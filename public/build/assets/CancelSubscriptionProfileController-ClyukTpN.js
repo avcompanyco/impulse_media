@@ -1,0 +1,1 @@
+import{q as l}from"./index-CMWG4mbA.js";const r=o=>({url:r.url(o),method:"post"});r.definition={methods:["post"],url:"/profile/subscription/cancel"};r.url=o=>r.definition.url+l(o);r.post=o=>({url:r.url(o),method:"post"});const t=o=>({action:r.url(o),method:"post"});t.post=o=>({action:r.url(o),method:"post"});r.form=t;export{r as C};

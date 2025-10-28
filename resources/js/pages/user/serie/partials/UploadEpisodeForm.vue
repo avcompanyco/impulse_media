@@ -1,0 +1,410 @@
+<script setup lang="ts">
+import { ref, computed } from 'vue';
+import { Form, router } from '@inertiajs/vue3';
+import UploadChapterVideoChapterController from '@/actions/App/Http/Controllers/Serie/UploadChapterVideoChapterController';
+import DeleteChapterVideoChapterController from '@/actions/App/Http/Controllers/Serie/DeleteChapterVideoChapterController';
+import ErrorLabel from '@/components/form/ErrorLabel.vue';
+
+const props = defineProps<{
+    serie: number;
+    season: number;
+    chapter: any;
+}>();
+
+const form = ref(null);
+const isDragOver = ref(false);
+const selectedFile = ref<File | null>(null);
+const isUploading = ref(false);
+const uploadProgress = ref(0);
+
+const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB
+
+const hasVideo = computed(() => {
+    return props.chapter.chapter_video || selectedFile.value;
+});
+
+const videoName = computed(() => {
+    return selectedFile.value?.name || (props.chapter.chapter_video ? 'Current episode video' : '');
+});
+
+function handleVideoChange(event: Event) {
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
+    if (file) {
+        selectedFile.value = file;
+        uploadChunks(file);
+    }
+}
+
+function handleDrop(event: DragEvent) {
+    event.preventDefault();
+    isDragOver.value = false;
+    
+    const files = event.dataTransfer?.files;
+    if (files && files.length > 0) {
+        const file = files[0];
+        if (file.type.startsWith('video/')) {
+            selectedFile.value = file;
+            const input = document.getElementById('episodeVideoFile') as HTMLInputElement;
+            if (input) {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                input.files = dt.files;
+            }
+            uploadChunks(file);
+        }
+    }
+}
+
+function handleDragOver(event: DragEvent) {
+    event.preventDefault();
+    isDragOver.value = true;
+}
+
+function handleDragLeave(event: DragEvent) {
+    event.preventDefault();
+    isDragOver.value = false;
+}
+
+const uploadChunks = async (file: File) => {
+    if (!file) return;
+
+    isUploading.value = true;
+    uploadProgress.value = 0;
+
+    try {
+        const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+        
+        for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+            const start = chunkIndex * CHUNK_SIZE;
+            const end = Math.min(start + CHUNK_SIZE, file.size);
+            const chunk = file.slice(start, end);
+            
+            const isLastChunk = chunkIndex === totalChunks - 1;
+            
+            const formData = new FormData();
+            formData.append('chapter_video', chunk, file.name);
+            formData.append('is_last_chunk', isLastChunk ? '1' : '0');
+            
+            await new Promise((resolve, reject) => {
+                router.post(UploadChapterVideoChapterController.url({
+                    serie: props.serie,
+                    season: props.season,
+                    chapter: props.chapter.id,
+                }), formData, {
+                    preserveScroll: true,
+                    forceFormData: true,
+                    onSuccess: (page) => {
+                        uploadProgress.value = Math.round(((chunkIndex + 1) / totalChunks) * 100);
+                        // @ts-ignore
+                        if (page.props.flash?.complete) {
+                            isUploading.value = false;
+                            uploadProgress.value = 100;
+                        }
+                        resolve(void 0);
+                    },
+                    onError: (errors) => {
+                        reject(new Error(Object.values(errors)[0] as string));
+                    }
+                });
+            });
+        }
+    } catch (error) {
+        console.error('Upload failed:', error);
+        isUploading.value = false;
+        uploadProgress.value = 0;
+        selectedFile.value = null;
+        
+        const fileInput = document.getElementById('episodeVideoFile') as HTMLInputElement;
+        if (fileInput) {
+            fileInput.value = '';
+        }
+    }
+};
+
+function triggerFileInput() {
+    if (isUploading.value) return;
+    const fileInput = document.getElementById('episodeVideoFile') as HTMLInputElement;
+    fileInput?.click();
+}
+
+function removeVideo() {
+    router.delete(DeleteChapterVideoChapterController.url({
+        serie: props.serie,
+        season: props.season,
+        chapter: props.chapter.id,
+    }), {
+        preserveScroll: true,
+        onSuccess: (page) => {
+            selectedFile.value = null;
+            uploadProgress.value = 0;
+        }
+    });
+}
+
+</script>
+<template>
+    <Form ref="form" v-bind="UploadChapterVideoChapterController.form({
+        serie: props.serie,
+        season: props.season,
+        chapter: props.chapter.id,
+    })" :reset-on-success="[]"
+        v-slot="{ errors, processing }" :options="{ preserveScroll: true }">
+        <div class="form-section">
+            <label class="form-label">Episode Video</label>
+            <div 
+                class="upload-box"
+                :class="{ 'drag-over': isDragOver, 'has-video': hasVideo, 'uploading': isUploading }"
+                @click="triggerFileInput"
+                @drop="handleDrop"
+                @dragover="handleDragOver"
+                @dragleave="handleDragLeave"
+            >
+                <div v-if="!hasVideo && !isUploading" class="upload-content">
+                    <i class="fa-solid fa-film"></i>
+                    <p>Select the episode video</p>
+                    <small>or drag and drop a video here</small>
+                </div>
+
+                <div v-else-if="isUploading" class="upload-progress">
+                    <i class="fa-solid fa-upload"></i>
+                    <p>Uploading episode...</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" :style="{ width: uploadProgress + '%' }"></div>
+                    </div>
+                    <span class="progress-text">{{ uploadProgress }}%</span>
+                </div>
+                
+                <div v-else class="video-info">
+                    <i class="fa-solid fa-film"></i>
+                    <p class="video-name">
+                        {{ videoName }}
+                    </p>
+                    <div class="video-actions">
+                        <button type="button" @click.stop="triggerFileInput" class="action-btn edit-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" 
+                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" 
+                                stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-edit">
+                                <path d="M12 20h9"></path>
+                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                            </svg>
+                        </button>
+                        <button type="button" @click.stop="removeVideo" class="action-btn delete-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" 
+                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" 
+                                stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2">
+                                <path d="M3 6h18"></path>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                <path d="M10 11v6"></path>
+                                <path d="M14 11v6"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <input 
+                type="file" 
+                name="chapter_video" 
+                id="episodeVideoFile" 
+                accept="video/*" 
+                @change="handleVideoChange"
+                :disabled="isUploading"
+            >
+            <ErrorLabel :error="errors.chapter_video" />
+        </div>
+    </Form>
+</template>
+
+<style scoped>
+.upload-form {
+    display: none;
+}
+
+.upload-form.active {
+    display: block;
+}
+
+.form-section {
+    margin-bottom: 1.5rem;
+}
+
+.form-label {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+    display: block;
+}
+
+.form-control {
+    background: var(--input-bg);
+    border: none;
+    color: var(--text-dark);
+    padding: 0.9rem;
+    border-radius: 12px;
+    font-size: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.upload-box {
+    border: 2px dashed #555;
+    background-color: var(--card-bg);
+    border-radius: 15px;
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.upload-box:hover {
+    border-color: var(--primary-color);
+}
+
+.upload-box.drag-over {
+    border-color: var(--primary-color);
+    background-color: rgba(var(--primary-color-rgb), 0.1);
+}
+
+.upload-box.uploading {
+    cursor: not-allowed;
+    border-color: var(--primary-color);
+}
+
+.upload-box.has-video {
+    padding: 1.5rem;
+    border-color: var(--success-color);
+    background-color: rgba(var(--success-color-rgb), 0.1);
+}
+
+.upload-content i {
+    font-size: 2rem;
+    color: #888;
+    margin-bottom: 0.75rem;
+    display: block;
+}
+
+.upload-content p {
+    color: var(--text-light);
+    font-size: 1rem;
+    font-weight: 500;
+    margin: 0 0 0.5rem 0;
+}
+
+.upload-content small {
+    color: #888;
+    font-size: 0.85rem;
+}
+
+.upload-progress {
+    width: 100%;
+}
+
+.upload-progress i {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-bottom: 0.75rem;
+    animation: pulse 2s infinite;
+}
+
+.upload-progress p {
+    color: var(--text-light);
+    font-size: 1rem;
+    font-weight: 500;
+    margin: 0 0 1rem 0;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    color: var(--primary-color);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.video-info {
+    width: 100%;
+}
+
+.video-info i {
+    font-size: 2rem;
+    color: var(--success-color);
+    margin-bottom: 0.75rem;
+}
+
+.video-name {
+    color: var(--text-light);
+    font-size: 1rem;
+    font-weight: 500;
+    margin: 0 0 1rem 0;
+    word-break: break-word;
+}
+
+.video-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+}
+
+.action-btn {
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+    transform: scale(1.1);
+}
+
+.edit-btn {
+    background: var(--secondary-color);
+    color: white;
+}
+
+.delete-btn {
+    background: var(--danger-color);
+    color: white;
+}
+
+input[type="file"] {
+    display: none;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+</style>

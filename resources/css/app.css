@@ -1,0 +1,211 @@
+@import '../assets/bootstrap/css/bootstrap.min.css';
+:root {
+    --main-bg: #0a0a23;
+    --sidebar-bg: #0f122e;
+    --content-area-bg: #0a0a23;
+    --primary-color: #f06292;
+    --primary-color-hover: #d84373;
+    --secondary-color: #2196f3;
+    --secondary-color-hover: #1976d2;
+    --input-bg: #e8e8e8;
+    --text-dark-on-light-bg: #1a1b1e;
+    --text-light: #ffffff;
+    --text-headings: #f0f6fc;
+    --text-muted: #aeb8c4;
+    --border-color: #2c2c4c;
+    --error-color: #ff6b6b;
+    --error-color-hover: #e04848;
+    --section-bg: rgba(20, 22, 46, 0.5);
+    --table-header-bg: rgba(30, 33, 63, 0.7);
+    --table-row-hover-bg: rgba(240, 98, 146, 0.08);
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 5px 15px rgba(0, 0, 0, 0.3);
+    --border-radius-sm: 6px;
+    --border-radius-md: 10px;
+    --card-bg: #1a1a3d;
+    --text-dark: #1a1b1e;
+    --danger-color: #e53935;
+    --gradient-start: #f06292;
+    --gradient-end: #2196f3;
+    --transition-bezier: cubic-bezier(0.4, 0, 0.2, 1);
+    --secondary-action-bg: #6c757d;
+    --destructive-action-bg: #dc3545;
+
+    --sidebar-bg: #0F122E; 
+    --content-area-bg: #0A0A23; 
+    --primary-color: #F06292; 
+    --primary-color-hover: #D84373; 
+    --secondary-color: #2196F3; 
+    --text-light: #FFFFFF;
+    --text-headings: #f0f6fc; 
+    --text-muted: #aeb8c4; 
+    --border-color: #2c2c4c;
+    --section-bg: rgba(20, 22, 46, 0.5); 
+    --table-row-hover-bg: rgba(240, 98, 146, 0.08); 
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.2);
+    --shadow-md: 0 5px 15px rgba(0,0,0,0.3);
+    --border-radius-md: 10px;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #0a0a23;
+    color: white;
+    min-height: 100vh;
+}
+
+.logo-icon {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 2rem;
+}
+
+.login-title {
+    font-size: 2rem;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 4rem;
+    letter-spacing: -0.5px;
+}
+
+.form-container {
+    width: 100%;
+}
+
+.form-group {
+    margin-bottom: 2rem;
+}
+
+.form-label {
+    color: white;
+    font-size: 1.25rem;
+    font-weight: 500;
+    margin-bottom: 0.875rem;
+    display: block;
+}
+
+.form-control {
+    background-color: #e8e8e8;
+    border: none;
+    border-radius: 30px;
+    padding: 1rem 1.75rem;
+    font-size: 1.1rem;
+    height: auto;
+    color: #333;
+    width: 100%;
+}
+
+.form-control::placeholder {
+    color: #666;
+}
+
+.form-control:focus {
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25);
+    background-color: #fff;
+}
+
+.forgot-password-link {
+    display: block;
+    text-align: right;
+    margin-top: -1rem;
+    margin-bottom: 2rem;
+    font-size: 0.9rem;
+    color: #ccc;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.forgot-password-link:hover {
+    color: white;
+    text-decoration: underline;
+}
+
+.login-button {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 30px;
+    padding: 1rem 2rem;
+    font-size: 1.125rem;
+    font-weight: 500;
+    width: 100%;
+    max-width: 200px;
+    display: block;
+    margin: 3rem auto 0;
+    transition: all 0.3s ease;
+}
+
+.login-button:hover {
+    transform: scale(1.02);
+    background-color: #bb2d3b;
+}
+
+/* Tablet */
+@media (min-width: 768px) {
+    .app-container {
+        max-width: 480px;
+    }
+
+    .logo-icon {
+        width: 56px;
+        height: 56px;
+        margin-bottom: 2.5rem;
+    }
+
+    .login-title {
+        font-size: 2.25rem;
+    }
+}
+
+/* Desktop */
+@media (min-width: 1200px) {
+    .app-container {
+        max-width: 520px;
+        padding: 0;
+    }
+
+    .logo-icon {
+        width: 64px;
+        height: 64px;
+        margin-bottom: 3rem;
+    }
+
+    .login-title {
+        font-size: 2.5rem;
+        margin-bottom: 5rem;
+    }
+
+    .form-group {
+        margin-bottom: 2.5rem;
+    }
+
+    .login-button {
+        margin-top: 4rem;
+    }
+}
+
+/* Mobile small */
+@media (max-width: 400px) {
+    .app-container {
+        padding: 1.5rem;
+    }
+
+    .login-title {
+        font-size: 1.75rem;
+        margin-bottom: 3rem;
+    }
+
+    .form-control {
+        padding: 0.875rem 1.5rem;
+        font-size: 1rem;
+    }
+
+    .form-label {
+        font-size: 1.125rem;
+    }
+
+    .login-button {
+        margin-top: 2.5rem;
+        padding: 0.875rem 1.75rem;
+    }
+}

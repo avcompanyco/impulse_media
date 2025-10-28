@@ -1,0 +1,1 @@
+import{q as e}from"./index-CMWG4mbA.js";const o=r=>({url:o.url(r),method:"post"});o.definition={methods:["post"],url:"/register"};o.url=r=>o.definition.url+e(r);o.post=r=>({url:o.url(r),method:"post"});const t=r=>({action:o.url(r),method:"post"});t.post=r=>({action:o.url(r),method:"post"});o.form=t;export{o as R};

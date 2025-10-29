@@ -149,6 +149,6 @@ trait HasMovie
      */
     protected function MovievideoDisk()
     {
-        return isset($_ENV['VAPOR_ARTIFACT_NAME']) ? 's3' : 'public';
+        return isset($_ENV['FILESYSTEM_DISK']) ? 's3' : 'public';
     }
 }

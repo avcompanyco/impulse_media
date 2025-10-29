@@ -35,9 +35,19 @@ trait HasMovie
     public function movieVideoUrl(): Attribute
     {
         return Attribute::get(function (): string {
-            return $this->movie_video
-                ? Storage::disk($this->MovievideoDisk())->url($this->movie_video)
-                : $this->defaultMovieVideo();
+            if (!$this->movie_video) {
+                return $this->defaultMovieVideo();
+            }
+    
+            $disk = Storage::disk($this->MovievideoDisk());
+    
+            try {
+                // URL temporal válida por 1 hora
+                return $disk->temporaryUrl($this->movie_video, now()->addHour());
+            } catch (\Throwable $e) {
+                // fallback a URL normal si el disco no soporta temporaryUrl
+                return $disk->url($this->movie_video);
+            }
         });
     }
 

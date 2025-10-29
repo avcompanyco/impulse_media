@@ -34,9 +34,19 @@ trait HasVideoChapter
     public function chapterVideoUrl(): Attribute
     {
         return Attribute::get(function (): string {
-            return $this->chapter_video
-                ? Storage::disk($this->ChapterVideoDisk())->url($this->chapter_video)
-                : $this->defaultChapterVideo();
+            if (!$this->chapter_video) {
+                return $this->defaultChapterVideo();
+            }
+    
+            $disk = Storage::disk($this->ChapterVideoDisk());
+    
+            try {
+                // URL temporal válida por 1 hora
+                return $disk->temporaryUrl($this->chapter_video, now()->addHour());
+            } catch (\Throwable $e) {
+                // fallback a URL normal si el disco no soporta temporaryUrl
+                return $disk->url($this->chapter_video);
+            }
         });
     }
 

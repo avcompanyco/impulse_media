@@ -34,9 +34,19 @@ trait HasVideoShort
     public function shortVideoUrl(): Attribute
     {
         return Attribute::get(function (): string {
-            return $this->short_video
-                ? Storage::disk($this->VideoShortDisk())->url($this->short_video)
-                : $this->defaultShortVideo();
+            if (!$this->short_video) {
+                return $this->defaultShortVideo();
+            }
+    
+            $disk = Storage::disk($this->VideoShortDisk());
+    
+            try {
+                // URL temporal válida por 1 hora
+                return $disk->temporaryUrl($this->short_video, now()->addHour());
+            } catch (\Throwable $e) {
+                // fallback a URL normal si el disco no soporta temporaryUrl
+                return $disk->url($this->short_video);
+            }
         });
     }
 

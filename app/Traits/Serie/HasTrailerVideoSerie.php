@@ -34,9 +34,19 @@ trait HasTrailerVideoSerie
     public function trailerVideoUrl(): Attribute
     {
         return Attribute::get(function (): string {
-            return $this->trailer_video
-                ? Storage::disk($this->TrailervideoDisk())->url($this->trailer_video)
-                : $this->defaultTrailerVideo();
+            if (!$this->trailer_video) {
+                return $this->defaultTrailerVideo();
+            }
+    
+            $disk = Storage::disk($this->TrailervideoDisk());
+    
+            try {
+                // URL temporal válida por 1 hora
+                return $disk->temporaryUrl($this->trailer_video, now()->addHour());
+            } catch (\Throwable $e) {
+                // fallback a URL normal si el disco no soporta temporaryUrl
+                return $disk->url($this->trailer_video);
+            }
         });
     }
 

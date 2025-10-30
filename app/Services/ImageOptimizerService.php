@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use Intervention\Image\Facades\Image;
+use Intervention\Image\Laravel\Facades\Image;
+use Intervention\Image\Encoders\WebpEncoder;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 
 class ImageOptimizerService
 {
@@ -41,29 +41,32 @@ class ImageOptimizerService
 
     public static function optimizeUploadedFile(UploadedFile $file, $quality = 75)
     {
-        // Crear una copia temporal optimizada
-        $optimizedImage = Image::make($file);
+        // Leer la imagen usando el facade de Laravel
+        $optimizedImage = Image::read($file->getRealPath());
 
-        // Optimizar la imagen
-        foreach (self::$qualities as $quality) {
-            if ($optimizedImage->filesize() > $quality['size']) {
-                $optimizedImage->encode('webp', $quality['quality']);
+        // Obtener el tamaño del archivo original
+        $fileSize = $file->getSize();
+
+        // Determinar la calidad basada en el tamaño del archivo
+        $selectedQuality = $quality;
+        foreach (self::$qualities as $qualitySetting) {
+            if ($fileSize > $qualitySetting['size']) {
+                $selectedQuality = $qualitySetting['quality'];
                 break;
             }
         }
 
-        if ($optimizedImage->mime() != 'image/webp') {
-            $optimizedImage->encode('webp', $quality);
-        }
+        // Convertir a WebP con la calidad seleccionada
+        $encodedImage = $optimizedImage->encode(new WebpEncoder($selectedQuality));
 
         // Crear un nuevo UploadedFile con la imagen optimizada
         $tempPath = tempnam(sys_get_temp_dir(), 'optimized_') . '.webp';
-        $optimizedImage->save($tempPath);
+        file_put_contents($tempPath, $encodedImage->toString());
 
         return new UploadedFile(
             $tempPath,
-            $file->getClientOriginalName(),
-            $file->getClientMimeType(),
+            pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME) . '.webp',
+            'image/webp',
             null,
             true
         );
@@ -71,13 +74,15 @@ class ImageOptimizerService
 
     public static function convertToWebP(UploadedFile $file, $quality = 90)
     {
-        $image = Image::make($file->getRealPath());
+        // Leer la imagen
+        $image = Image::read($file->getRealPath());
 
-        $image->encode('webp', $quality);
+        // Codificar a WebP
+        $encodedImage = $image->encode(new WebpEncoder($quality));
 
-
+        // Guardar en archivo temporal
         $tempPath = tempnam(sys_get_temp_dir(), 'webp_') . '.webp';
-        $image->save($tempPath);
+        file_put_contents($tempPath, $encodedImage->toString());
 
         return new UploadedFile(
             $tempPath,

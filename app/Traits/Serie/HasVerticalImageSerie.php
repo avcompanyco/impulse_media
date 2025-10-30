@@ -5,6 +5,7 @@ namespace App\Traits\Serie;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use App\Services\ImageOptimizerService;
 
 trait HasVerticalImageSerie
 {
@@ -20,7 +21,7 @@ trait HasVerticalImageSerie
             return;
         }
 
-        Storage::disk($this->VerticalPhotoDisk())->delete($this->vertical_image);
+        Storage::disk(getDisk())->delete($this->vertical_image);
 
         $this->forceFill([
             'vertical_image' => '',
@@ -34,7 +35,7 @@ trait HasVerticalImageSerie
     {
         return Attribute::get(function (): string {
             return $this->vertical_image
-                ? Storage::disk($this->VerticalPhotoDisk())->url($this->vertical_image)
+                ? Storage::disk(getDisk())->url($this->vertical_image)
                 : $this->defaultVerticalImage();
         });
     }
@@ -47,16 +48,22 @@ trait HasVerticalImageSerie
      */
     public function updateVerticalImage(UploadedFile $photo, $storagePath = 'series/vertical_images')
     {
+        if ($photo->getSize() > 200000) {
+            $photo = ImageOptimizerService::optimizeUploadedFile($photo); // ya devuelve como webp
+        } else if ($photo->getMimeType() != 'image/webp') {
+            $photo = ImageOptimizerService::convertToWebP($photo); // ya devuelve como webp
+        }
+
         tap($this->vertical_image, function ($previous) use ($photo, $storagePath) {
             $this->forceFill([
                 'vertical_image' => $photo->storePublicly(
                     $storagePath,
-                    ['disk' => $this->VerticalPhotoDisk()]
+                    ['disk' => getDisk()]
                 ),
             ])->save();
 
             if ($previous) {
-                Storage::disk($this->VerticalPhotoDisk())->delete($previous);
+                Storage::disk(getDisk())->delete($previous);
             }
         });
     }
@@ -74,13 +81,4 @@ trait HasVerticalImageSerie
         return 'https://ui-avatars.com/api/?name=' . urlencode($name) . '&color=7F9CF5&background=EBF4FF';
     }
 
-    /**
-     * Get the disk that vertical photos should be stored on.
-     *
-     * @return string
-     */
-    protected function VerticalPhotoDisk()
-    {
-        return isset($_ENV['FILESYSTEM_DISK']) ? 's3' : 'public';
-    }
 }

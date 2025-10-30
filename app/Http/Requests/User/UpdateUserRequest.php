@@ -39,7 +39,7 @@ class UpdateUserRequest extends FormRequest
             'status' => ['required', 'string', 'in:active,suspended'],
             'plan_id' => ['nullable', 'integer', 'exists:plans,id'],
             'trial_days' => ['nullable', 'integer', 'min:0'],
-            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
+            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,svg,webp', 'max:2048'],
             'roles' => ['nullable', 'array'],
             'roles.*' => ['string', 'exists:roles,name'],
         ];

@@ -83,6 +83,6 @@ class ChunkUploadService
      */
     protected function chunkDisk()
     {
-        return isset($_ENV['VAPOR_ARTIFACT_NAME']) ? 's3' : 'local';
+        return isset($_ENV['FILESYSTEM_DISK']) ? 's3' : 'local';
     }
 }

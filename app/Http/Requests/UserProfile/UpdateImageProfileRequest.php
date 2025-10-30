@@ -30,7 +30,7 @@ class UpdateImageProfileRequest extends FormRequest
     {
         
         return [
-            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
+            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,svg,webp', 'max:2048'],
         ];
     }
 

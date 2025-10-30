@@ -5,6 +5,7 @@ namespace App\Traits\Serie;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use App\Services\ImageOptimizerService;
 
 trait HasThumbnailChapter
 {
@@ -20,7 +21,7 @@ trait HasThumbnailChapter
             return;
         }
 
-        Storage::disk($this->ThumbnailDisk())->delete($this->thumbnail);
+        Storage::disk(getDisk())->delete($this->thumbnail);
 
         $this->forceFill([
             'thumbnail' => '',
@@ -34,7 +35,7 @@ trait HasThumbnailChapter
     {
         return Attribute::get(function (): string {
             return $this->thumbnail
-                ? Storage::disk($this->ThumbnailDisk())->url($this->thumbnail)
+                ? Storage::disk(getDisk())->url($this->thumbnail)
                 : $this->defaultThumbnail();
         });
     }
@@ -47,16 +48,22 @@ trait HasThumbnailChapter
      */
     public function updateThumbnail(UploadedFile $photo, $storagePath = 'series/thumbnails')
     {
+        if ($photo->getSize() > 200000) {
+            $photo = ImageOptimizerService::optimizeUploadedFile($photo); // ya devuelve como webp
+        } else if ($photo->getMimeType() != 'image/webp') {
+            $photo = ImageOptimizerService::convertToWebP($photo); // ya devuelve como webp
+        }
+
         tap($this->thumbnail, function ($previous) use ($photo, $storagePath) {
             $this->forceFill([
                 'thumbnail' => $photo->storePublicly(
                     $storagePath,
-                    ['disk' => $this->ThumbnailDisk()]
+                    ['disk' => getDisk()]
                 ),
             ])->save();
 
             if ($previous) {
-                Storage::disk($this->ThumbnailDisk())->delete($previous);
+                Storage::disk(getDisk())->delete($previous);
             }
         });
     }
@@ -74,13 +81,4 @@ trait HasThumbnailChapter
         return 'https://ui-avatars.com/api/?name=' . urlencode($name) . '&color=7F9CF5&background=EBF4FF';
     }
 
-    /**
-     * Get the disk that thumbnails should be stored on.
-     *
-     * @return string
-     */
-    protected function ThumbnailDisk()
-    {
-        return isset($_ENV['FILESYSTEM_DISK']) ? 's3' : 'public';
-    }
 }

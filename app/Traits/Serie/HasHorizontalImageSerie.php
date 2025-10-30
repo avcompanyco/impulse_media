@@ -5,6 +5,7 @@ namespace App\Traits\Serie;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use App\Services\ImageOptimizerService;
 
 trait HasHorizontalImageSerie
 {
@@ -20,7 +21,7 @@ trait HasHorizontalImageSerie
             return;
         }
 
-        Storage::disk($this->HorizontalPhotoDisk())->delete($this->horizontal_image);
+        Storage::disk(getDisk())->delete($this->horizontal_image);
 
         $this->forceFill([
             'horizontal_image' => '',
@@ -34,7 +35,7 @@ trait HasHorizontalImageSerie
     {
         return Attribute::get(function (): string {
             return $this->horizontal_image
-                ? Storage::disk($this->HorizontalPhotoDisk())->url($this->horizontal_image)
+                ? Storage::disk(getDisk())->url($this->horizontal_image)
                 : $this->defaultHorizontalImage();
         });
     }
@@ -47,16 +48,22 @@ trait HasHorizontalImageSerie
      */
     public function updateHorizontalImage(UploadedFile $photo, $storagePath = 'series/horizontal_images')
     {
+        if ($photo->getSize() > 200000) {
+            $photo = ImageOptimizerService::optimizeUploadedFile($photo); // ya devuelve como webp
+        } else if ($photo->getMimeType() != 'image/webp') {
+            $photo = ImageOptimizerService::convertToWebP($photo); // ya devuelve como webp
+        }
+
         tap($this->horizontal_image, function ($previous) use ($photo, $storagePath) {
             $this->forceFill([
                 'horizontal_image' => $photo->storePublicly(
                     $storagePath,
-                    ['disk' => $this->HorizontalPhotoDisk()]
+                    ['disk' => getDisk()]
                 ),
             ])->save();
 
             if ($previous) {
-                Storage::disk($this->HorizontalPhotoDisk())->delete($previous);
+                Storage::disk(getDisk())->delete($previous);
             }
         });
     }
@@ -74,13 +81,4 @@ trait HasHorizontalImageSerie
         return 'https://ui-avatars.com/api/?name=' . urlencode($name) . '&color=7F9CF5&background=EBF4FF';
     }
 
-    /**
-     * Get the disk that vertical photos should be stored on.
-     *
-     * @return string
-     */
-    protected function HorizontalPhotoDisk()
-    {
-        return isset($_ENV['FILESYSTEM_DISK']) ? 's3' : 'public';
-    }
 }

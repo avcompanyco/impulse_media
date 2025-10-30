@@ -4,6 +4,7 @@
   use Illuminate\Http\UploadedFile;
   use Illuminate\Support\Facades\Storage;
   use Illuminate\Database\Eloquent\Casts\Attribute;
+  use App\Services\ImageOptimizerService;
 
   trait HasImageUser
   {
@@ -19,7 +20,7 @@
             return;
         }
 
-        Storage::disk($this->CollectionPhotoDisk())->delete($this->image);
+        Storage::disk(getDisk())->delete($this->image);
 
         $this->forceFill([
             'image' => '',
@@ -32,7 +33,7 @@
     public function imageUrl (): Attribute {
         return Attribute::get(function (): string {
             return $this->image
-                    ? Storage::disk($this->CollectionPhotoDisk())->url($this->image)
+                    ? Storage::disk(getDisk())->url($this->image)
                     : $this->defaultCollectionImage();
         });
     }
@@ -44,15 +45,21 @@
      * @param  string  $storagePath
      */
     public function updateImage(UploadedFile $photo, $storagePath = 'users/images') {
+        if ($photo->getSize() > 200000) {
+            $photo = ImageOptimizerService::optimizeUploadedFile($photo); // ya devuelve como webp
+        } else if ($photo->getMimeType() != 'image/webp') {
+            $photo = ImageOptimizerService::convertToWebP($photo); // ya devuelve como webp
+        }
+
         tap($this->image, function ($previous) use ($photo, $storagePath) {
             $this->forceFill([
                 'image' => $photo->storePublicly(
-                    $storagePath, ['disk' => $this->CollectionPhotoDisk()]
+                    $storagePath, ['disk' => getDisk()]
                 ),
             ])->save();
 
             if ($previous) {
-                Storage::disk($this->CollectionPhotoDisk())->delete($previous);
+                Storage::disk(getDisk())->delete($previous);
             }
         });
     }
@@ -71,14 +78,5 @@
         return 'https://ui-avatars.com/api/?name='.urlencode($name).'&color=7F9CF5&background=EBF4FF';
     }
 
-     /**
-     * Get the disk that profile photos should be stored on.
-     *
-     * @return string
-     */
-    protected function CollectionPhotoDisk()
-    {
-        return isset($_ENV['FILESYSTEM_DISK']) ? 's3' : 'public';
-    }
   }
   

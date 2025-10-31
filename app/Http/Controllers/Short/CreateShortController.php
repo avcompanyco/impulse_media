@@ -47,6 +47,11 @@ class CreateShortController extends Controller
         $short->load('content');
 
         $plan = $_user->plan;
+
+        if (!$plan) {
+            return redirect()->route('user.profile.subscription');
+        }
+
         $canPublish = true;
         $shortsCount = $_user->shorts()->where('status', ContentStatus::PUBLISHED->value)->count();
         if (!$plan->is_unlimited_content)

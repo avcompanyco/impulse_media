@@ -50,6 +50,11 @@ class CreateSerieController extends Controller
         $categories = Category::with('subcategories')->orderBy('name', 'asc')->get();
 
         $plan = $_user->plan;
+        
+        if (!$plan) {
+            return redirect()->route('user.profile.subscription');
+        }
+
         $canPublish = true;
         $seriesCount = $_user->series()->where('status', ContentStatus::PUBLISHED->value)->count();
         if (!$plan->is_unlimited_content)

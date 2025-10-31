@@ -117,7 +117,7 @@ watch(() => usePage().props, (newVal: any) => {
             <img src="/images/home.svg" alt="Home" class="nav-icon">
             <span>Home</span>
         </Link>
-        <Link :href="SearchController()" class="nav-item" :class="{ active: $page.url === SearchController.url() }">
+        <Link :href="SearchController()" class="nav-item" :class="{ active: $page.url.includes('search') }">
             <img src="/images/search.svg" alt="Explore" class="nav-icon">
             <span>Explore</span>
         </Link>

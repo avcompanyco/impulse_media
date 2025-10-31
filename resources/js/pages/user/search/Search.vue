@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import UserDashboardLayout from '@/layouts/UserDashboardLayout.vue';
 import { ref, onMounted, nextTick, computed, watch } from 'vue';
-import { router, Link } from '@inertiajs/vue3';
+import { router, Link, usePage } from '@inertiajs/vue3';
 import ShowCategoryController from '@/actions/App/Http/Controllers/Category/ShowCategoryController';
 import SearchController from '@/actions/App/Http/Controllers/SearchController';
 import ShowMovieController from '@/actions/App/Http/Controllers/Movie/ShowMovieController';
+import FilterSearchController from '@/actions/App/Http/Controllers/FilterSearchController';
+import { useQueryParams } from '@/composables/useQueryParams';
+import SearchData from './partials/SearchData.vue';
 
 interface Content {
     id: number;
@@ -21,27 +24,26 @@ interface Content {
 }
 
 const props = defineProps<{
-    contents: Content[];
     categories: any[];
 }>();
 
-const searchTerm = ref('');
 const showSearchResults = ref(false);
 const showCategories = ref(true);
-const pageTitle = ref('Explore');
+const page = usePage();
 const searchInput = ref<HTMLInputElement | null>(null);
 
-// Filtrar contenidos basado en el término de búsqueda
-const filteredContents = computed(() => {
-    if (!searchTerm.value.trim()) {
-        return props.contents;
-    }
-
-    return props.contents.filter(content =>
-        content.contentable.title.toLowerCase().includes(searchTerm.value.toLowerCase())
-    );
+const queryParams = ref({
+    search: '',
+    ...useQueryParams(page.url)
 });
 
+
+const pageTitle = computed(() => {
+    if (queryParams.value.category && queryParams.value.category.length > 0) {
+        return props.categories.find(category => category.id == queryParams.value.category)?.name;
+    }
+    return 'Explore';
+});
 
 
 function shuffleArray(array: any[]) {
@@ -51,15 +53,6 @@ function shuffleArray(array: any[]) {
         [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
     return shuffled;
-}
-
-function generateMockMovies() {
-    const shuffled = shuffleArray([...moviePosters, ...moviePosters]);
-    return shuffled.map((poster, index) => ({
-        id: index + 1,
-        vertical_image_url: poster,
-        title: `Movie ${index + 1}`
-    }));
 }
 
 function initializeMovieRowScroll(rowElement: HTMLElement) {
@@ -123,62 +116,29 @@ function initializeMovieRowScroll(rowElement: HTMLElement) {
     }
 }
 
-async function displayCategoryMovies(categoryName: string) {
-    showCategories.value = false;
-    showSearchResults.value = true;
-    pageTitle.value = categoryName;
-
-    await nextTick();
-    const moviesRow = document.querySelector('.search-results .movies-row') as HTMLElement;
-    if (moviesRow) {
-        initializeMovieRowScroll(moviesRow);
-    }
+function handleCategoryClick(categoryId: number) {
+    router.visit(SearchController({
+        query: { category: categoryId }
+    }))
 }
+let debounceTimeout: ReturnType<typeof setTimeout> | null = null;
 
 function handleSearch() {
-    const term = searchTerm.value.trim();
-
-    if (term.length > 0) {
-        // Realizar búsqueda con InertiaJS manteniendo el estado
-        router.get(SearchController({
-            search: term,
-        }), {}, {
+    if (debounceTimeout) {
+        clearTimeout(debounceTimeout);
+    }
+    debounceTimeout = setTimeout(() => {
+        router.visit(SearchController({
+            query: queryParams.value
+        }), {
+            preserveUrl: false,
             preserveState: true,
             preserveScroll: true,
-            replace: true,
-            showProgress: false,
-            only: ['contents', 'categories']
+            onFinish: () => {
+                searchInput.value?.focus();
+            }
         });
-
-        showCategories.value = false;
-        showSearchResults.value = true;
-        pageTitle.value = 'Search Results';
-    } else {
-        // Limpiar búsqueda
-        router.get(SearchController({}), {}, {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true
-        });
-
-        showCategories.value = true;
-        showSearchResults.value = false;
-        pageTitle.value = 'Explore';
-    }
-}
-
-function handleCategoryClick(categoryId: number) {
-    router.visit(ShowCategoryController({ category: categoryId }))
-}
-
-function getContentUrl(content: Content): string {
-    if (content.type === 'movie') {
-        return route('user.movie.show', { movie: content.contentable.id });
-    } else if (content.type === 'serie') {
-        // Asumiendo que existe una ruta para series
-        return `/serie/${content.contentable.id}`;
-    }
-    return '#';
+    }, 1000);
 }
 
 onMounted(() => {
@@ -187,7 +147,7 @@ onMounted(() => {
     const searchParam = urlParams.get('search');
 
     if (searchParam) {
-        searchTerm.value = searchParam;
+        queryParams.value.search = searchParam;
         showCategories.value = false;
         showSearchResults.value = true;
         pageTitle.value = 'Search Results';
@@ -198,6 +158,17 @@ onMounted(() => {
     movieRows.forEach(row => initializeMovieRowScroll(row));
 });
 
+function haveQueryParams() {
+    let hasQueryParams = false;
+    if (queryParams.value.search && queryParams.value.search.length > 0) {
+        hasQueryParams = true;
+    }
+    if (queryParams.value.category && queryParams.value.category.length > 0) {
+        hasQueryParams = true;
+    }
+
+    return hasQueryParams;
+}
 
 </script>
 
@@ -206,8 +177,8 @@ onMounted(() => {
         <!-- Search Bar -->
         <div class="search-wrapper">
             <div class="search-container">
-                <input type="text" class="search-bar" placeholder="Search by title, genre..." v-model="searchTerm"
-                    @input="handleSearch">
+                <input ref="searchInput" type="text" class="search-bar" placeholder="Search by title, genre..." v-model="queryParams.search"
+                    @input:debounce.500ms="handleSearch" />
             </div>
         </div>
 
@@ -215,8 +186,10 @@ onMounted(() => {
             <h1 class="page-title">{{ pageTitle }}</h1>
 
             <!-- Categories Grid -->
-            <div v-if="showCategories" class="categories-grid">
-                <div v-for="category in categories" :key="`show_category_${category.id}_search`" class="category-card"
+            <div v-if="!haveQueryParams()" class="categories-grid">
+                <div v-for="category in categories"
+                    :key="`show_category_${category.id}_search`" 
+                    class="category-card"
                     @click="handleCategoryClick(category.id)">
                     <img :src="category.image_url || '/images/action.png'" :alt="category.name" class="category-image">
                     <div class="category-overlay">
@@ -224,9 +197,14 @@ onMounted(() => {
                     </div>
                 </div>
             </div>
+            <template v-else>
+                <Suspense>
+                    <SearchData v-model:url="queryParams" />
+                </Suspense>
+            </template>
 
             <!-- Search Results -->
-            <div v-if="showSearchResults" class="search-results">
+            <!-- <div v-if="showSearchResults" class="search-results">
                 <div class="movies-row">
                     <div v-for="(content, index) in filteredContents" :key="`content_${content.id}_card_${index + 1}`"
                         class="movie-card">
@@ -241,7 +219,7 @@ onMounted(() => {
                 </div>
                 <button class="slider-arrow prev" aria-label="Previous"></button>
                 <button class="slider-arrow next" aria-label="Next"></button>
-            </div>
+            </div> -->
         </main>
         <br />
     </UserDashboardLayout>

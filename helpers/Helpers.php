@@ -105,5 +105,5 @@ function googleMapEmbed($q, $center = "", $zoom = 15, $language = "", $region = 
  */
 function getDisk()
 {
-    return isset($_ENV['FILESYSTEM_DISK']) && $_ENV['FILESYSTEM_DISK'] == 's3' ? 's3' : 'local';
+    return isset($_ENV['FILESYSTEM_DISK']) ? $_ENV['FILESYSTEM_DISK'] : 'local';
 }

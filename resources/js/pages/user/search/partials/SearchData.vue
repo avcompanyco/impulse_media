@@ -1,46 +1,72 @@
 <script setup lang="ts">
+import { computed, onMounted, ref, watch } from 'vue';
 import { Link } from '@inertiajs/vue3';
-import ShowCategoryController from '@/actions/App/Http/Controllers/Category/ShowCategoryController';
+
 import ShowMovieController from '@/actions/App/Http/Controllers/Movie/ShowMovieController';
 import ShowSerieController from '@/actions/App/Http/Controllers/Serie/ShowSerieController';
+import FilterSearchController from '@/actions/App/Http/Controllers/FilterSearchController';
 
-const props = defineProps<{
-    categories: any[];
-}>();
+const data = ref<any[]>([]);
 
-function mergeInRandomOrderMoviesAndSeries(category: any) {
-    return [...category.movies, ...category.series].sort(() => Math.random() - 0.5);
+const model = defineModel<string>('url');
+
+const url = computed(() => FilterSearchController({ query: model.value || {} }));
+
+
+watch(url, async () => {
+    refreshData();
+});
+
+async function refreshData() {
+    try {
+        // @ts-ignore
+        data.value = await fetch(url.value.url).then(response => response.json());
+        if (data.value.data) {
+            data.value = data.value.data;
+        }
+    } catch (error) {
+        console.error(error);
+    }
 }
 
-function hasMoviesOrSeries(category: any) {
-    return category.movies.length > 0 || category.series.length > 0;
-}
+onMounted(async () => {
+    await refreshData();
+});
 
 </script>
 
 <template>
-    <div v-for="category in categories" :key="category.id">
-        <div v-if="hasMoviesOrSeries(category)" class="movies-section">
-            <div class="section-header">
-                <Link :href="ShowCategoryController(category)" class="section-title">{{ category.name }}</Link>
-                <Link :href="ShowCategoryController(category)" class="view-all-btn">View All</Link>
-            </div>
-            <div class="movies-row" data-slider="action">
-                <div v-for="(movie, index) in mergeInRandomOrderMoviesAndSeries(category)"
-                    :key="`movie_${movie.id}_card_${index + 1}`" class="movie-card">
-                    <Link v-if="movie.movie_video" :href="ShowMovieController.url(movie)">
-                        <img :src="movie.vertical_image_url" alt="Movie Poster">
+     <div 
+            class="movies-section"
+            style="margin-bottom: 80px;"
+        >
+            <div class="movies-row" data-slider="slasher">
+                <div v-for="(content, index) in data"
+                    :key="`movie_${content.id}_card_${index + 1}`" class="movie-card">
+                    <Link 
+                        v-if="content.type == 'movies'"
+                        :href="ShowMovieController({ movie: content.contentable.id })">
+                        <img :src="content.contentable.vertical_image_url" alt="Movie Poster">
                     </Link>
-                    <Link v-else :href="ShowSerieController.url(movie)">
-                        <img :src="movie.vertical_image_url" alt="Movie Poster">
+                    <Link 
+                        v-else
+                        :href="ShowSerieController({ serie: content.contentable.id })">
+                        <img :src="content.vertical_image_url" alt="Movie Poster">
                     </Link>
                 </div>
             </div>
         </div>
-    </div>
 </template>
 
 <style scoped>
+/* Page Specific Styles */
+.page-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 1.5rem 1rem;
+    text-align: center;
+}
+
 /* Movie Sections */
 .movies-section {
     position: relative;
@@ -49,35 +75,10 @@ function hasMoviesOrSeries(category: any) {
     overflow: visible;
 }
 
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-
 .section-title {
     font-size: 1.75rem;
     font-weight: 600;
-    margin-bottom: 0;
-    color: inherit;
-    text-decoration: none;
-}
-
-.view-all-btn {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: var(--text-light);
-    text-decoration: none;
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    font-weight: 500;
-    transition: background-color 0.2s;
-}
-
-.view-all-btn:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-    color: var(--text-light);
+    margin-bottom: 1rem;
 }
 
 .movies-row {
@@ -206,30 +207,8 @@ function hasMoviesOrSeries(category: any) {
         padding: 0 4rem 80px;
     }
 
-    .header {
-        justify-content: space-between;
-    }
-
-    .logo-icon {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-    }
-
-    .carousel-container {
-        padding: 0;
-    }
-
-    .carousel-content {
-        aspect-ratio: 21/9;
-    }
-
-    .mobile-image {
-        display: none;
-    }
-
-    .desktop-image {
-        display: block;
+    .page-title {
+        margin: 2rem 0 3rem;
     }
 
     .movies-section {
@@ -259,19 +238,6 @@ function hasMoviesOrSeries(category: any) {
 
     .movie-card:hover~.movie-card {
         transform: translateX(30px);
-    }
-
-    .movies-row .movie-card:first-child {
-        transform-origin: left center;
-    }
-
-    .movies-row .movie-card:last-child {
-        transform-origin: right center;
-    }
-
-    .movie-title {
-        font-size: 2.5rem;
-        max-width: 800px;
     }
 
     .slider-arrow {

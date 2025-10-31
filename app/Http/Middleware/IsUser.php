@@ -21,6 +21,7 @@ class IsUser
             Inertia::share('user', $request->user());
             return $next($request);
         }
-        return redirect()->to('/');
+
+        return redirect()->route('admin.dashboard');
     }
 }

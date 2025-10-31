@@ -18,6 +18,6 @@ class IsAdmin
         if ($request->user() && $request->user()->hasRole('admin')) {
             return $next($request);
         }
-        return redirect()->to('/');
+        return redirect()->route('dashboard');
     }
 }

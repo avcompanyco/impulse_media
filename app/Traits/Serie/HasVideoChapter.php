@@ -21,7 +21,7 @@ trait HasVideoChapter
             return;
         }
 
-        Storage::disk($this->ChapterVideoDisk())->delete($this->chapter_video);
+        Storage::disk(getDisk())->delete($this->chapter_video);
 
         $this->forceFill([
             'chapter_video' => '',
@@ -38,7 +38,7 @@ trait HasVideoChapter
                 return $this->defaultChapterVideo();
             }
     
-            $disk = Storage::disk($this->ChapterVideoDisk());
+            $disk = Storage::disk(getDisk());
     
             try {
                 // URL temporal válida por 1 hora
@@ -65,21 +65,21 @@ trait HasVideoChapter
                 $this->forceFill([
                     'chapter_video' => $video->storePublicly(
                         $storagePath,
-                        ['disk' => $this->ChapterVideoDisk()]
+                        ['disk' => getDisk()]
                     ),
                 ])->save();
 
                 if ($previous) {
-                    Storage::disk($this->ChapterVideoDisk())->delete($previous);
+                    Storage::disk(getDisk())->delete($previous);
                 }
             });
         } else if ($video instanceof File) {
             tap($this->chapter_video, function ($previous) use ($video, $storagePath) {
                 $this->forceFill([
-                    'chapter_video' => Storage::disk($this->ChapterVideoDisk())->put($storagePath, $video),
+                    'chapter_video' => Storage::disk(getDisk())->put($storagePath, $video),
                 ])->save();
                 if ($previous) {
-                    Storage::disk($this->ChapterVideoDisk())->delete($previous);
+                    Storage::disk(getDisk())->delete($previous);
                 }
             });
         } else if (is_string($video)) {
@@ -89,7 +89,7 @@ trait HasVideoChapter
                 $filename = uniqid('chapter_') . '.' . $originalExtension;
                 $destinationPath = $storagePath . '/' . $filename;
                 
-                $disk = Storage::disk($this->ChapterVideoDisk());
+                $disk = Storage::disk(getDisk());
                 $chunkSize = 2 * 1024 * 1024; // 2MB chunks
                 
                 // Open the source file for reading
@@ -126,7 +126,7 @@ trait HasVideoChapter
                     ])->save();
                     
                     if ($previous) {
-                        Storage::disk($this->ChapterVideoDisk())->delete($previous);
+                        Storage::disk(getDisk())->delete($previous);
                     }
                     
                 } finally {
@@ -156,13 +156,4 @@ trait HasVideoChapter
         return 'https://ui-avatars.com/api/?name=' . urlencode($name) . '&color=7F9CF5&background=EBF4FF';
     }
 
-    /**
-     * Get the disk that chapter videos should be stored on.
-     *
-     * @return string
-     */
-    protected function ChapterVideoDisk()
-    {
-        return isset($_ENV['FILESYSTEM_DISK']) ? 's3' : 'public';
-    }
 }

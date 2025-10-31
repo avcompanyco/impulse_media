@@ -27,7 +27,7 @@ class LoginUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
+            'email' => ['required', 'string'],
             'password' => ['required', 'string'],
         ];
     }
@@ -41,7 +41,10 @@ class LoginUserRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        $user = User::where('email', $this->input('email'))->first();
+        $user = User::where('email', $this->input('email'))
+            ->orWhere('username', $this->input('email'))
+            ->first();
+
         // role user
         if (!$user || !$user->hasRole('user')) {
             throw ValidationException::withMessages([
@@ -49,7 +52,12 @@ class LoginUserRequest extends FormRequest
             ]);
         }
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        $data_login = [
+            'email' => $user->email,
+            'password' => $this->input('password'),
+        ];
+
+        if (! Auth::attempt($data_login, $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([

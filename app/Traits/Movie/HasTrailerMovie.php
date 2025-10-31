@@ -21,7 +21,7 @@ trait HasTrailerMovie
             return;
         }
 
-        Storage::disk($this->TrailervideoDisk())->delete($this->trailer_video);
+        Storage::disk(getDisk())->delete($this->trailer_video);
 
         $this->forceFill([
             'trailer_video' => '',
@@ -38,7 +38,7 @@ trait HasTrailerMovie
                 return $this->defaultTrailerVideo();
             }
     
-            $disk = Storage::disk($this->TrailervideoDisk());
+            $disk = Storage::disk(getDisk());
     
             try {
                 // URL temporal válida por 1 hora
@@ -64,21 +64,21 @@ trait HasTrailerMovie
                 $this->forceFill([
                     'trailer_video' => $video->storePublicly(
                         $storagePath,
-                        ['disk' => $this->TrailervideoDisk()]
+                        ['disk' => getDisk()]
                     ),
                 ])->save();
 
                 if ($previous) {
-                    Storage::disk($this->TrailervideoDisk())->delete($previous);
+                    Storage::disk(getDisk())->delete($previous);
                 }
             });
         } else if ($video instanceof File) {
             tap($this->trailer_video, function ($previous) use ($video, $storagePath) {
                 $this->forceFill([
-                    'trailer_video' => Storage::disk($this->TrailervideoDisk())->put($storagePath, $video),
+                    'trailer_video' => Storage::disk(getDisk())->put($storagePath, $video),
                 ])->save();
                 if ($previous) {
-                    Storage::disk($this->TrailervideoDisk())->delete($previous);
+                    Storage::disk(getDisk())->delete($previous);
                 }
             });
         } else if (is_string($video)) {
@@ -88,7 +88,7 @@ trait HasTrailerMovie
                 $filename = uniqid('trailer_') . '.' . $originalExtension;
                 $destinationPath = $storagePath . '/' . $filename;
                 
-                $disk = Storage::disk($this->TrailervideoDisk());
+                $disk = Storage::disk(getDisk());
                 $chunkSize = 2 * 1024 * 1024; // 2MB chunks
                 
                 // Abrir el archivo fuente para lectura
@@ -125,7 +125,7 @@ trait HasTrailerMovie
                     ])->save();
                     
                     if ($previous) {
-                        Storage::disk($this->TrailervideoDisk())->delete($previous);
+                        Storage::disk(getDisk())->delete($previous);
                     }
                     
                 } finally {
@@ -151,13 +151,4 @@ trait HasTrailerMovie
         return '';
     }
 
-    /**
-     * Get the disk that trailer videos should be stored on.
-     *
-     * @return string
-     */
-    protected function TrailervideoDisk()
-    {
-        return isset($_ENV['FILESYSTEM_DISK']) ? 's3' : 'public';
-    }
 }

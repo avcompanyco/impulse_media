@@ -22,7 +22,7 @@ trait HasMovie
             return;
         }
 
-        Storage::disk($this->MovievideoDisk())->delete($this->movie_video);
+        Storage::disk(getDisk())->delete($this->movie_video);
 
         $this->forceFill([
             'movie_video' => '',
@@ -39,7 +39,7 @@ trait HasMovie
                 return $this->defaultMovieVideo();
             }
     
-            $disk = Storage::disk($this->MovievideoDisk());
+            $disk = Storage::disk(getDisk());
     
             try {
                 // URL temporal válida por 1 hora
@@ -66,21 +66,21 @@ trait HasMovie
                 $this->forceFill([
                     'movie_video' => $video->storePublicly(
                         $storagePath,
-                        ['disk' => $this->MovievideoDisk()]
+                        ['disk' => getDisk()]
                     ),
                 ])->save();
 
                 if ($previous) {
-                    Storage::disk($this->MovievideoDisk())->delete($previous);
+                    Storage::disk(getDisk())->delete($previous);
                 }
             });
         } else if ($video instanceof File) {
             tap($this->movie_video, function ($previous) use ($video, $storagePath) {
                 $this->forceFill([
-                    'movie_video' => Storage::disk($this->MovievideoDisk())->put($storagePath, $video),
+                    'movie_video' => Storage::disk(getDisk())->put($storagePath, $video),
                 ])->save();
                 if ($previous) {
-                    Storage::disk($this->MovievideoDisk())->delete($previous);
+                    Storage::disk(getDisk())->delete($previous);
                 }
             });
         } else if (is_string($video)) {
@@ -90,7 +90,7 @@ trait HasMovie
                 $filename = uniqid('movie_') . '.' . $originalExtension;
                 $destinationPath = $storagePath . '/' . $filename;
 
-                $disk = Storage::disk($this->MovievideoDisk());
+                $disk = Storage::disk(getDisk());
                 $chunkSize = 2 * 1024 * 1024; // 2MB chunks
 
                 // Abrir el archivo fuente para lectura
@@ -127,7 +127,7 @@ trait HasMovie
                     ])->save();
 
                     if ($previous) {
-                        Storage::disk($this->MovievideoDisk())->delete($previous);
+                        Storage::disk(getDisk())->delete($previous);
                     }
                 } finally {
                     // Cerrar todos los handles
@@ -151,14 +151,5 @@ trait HasMovie
     {
         return '';
     }
-
-    /**
-     * Get the disk that movie videos should be stored on.
-     *
-     * @return string
-     */
-    protected function MovievideoDisk()
-    {
-        return isset($_ENV['FILESYSTEM_DISK']) ? 's3' : 'public';
-    }
+    
 }

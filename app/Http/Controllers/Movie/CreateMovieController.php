@@ -54,6 +54,10 @@ class CreateMovieController extends Controller
 
         $plan = $_user->plan;
 
+        if (!$plan) {
+            return redirect()->route('user.profile.subscription');
+        }
+
         $canPublish = true;
         $moviesCount = $_user->movies()->where('status', ContentStatus::PUBLISHED->value)->count();
         if (!$plan->is_unlimited_content)

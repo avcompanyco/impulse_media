@@ -21,7 +21,7 @@ trait HasVideoShort
             return;
         }
 
-        Storage::disk($this->VideoShortDisk())->delete($this->short_video);
+        Storage::disk(getDisk())->delete($this->short_video);
 
         $this->forceFill([
             'short_video' => '',
@@ -38,7 +38,7 @@ trait HasVideoShort
                 return $this->defaultShortVideo();
             }
     
-            $disk = Storage::disk($this->VideoShortDisk());
+            $disk = Storage::disk(getDisk());
     
             try {
                 // URL temporal válida por 1 hora
@@ -64,21 +64,21 @@ trait HasVideoShort
                 $this->forceFill([
                     'short_video' => $video->storePublicly(
                         $storagePath,
-                        ['disk' => $this->VideoShortDisk()]
+                        ['disk' => getDisk()]
                     ),
                 ])->save();
 
                 if ($previous) {
-                    Storage::disk($this->VideoShortDisk())->delete($previous);
+                    Storage::disk(getDisk())->delete($previous);
                 }
             });
         } else if ($video instanceof File) {
             tap($this->short_video, function ($previous) use ($video, $storagePath) {
                 $this->forceFill([
-                    'short_video' => Storage::disk($this->VideoShortDisk())->put($storagePath, $video),
+                    'short_video' => Storage::disk(getDisk())->put($storagePath, $video),
                 ])->save();
                 if ($previous) {
-                    Storage::disk($this->VideoShortDisk())->delete($previous);
+                    Storage::disk(getDisk())->delete($previous);
                 }
             });
         } else if (is_string($video)) {
@@ -88,7 +88,7 @@ trait HasVideoShort
                 $filename = uniqid('short_') . '.' . $originalExtension;
                 $destinationPath = $storagePath . '/' . $filename;
                 
-                $disk = Storage::disk($this->VideoShortDisk());
+                $disk = Storage::disk(getDisk());
                 $chunkSize = 2 * 1024 * 1024; // 2MB chunks
                 
                 // Abrir el archivo fuente para lectura
@@ -125,7 +125,7 @@ trait HasVideoShort
                     ])->save();
                     
                     if ($previous) {
-                        Storage::disk($this->VideoShortDisk())->delete($previous);
+                        Storage::disk(getDisk())->delete($previous);
                     }
                     
                 } finally {
@@ -151,13 +151,4 @@ trait HasVideoShort
         return '';
     }
 
-    /**
-     * Get the disk that trailer videos should be stored on.
-     *
-     * @return string
-     */
-    protected function VideoShortDisk()
-    {
-        return isset($_ENV['FILESYSTEM_DISK']) ? 's3' : 'public';
-    }
 }

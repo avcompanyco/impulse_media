@@ -25,13 +25,13 @@ class ChunkUploadService
     ) {
         $_user = Auth::user();
         $_aux_directory = 'chunks/' . 'user_' . $_user->id;
-        if (!Storage::disk($this->chunkDisk())->exists($_aux_directory)) {
-            Storage::disk($this->chunkDisk())->makeDirectory($_aux_directory);
+        if (!Storage::disk(getDisk())->exists($_aux_directory)) {
+            Storage::disk(getDisk())->makeDirectory($_aux_directory);
         }
         // Instead, you can create a unique hash or name and uuid to avoid the file to override.
         $tempFileName =  $file->getClientOriginalName();
 
-        $this->chunkPath = Storage::disk($this->chunkDisk())->path(
+        $this->chunkPath = Storage::disk(getDisk())->path(
             $_aux_directory . "/{$tempFileName}"
         );
     }
@@ -73,16 +73,6 @@ class ChunkUploadService
 
     public function deleteChunk(): void
     {
-        Storage::disk($this->chunkDisk())->delete($this->chunkPath);
+        Storage::disk(getDisk())->delete($this->chunkPath);
     }
-
-    /**
-     * Get the disk that chunks should be stored on.
-     *
-     * @return string
-     */
-    protected function chunkDisk()
-    {
-        return isset($_ENV['FILESYSTEM_DISK']) ? 's3' : 'local';
-    }
-}
+ }

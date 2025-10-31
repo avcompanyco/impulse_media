@@ -120,6 +120,9 @@ Route::middleware('auth')->group(function () {
 
         Route::get('search', \App\Http\Controllers\SearchController::class)
             ->name('search');
+        
+        Route::get('filter-search', \App\Http\Controllers\FilterSearchController::class)
+            ->name('filter-search');
 
         Route::get('category/{category}', \App\Http\Controllers\Category\ShowCategoryController::class)
             ->name('category.show');

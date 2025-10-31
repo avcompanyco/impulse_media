@@ -19,7 +19,7 @@ class ShowCategoryController extends Controller
             if (!$this->canAccess()) {
                 throw new \Exception(__("You are not authorized to access this resource"));
             }
-    
+
             $subcategories = Subcategory::where('category_id', $category->id)
                 ->with(['movies.content','series.content','movies' => function ($query) {
                     $query->whereHas('content', function ($query) {
@@ -49,7 +49,7 @@ class ShowCategoryController extends Controller
     public function canAccess()
     {
         $_user = User::find(Auth::user()->id);
-        if ($_user && $_user->hasRole('admin')) {
+        if ($_user && !$_user->hasRole('admin')) {
             return true;
         }
         return false;

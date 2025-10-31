@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 
 use App\Traits\Serie\HasDeleteThumbnailChapter;
 use App\Models\Serie;
+use App\Models\SeasonSerie;
 use App\Models\ChapterSerie;
 use App\Models\User;
 
@@ -14,7 +15,7 @@ class DeleteThumbnailChapterController extends Controller
 {
     use HasDeleteThumbnailChapter;
 
-    public function __invoke(Serie $serie, ChapterSerie $chapter)
+    public function __invoke(Serie $serie, SeasonSerie $season, ChapterSerie $chapter)
     {
         try {
             if (!$this->canAccess()) {

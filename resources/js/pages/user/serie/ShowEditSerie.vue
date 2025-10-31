@@ -200,20 +200,20 @@ function selectSeason(seasonId: number) {
                             </template>
                         </div>
                         <div id="episodesList" class="item-list">
-                            <template v-for="(episode, index) in episodesComputed" :key="`episode_${episode.id}`">
+                            <template v-for="(episode, index) in episodesComputed" :key="`episode_${index}_${episode.id}_${episode.chapter_number}_${episode.season_id}`">
                                 <div class="list-item">
                                     <span>Episode {{ episode.chapter_number }}: {{ episode.title }}</span>
                                     <div class="list-item-actions">
                                         <EditChapterItemModal 
                                             :chapter="episode" 
                                             :serie="serie.id" 
-                                            :season="seasonSelected" 
+                                            :season="episode.season_id" 
                                             @chapter-updated="getSeasons"
                                         />
                                         <DeleteChapterItem 
                                             :chapter="episode" 
                                             :serie="serie.id" 
-                                            :season="seasonSelected" 
+                                            :season="episode.season_id" 
                                             @chapter-deleted="getSeasons"
                                         />
                                     </div>

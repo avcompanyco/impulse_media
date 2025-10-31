@@ -2,8 +2,18 @@
 
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Auth;
 
 Route::get('/', function () {
+    $user = Auth::user();
+    if ($user) {
+        if ($user->hasRole('admin')) {
+            return redirect()->route('admin.dashboard');
+        }
+        if ($user->hasRole('user')) {
+            return redirect()->route('dashboard');
+        }
+    }
     return Inertia::render('Home');
 })->name('home');
 

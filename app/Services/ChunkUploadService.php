@@ -38,7 +38,8 @@ class ChunkUploadService
 
     public function merge(): string|null
     {
-        File::append($this->chunkPath, $this->file->get());
+        Storage::disk(getDisk())->append($this->chunkPath, $this->file->get());
+        // File::append($this->chunkPath, $this->file->get());
 
         if (!$this->isLastChunk) {
             return null;

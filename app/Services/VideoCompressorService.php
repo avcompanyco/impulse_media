@@ -26,15 +26,15 @@ class VideoCompressorService
         $safeInputPath = escapeshellarg($inputPath);
         $safeOutputPath = escapeshellarg($outputPath);
 
-        // Filtro de video (sin comillas dobles internas)
-        $videoFilter = $config['vf'];
+        $safeVideoFilter = escapeshellarg($config['vf']);
 
         $ffmpegPath = env('FFMPEG_PATH', 'ffmpeg');
 
         // Construir comando FFmpeg
         $command = "{$ffmpegPath} -hide_banner -loglevel error "
             . "-i {$safeInputPath} "
-            . "-vf {$videoFilter} "
+            // Usar el filtro escapado
+            . "-vf {$safeVideoFilter} " 
             . "-c:v libx264 "
             . "-crf {$config['crf']} "
             . "-preset fast "
@@ -47,14 +47,14 @@ class VideoCompressorService
         exec($command, $output, $returnCode);
 
         // Depuración opcional:
-        // file_put_contents('ffmpeg.log', implode("\n", $output));
+        // file_put_contents(storage_path('logs/ffmpeg.log'), "Comando:\n{$command}\n\nSalida:\n" . implode("\n", $output));
 
         if ($returnCode === 0) {
             return $outputPath;
         }
 
         // Si hay error, lanzar excepción con mensaje detallado
-        throw new \Exception("FFmpeg error (Code {$returnCode}):\n" . implode("\n", $output));
+        throw new \Exception("FFmpeg error (Code {$returnCode}):\nComando: {$command}\nSalida: " . implode("\n", $output));
     }
 
     /**

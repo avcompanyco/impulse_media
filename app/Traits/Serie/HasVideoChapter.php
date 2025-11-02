@@ -21,7 +21,7 @@ trait HasVideoChapter
             return;
         }
 
-        Storage::disk(getVideoDisk())->delete($this->chapter_video);
+        Storage::disk(getDisk())->delete($this->chapter_video);
 
         $this->forceFill([
             'chapter_video' => '',
@@ -38,11 +38,11 @@ trait HasVideoChapter
                 return $this->defaultChapterVideo();
             }
     
-            $disk = Storage::disk(getVideoDisk());
+            $disk = Storage::disk(getDisk());
     
             try {
                 // URL temporal válida por 1 hora
-                return $disk->temporaryUrl($this->chapter_video, now()->addHour());
+                return $disk->temporaryUrl($this->chapter_video, now()->addDay());
             } catch (\Throwable $e) {
                 // fallback a URL normal si el disco no soporta temporaryUrl
                 return $disk->url($this->chapter_video);

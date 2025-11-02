@@ -21,7 +21,7 @@ trait HasTrailerVideoSerie
             return;
         }
 
-        Storage::disk(getVideoDisk())->delete($this->trailer_video);
+        Storage::disk(getDisk())->delete($this->trailer_video);
 
         $this->forceFill([
             'trailer_video' => '',
@@ -38,11 +38,11 @@ trait HasTrailerVideoSerie
                 return $this->defaultTrailerVideo();
             }
 
-            $disk = Storage::disk(getVideoDisk());
+            $disk = Storage::disk(getDisk());
 
             try {
                 // URL temporal válida por 1 hora
-                return $disk->temporaryUrl($this->trailer_video, now()->addHour());
+                return $disk->temporaryUrl($this->trailer_video, now()->addDay());
             } catch (\Throwable $e) {
                 // fallback a URL normal si el disco no soporta temporaryUrl
                 return $disk->url($this->trailer_video);

@@ -22,7 +22,7 @@ trait HasMovie
             return;
         }
 
-        Storage::disk(getVideoDisk())->delete($this->movie_video);
+        Storage::disk(getDisk())->delete($this->movie_video);
 
         $this->forceFill([
             'movie_video' => '',
@@ -39,7 +39,7 @@ trait HasMovie
                 return $this->defaultMovieVideo();
             }
     
-            $disk = Storage::disk(getVideoDisk());
+            $disk = Storage::disk(getDisk());
     
             try {
                 // URL temporal válida por 1 hora

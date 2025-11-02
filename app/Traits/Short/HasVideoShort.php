@@ -21,7 +21,7 @@ trait HasVideoShort
             return;
         }
 
-        Storage::disk(getVideoDisk())->delete($this->short_video);
+        Storage::disk(getDisk())->delete($this->short_video);
 
         $this->forceFill([
             'short_video' => '',
@@ -38,7 +38,7 @@ trait HasVideoShort
                 return $this->defaultShortVideo();
             }
 
-            $disk = Storage::disk(getVideoDisk());
+            $disk = Storage::disk(getDisk());
 
             try {
                 // URL temporal válida por 1 hora

@@ -3,16 +3,17 @@
 namespace App\Traits\Short;
 
 use Illuminate\Http\UploadedFile;
+use Illuminate\Http\File; // <-- Importamos Illuminate\Http\File
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Casts\Attribute;
-use Illuminate\Support\Facades\File;
+use App\Services\VideoCompressorService;
 
 trait HasVideoShort
 {
 
     /**
-     * Update the trailer video's profile video.
-     * 
+     * Borra el video short actual.
+     *
      * @return void
      */
     public function deleteVideoShort(): void
@@ -29,7 +30,7 @@ trait HasVideoShort
     }
 
     /**
-     * Get the URL to the trailer video's profile video.
+     * Obtiene la URL del video short.
      */
     public function shortVideoUrl(): Attribute
     {
@@ -41,119 +42,124 @@ trait HasVideoShort
             $disk = Storage::disk(getDisk());
 
             try {
-                // URL temporal válida por 1 hora
                 return $disk->temporaryUrl($this->short_video, now()->addHour());
             } catch (\Throwable $e) {
-                // fallback a URL normal si el disco no soporta temporaryUrl
                 return $disk->url($this->short_video);
             }
         });
     }
 
     /**
-     * Update the trailer video's profile video.
-     * 
-     * @param  $video
+     * Actualiza y comprime el video short.
+     *
+     * @param  \Illuminate\Http\UploadedFile|\Illuminate\Http\File|string  $video
      * @param  string  $storagePath
      */
     public function updateVideoShort($video, $storagePath = 'shorts')
     {
-
         $user_id_hash = hash('sha256', $this->user_id);
-
         $storagePath .= '/' . $user_id_hash;
 
-        // check if storage path is valid
         if (!Storage::disk(getDisk())->exists($storagePath)) {
             Storage::disk(getDisk())->makeDirectory($storagePath);
         }
 
-        if ($video instanceof UploadedFile) {
-            // el video no es chunk, se guarda directamente usando el disco con getDisk()
-            tap($this->short_video, function ($previous) use ($video, $storagePath) {
-                $this->forceFill([
-                    'short_video' => $video->storePublicly(
-                        $storagePath,
-                        ['disk' => getDisk()]
-                    ),
-                ])->save();
+        $compressor = new VideoCompressorService();
 
-                if ($previous) {
-                    Storage::disk(getDisk())->delete($previous);
-                }
-            });
-        } else if ($video instanceof File) {
-            // el video no es chunk, se guarda directamente usando el disco con getDisk()
-            tap($this->short_video, function ($previous) use ($video, $storagePath) {
-                $this->forceFill([
-                    'short_video' => Storage::disk(getDisk())->put($storagePath, $video),
-                ])->save();
-                if ($previous) {
-                    Storage::disk(getDisk())->delete($previous);
-                }
-            });
-        } else if (is_string($video)) {
-            // Si $video es string (path del archivo), moverlo usando streams para evitar problemas de memoria
-            tap($this->short_video, function ($previous) use ($video, $storagePath) {
-                $originalExtension = pathinfo($video, PATHINFO_EXTENSION);
-                $filename = uniqid('short_') . '.' . $originalExtension;
-                $destinationPath = $storagePath . '/' . $filename;
+        // CASO 1 Y 2: $video es UploadedFile O File
+        // (Maneja subidas directas, no-chunked)
+        if ($video instanceof UploadedFile || $video instanceof File) {
+            
+            tap($this->short_video, function ($previous) use ($video, $storagePath, $compressor) {
+                
+                $sourcePath = $video->getRealPath();
+                // $originalExtension = $video->guessExtension() ?: 'mp4'; 
+                $originalExtension = 'mp4';
 
-                $disk = Storage::disk(getDisk());
-                $chunkSize = 2 * 1024 * 1024; // 2MB chunks
+                $compressedPath = tempnam(sys_get_temp_dir(), 'comp_short_') . '.' . $originalExtension;
 
                 try {
-                    // Abrir el archivo fuente para lectura
-                    $sourceHandle = fopen($video, 'rb');
-                    if (!$sourceHandle) {
-                        throw new \Exception('No se pudo abrir el archivo fuente: ' . $video);
-                    }
+                    // Comprimir
+                    $compressor->compressVideo($sourcePath, $compressedPath);
+                    
+                    // Guardar el video *comprimido*
+                    $storedPath = Storage::disk(getDisk())->putFile(
+                        $storagePath,
+                        new File($compressedPath), // Usamos new File() para el archivo comprimido
+                    );
 
-                    // Crear un stream temporal para escribir los chunks
-                    $tempStream = fopen('php://temp', 'w+b');
-                    if (!$tempStream) {
-                        fclose($sourceHandle);
-                        throw new \Exception('No se pudo crear el stream temporal');
-                    }
-
-
-                    // Leer y escribir en chunks para evitar cargar todo el archivo en memoria
-                    while (!feof($sourceHandle)) {
-                        $chunk = fread($sourceHandle, $chunkSize);
-                        if ($chunk === false) {
-                            throw new \Exception('Error al leer el chunk del archivo');
-                        }
-                        fwrite($tempStream, $chunk);
-                    }
-
-                    // Rewind el stream temporal para poder leerlo desde el inicio
-                    rewind($tempStream);
-
-                    // Guardar el stream en el disco de destino
-                    $disk->put($destinationPath, $tempStream);
-
+                    // Actualizar DB
                     $this->forceFill([
-                        'short_video' => $destinationPath,
+                        'short_video' => $storedPath,
                     ])->save();
 
+                    // Eliminar video anterior
                     if ($previous) {
                         Storage::disk(getDisk())->delete($previous);
                     }
                 } finally {
-                    // Cerrar todos los handles
-                    if (isset($sourceHandle) && $sourceHandle) {
-                        fclose($sourceHandle);
-                    }
-                    if (isset($tempStream) && $tempStream) {
-                        fclose($tempStream);
-                    }
-
-                    // Eliminar el archivo temporal después de moverlo
-                    if (file_exists($video)) {
-                        unlink($video);
+                    // Limpiar el temporal comprimido
+                    if (file_exists($compressedPath)) {
+                        unlink($compressedPath);
                     }
                 }
             });
+        
+        // CASO 3: $video es un string (path)
+        // (Maneja la subida por chunks, después de que se unen)
+        } else if (is_string($video)) {
+            
+            tap($this->short_video, function ($previous) use ($video, $storagePath, $compressor) {
+                
+                $sourcePath = $video; // $video es el path al archivo unido
+                // $originalExtension = pathinfo($sourcePath, PATHINFO_EXTENSION);
+                $originalExtension = 'mp4';
+                
+                $filename = uniqid('short_') . '.' . $originalExtension;
+                $destinationPath = $storagePath . '/' . $filename;
+                $compressedPath = tempnam(sys_get_temp_dir(), 'comp_short_') . '.' . $originalExtension;
+
+                $disk = Storage::disk(getDisk());
+                $compressedHandle = null;
+
+                try {
+                    // 1. Comprimir
+                    $compressor->compressVideo($sourcePath, $compressedPath);
+
+                    // 2. Abrir stream del *comprimido*
+                    $compressedHandle = fopen($compressedPath, 'rb');
+                    if (!$compressedHandle) {
+                        throw new \Exception('No se pudo abrir el archivo comprimido: ' . $compressedPath);
+                    }
+
+                    // 3. Guardar stream en disco
+                    $disk->put($destinationPath, $compressedHandle, 'public'); 
+
+                    // 4. Actualizar DB
+                    $this->forceFill([
+                        'short_video' => $destinationPath,
+                    ])->save();
+
+                    // 5. Eliminar video anterior
+                    if ($previous) {
+                        Storage::disk(getDisk())->delete($previous);
+                    }
+                } finally {
+                    // 6. Limpieza de TODOS los temporales
+                    if (isset($compressedHandle) && $compressedHandle) {
+                        fclose($compressedHandle);
+                    }
+                    if (file_exists($compressedPath)) {
+                        unlink($compressedPath); // Borra el comprimido
+                    }
+                    if (file_exists($sourcePath)) {
+                        unlink($sourcePath); // Borra el original (unido de chunks)
+                    }
+                }
+            });
+        
+        } else {
+             throw new \InvalidArgumentException('El tipo de video proporcionado no es soportado. Debe ser UploadedFile, File o string (path).');
         }
     }
 

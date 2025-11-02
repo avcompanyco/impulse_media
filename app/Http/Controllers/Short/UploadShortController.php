@@ -43,7 +43,7 @@ class UploadShortController extends Controller
         );
         try {
 
-            $path = $chunkUpload->merge();
+            $path = $chunkUpload->merge(false); // se coloca false, porque luego de la compresion se elimina el chunk
 
             // if the last chunk, store the uploaded file
             if ($path) {

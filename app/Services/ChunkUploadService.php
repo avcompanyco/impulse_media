@@ -36,7 +36,7 @@ class ChunkUploadService
         );
     }
 
-    public function merge(): string|null
+    public function merge($deleteChunk = true): string|null
     {
         File::append($this->chunkPath, $this->file->get());
 
@@ -66,7 +66,9 @@ class ChunkUploadService
             }
         }
 
-        $this->deleteChunk();
+        if ($deleteChunk) {
+            $this->deleteChunk();
+        }
 
         return $path;
     }

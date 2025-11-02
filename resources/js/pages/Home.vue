@@ -7,7 +7,7 @@ import { Head, Link } from '@inertiajs/vue3';
 
 <template>
 
-    <Head title="Welcome">
+    <Head :title="`Welcome - ${$page.props.name || 'Impulsemedia'}`">
     </Head>
     <div class="app-container">
         <Link :href="loginUser()" class="btn home-login-button" role="button">Log In</Link>

@@ -80,7 +80,9 @@ function unfollowUser(userId: number) {
 }
 </script>
 <template>
-    <UserDashboardLayout :title="movie.title" headerTitle="Dashboard">
+    <UserDashboardLayout 
+        :title="`${movie.title} - ${$page.props.name || 'Impulsemedia'}`" 
+        :headerTitle="`${movie.title} - ${$page.props.name || 'Impulsemedia'}`">
         <template #main-content>
             <div class="movie-banner"
                 :style="{ background: `url(${movie.horizontal_image_url}) no-repeat`, backgroundPosition: 'center center', backgroundSize: 'cover' }"

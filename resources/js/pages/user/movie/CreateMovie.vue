@@ -83,7 +83,9 @@ function successForm() {
 
 <template>
 
-    <UserDashboardLayout title="Dashboard" headerTitle="Dashboard">
+    <UserDashboardLayout 
+        :title="`Create Movie - ${$page.props.name || 'Impulsemedia'}`" 
+        :headerTitle="`Create Movie - ${$page.props.name || 'Impulsemedia'}`">
 
 
         <div class="main-content">

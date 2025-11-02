@@ -29,7 +29,9 @@ function logout() {
 </script>
 
 <template>
-    <UserDashboardLayout title="My Account" headerTitle="My Account">
+    <UserDashboardLayout 
+        :title="`My Account - ${$page.props.name || 'Impulsemedia'}`" 
+        :headerTitle="`My Account - ${$page.props.name || 'Impulsemedia'}`">
         <h1 class="page-title">My Account</h1>
         <div class="app-subcontainer" style="margin-bottom: 80px;">
             <section>

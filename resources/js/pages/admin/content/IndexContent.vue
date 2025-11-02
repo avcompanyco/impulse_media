@@ -16,8 +16,10 @@ const props = defineProps<{
 
 </script>
 
-<template>
-    <AdminDashboardLayout title="Manage categories and content" headerTitle="Manage Categories">
+<template>  
+    <AdminDashboardLayout 
+        :title="`Manage Categories and Content - ${$page.props.name || 'Impulsemedia'}`" 
+        :headerTitle="`Manage Categories and Content - ${$page.props.name || 'Impulsemedia'}`">
         <template #header-actions>
             <CreateCategoryModal />
         </template>

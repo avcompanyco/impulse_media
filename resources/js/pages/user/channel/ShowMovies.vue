@@ -27,7 +27,9 @@ function goToShortChannel() {
 </script>
 
 <template>
-    <UserDashboardLayout title="Dashboard" headerTitle="Dashboard">
+    <UserDashboardLayout 
+        :title="`Movies - ${$page.props.name || 'Impulsemedia'}`" 
+        :headerTitle="`Movies - ${$page.props.name || 'Impulsemedia'}`">
         <ChannelSection :user="user" />
         <nav class="channel-tabs">
             <button class="tab-btn active" data-content="movies">Movies</button>

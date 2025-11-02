@@ -51,7 +51,9 @@ const closeDeleteModal = () => {
 </script>
 
 <template>
-    <AdminDashboardLayout title="List of Subscription Plans" headerTitle="Subscription Plans">
+    <AdminDashboardLayout 
+        :title="`List of Subscription Plans - ${$page.props.name || 'Impulsemedia'}`" 
+        :headerTitle="`List of Subscription Plans - ${$page.props.name || 'Impulsemedia'}`">
         <template #header-actions>
             <CreatePlanModal />
         </template>

@@ -74,7 +74,9 @@ function goToMovieForm() {
 
 <template>
 
-    <UserDashboardLayout title="Dashboard" headerTitle="Dashboard">
+    <UserDashboardLayout 
+        :title="`Edit Movie - ${$page.props.name || 'Impulsemedia'}`" 
+        :headerTitle="`Edit Movie - ${$page.props.name || 'Impulsemedia'}`">
         <div class="main-content" style="margin-bottom: 80px;">
             <h1 class="page-title">Edit Content</h1>
             <p class="page-subtitle" id="editingSubtitle">

@@ -11,7 +11,9 @@ const props = defineProps<{
 </script>
 
 <template>
-    <AdminDashboardLayout title="Manage Users" headerTitle="Manage Users">
+    <AdminDashboardLayout 
+        :title="`Manage Users - ${$page.props.name || 'Impulsemedia'}`" 
+        :headerTitle="`Manage Users - ${$page.props.name || 'Impulsemedia'}`">
         <template #header-actions>
             <CreateUserModal :plans="plans" :statusOptions="statusOptions" />
         </template>

@@ -29,7 +29,9 @@ function goToSerieChannel() {
 </script>
 
 <template>
-    <UserDashboardLayout title="Dashboard" headerTitle="Dashboard">
+    <UserDashboardLayout 
+        :title="`Shorts - ${$page.props.name || 'Impulsemedia'}`" 
+        :headerTitle="`Shorts - ${$page.props.name || 'Impulsemedia'}`">
         <section class="channel-header">
             <div class="channel-info-card">
                 <img :src="$page.props.auth.user.image_url" alt="Avatar" class="channel-avatar">

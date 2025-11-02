@@ -150,7 +150,6 @@ onMounted(() => {
         queryParams.value.search = searchParam;
         showCategories.value = false;
         showSearchResults.value = true;
-        pageTitle.value = 'Search Results';
     }
 
     // Initialize scroll for any existing movie rows
@@ -173,7 +172,9 @@ function haveQueryParams() {
 </script>
 
 <template>
-    <UserDashboardLayout :title="pageTitle" :headerTitle="pageTitle">
+    <UserDashboardLayout 
+        :title="`Search - ${$page.props.name || 'Impulsemedia'}`" 
+        :headerTitle="`Search - ${$page.props.name || 'Impulsemedia'}`">
         <!-- Search Bar -->
         <div class="search-wrapper">
             <div class="search-container">

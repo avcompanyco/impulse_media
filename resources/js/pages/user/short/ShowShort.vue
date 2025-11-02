@@ -326,7 +326,9 @@ function removeFromFollow(userId: number) {
 </script>
 
 <template>
-    <UserDashboardLayout title="Shorts" headerTitle="Shorts">
+    <UserDashboardLayout 
+        :title="`Shorts - ${$page.props.name || 'Impulsemedia'}`" 
+        :headerTitle="`Shorts - ${$page.props.name || 'Impulsemedia'}`">
         <template #shorts-content>
             <div class="shorts-container" id="shortsContainer" @click="handleContainerClick" style="height: 100%;">
                 <div class="short-video-slide">
@@ -375,7 +377,7 @@ function removeFromFollow(userId: number) {
                                     <img :src="currentShort.user.image_url" alt="User Avatar" class="user-avatar">
                                     <span class="username">@{{ currentShort.user.username }}</span>
 
-                                    <template v-if="currentShort.user.id !== $page.props.user.id">
+                                    <template v-if="currentShort.user.id !== $page.props.auth.user.id">
                                         <button v-if="!currentShort.user.is_followed" class="follow-btn"
                                             @click="addToFollow(currentShort.user.id)" :disabled="addFollowLoading">
                                             <i class="fa-solid fa-circle-notch fa-spin" v-if="addFollowLoading"></i>

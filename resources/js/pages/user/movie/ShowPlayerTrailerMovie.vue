@@ -245,7 +245,9 @@ onUnmounted(() => {
 
 </script>
 <template>
-    <UserDashboardLayout :title="movie.title" headerTitle="Dashboard">
+    <UserDashboardLayout 
+        :title="`${movie.title} - ${$page.props.name || 'Impulsemedia'}`" 
+        :headerTitle="`${movie.title} - ${$page.props.name || 'Impulsemedia'}`">
         <div 
             ref="playerContainer"
             class="player-container" 

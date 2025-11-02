@@ -78,7 +78,9 @@ const episodesComputed = computed(() => {
 
 <template>
 
-    <UserDashboardLayout title="Dashboard" headerTitle="Dashboard">
+    <UserDashboardLayout 
+        :title="`Edit Serie - ${$page.props.name || 'Impulsemedia'}`" 
+        :headerTitle="`Edit Serie - ${$page.props.name || 'Impulsemedia'}`">
         <div class="main-content">
             <h1 class="page-title">Upload Content</h1>
 

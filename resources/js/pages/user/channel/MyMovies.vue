@@ -30,7 +30,9 @@ function goToShortChannel() {
 </script>
 
 <template>
-    <UserDashboardLayout title="Dashboard" headerTitle="Dashboard">
+    <UserDashboardLayout 
+        :title="`Movies - ${$page.props.name || 'Impulsemedia'}`" 
+        :headerTitle="`Movies - ${$page.props.name || 'Impulsemedia'}`">
         <section class="channel-header">
             <div class="channel-info-card">
                 <img :src="$page.props.auth.user.image_url" alt="Avatar" class="channel-avatar">

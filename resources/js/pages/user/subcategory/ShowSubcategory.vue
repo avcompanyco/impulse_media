@@ -20,7 +20,9 @@ function mergeInRandomOrderMoviesAndSeries(subcategory: any) {
 </script>
 
 <template>
-    <UserDashboardLayout :title="subcategory.name" :headerTitle="subcategory.name">
+    <UserDashboardLayout 
+        :title="`${subcategory.name} - ${$page.props.name || 'Impulsemedia'}`" 
+        :headerTitle="`${subcategory.name} - ${$page.props.name || 'Impulsemedia'}`">
         <h1 class="page-title">{{ subcategory.name }}</h1>
         <div class="movies-row" data-slider="slasher" style="margin-bottom: 40px;">
             <div v-for="(movie, index) in mergeInRandomOrderMoviesAndSeries(subcategory)"

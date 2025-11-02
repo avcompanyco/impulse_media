@@ -31,7 +31,9 @@ watch(() => props.short, (newVal) => {
 </script>
 
 <template>
-    <UserDashboardLayout title="Dashboard" headerTitle="Dashboard">
+    <UserDashboardLayout 
+        :title="`Edit Short - ${$page.props.name || 'Impulsemedia'}`" 
+        :headerTitle="`Edit Short - ${$page.props.name || 'Impulsemedia'}`">
         <div class="main-content">
             <h1 class="page-title">Edit Content</h1>
             <UploadShortForm v-model="shortRef" />

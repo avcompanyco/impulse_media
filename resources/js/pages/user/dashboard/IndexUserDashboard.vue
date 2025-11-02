@@ -13,7 +13,9 @@ const props = defineProps<{
 
 <template>
 
-    <UserDashboardLayout title="Dashboard" headerTitle="Dashboard">
+    <UserDashboardLayout 
+        :title="`Dashboard - ${$page.props.name || 'Impulsemedia'}`" 
+        :headerTitle="`Dashboard - ${$page.props.name || 'Impulsemedia'}`">
         <FrontPageCarousel :frontpage="frontpage" />
 
         <div style="padding-top: 30px;"> </div>

@@ -93,7 +93,9 @@ function playChapter(seasonId: number, chapterId: number) {
 </script>
 
 <template>
-    <UserDashboardLayout :title="serie.title" headerTitle="Dashboard">
+    <UserDashboardLayout 
+        :title="`${serie.title} - ${$page.props.name || 'Impulsemedia'}`" 
+        :headerTitle="`${serie.title} - ${$page.props.name || 'Impulsemedia'}`">
         <template #main-content>
             <div class="serie-banner"
                 :style="{ background: `url(${serie.horizontal_image_url}) no-repeat`, backgroundPosition: 'center center', backgroundSize: 'cover' }"

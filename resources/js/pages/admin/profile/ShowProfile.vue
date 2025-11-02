@@ -43,7 +43,9 @@ function handleChangePicture(event: Event) {
 </script>
 
 <template>
-    <AdminDashboardLayout title="My Account" headerTitle="My Account">
+    <AdminDashboardLayout 
+        :title="`My Account - ${$page.props.name || 'Impulsemedia'}`" 
+        :headerTitle="`My Account - ${$page.props.name || 'Impulsemedia'}`">
         <div style="max-width: 600px; margin: 0 auto;">
             <h1 class="page-title">My Account</h1>
             <Form v-bind="UpdateAdminProfileController.form()" :reset-on-success="['password', 'password_confirmation']"

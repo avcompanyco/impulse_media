@@ -60,7 +60,9 @@ function handleChangePicture(event: Event) {
 </script>
 
 <template>
-    <UserDashboardLayout title="My Account" headerTitle="My Account">
+    <UserDashboardLayout 
+        :title="`Manage User - ${$page.props.name || 'Impulsemedia'}`" 
+        :headerTitle="`Manage User - ${$page.props.name || 'Impulsemedia'}`">
         <h1 class="page-title">Manage User</h1>
         <div class="app-subcontainer" style="margin-bottom: 80px;">
 

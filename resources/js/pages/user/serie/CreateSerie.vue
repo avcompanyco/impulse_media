@@ -84,7 +84,9 @@ function submitPublishForm() {
 
 <template>
 
-    <UserDashboardLayout title="Dashboard" headerTitle="Dashboard">
+    <UserDashboardLayout 
+        :title="`Create Serie - ${$page.props.name || 'Impulsemedia'}`" 
+        :headerTitle="`Create Serie - ${$page.props.name || 'Impulsemedia'}`">
 
         <div class="main-content">
             <h1 class="page-title">Upload Content</h1>

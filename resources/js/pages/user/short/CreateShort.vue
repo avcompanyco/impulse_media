@@ -49,7 +49,9 @@ watch(() => props.short, (newVal) => {
 
 <template>
 
-    <UserDashboardLayout title="Dashboard" headerTitle="Dashboard">
+    <UserDashboardLayout 
+        :title="`Create Short - ${$page.props.name || 'Impulsemedia'}`" 
+        :headerTitle="`Create Short - ${$page.props.name || 'Impulsemedia'}`">
 
 
         <div class="main-content">

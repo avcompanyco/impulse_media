@@ -49,7 +49,9 @@ function updatePlan() {
 </script>
 
 <template>
-    <UserDashboardLayout title="My Account" headerTitle="My Account">
+    <UserDashboardLayout 
+        :title="`Manage Subscription - ${$page.props.name || 'Impulsemedia'}`" 
+        :headerTitle="`Manage Subscription - ${$page.props.name || 'Impulsemedia'}`">
         <div class="manage-wrapper" style="margin-bottom: 80px;">
             <h1 class="page-title">Manage Subscription</h1>
 

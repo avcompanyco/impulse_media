@@ -55,7 +55,9 @@ onMounted(() => {
 </script>
 
 <template>
-    <AdminDashboardLayout title="Dashboard" headerTitle="Dashboard Summary">
+    <AdminDashboardLayout 
+        :title="`Dashboard - ${$page.props.name || 'Impulsemedia'}`" 
+        :headerTitle="`Dashboard Summary - ${$page.props.name || 'Impulsemedia'}`">
 
         <div class="stats-grid">
             <DashboardCard v-for="card in cards" :key="card.title" :title="card.title" :value="card.value" />

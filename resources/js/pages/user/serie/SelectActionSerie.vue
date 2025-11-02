@@ -28,7 +28,9 @@ function goToEditSerieForm() {
 
 <template>
 
-    <UserDashboardLayout title="Dashboard" headerTitle="Dashboard">
+    <UserDashboardLayout 
+        :title="`Select Action Serie - ${$page.props.name || 'Impulsemedia'}`" 
+        :headerTitle="`Select Action Serie - ${$page.props.name || 'Impulsemedia'}`">
         
         <div class="main-content" style="margin-bottom: 80px;">
             <h1 class="page-title">Upload Content</h1>

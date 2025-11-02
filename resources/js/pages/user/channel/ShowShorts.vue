@@ -26,7 +26,9 @@ function goToSerieChannel() {
 </script>
 
 <template>
-    <UserDashboardLayout title="Dashboard" headerTitle="Dashboard">
+    <UserDashboardLayout 
+        :title="`Shorts - ${$page.props.name || 'Impulsemedia'}`" 
+        :headerTitle="`Shorts - ${$page.props.name || 'Impulsemedia'}`">
         <ChannelSection :user="user" />
 
         <nav class="channel-tabs">

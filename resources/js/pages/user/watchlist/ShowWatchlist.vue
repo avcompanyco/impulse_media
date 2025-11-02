@@ -14,7 +14,9 @@ const props = defineProps<{
 
 </script>
 <template>
-    <UserDashboardLayout title="Dashboard" headerTitle="Dashboard">
+    <UserDashboardLayout 
+        :title="`Watchlist - ${$page.props.name || 'Impulsemedia'}`" 
+        :headerTitle="`Watchlist - ${$page.props.name || 'Impulsemedia'}`">
         <h1 class="page-title">Watchlist</h1>
 
         <template v-for="(content, categoryName) in watchlist" :key="`name_${content.category.id}`">

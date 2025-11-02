@@ -107,3 +107,11 @@ function getDisk()
 {
     return isset($_ENV['FILESYSTEM_DISK']) ? $_ENV['FILESYSTEM_DISK'] : 'local';
 }
+
+/**
+ * Get Video Disk
+ */
+function getVideoDisk()
+{
+    return 'local';
+}

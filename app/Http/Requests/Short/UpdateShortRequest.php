@@ -23,7 +23,7 @@ class UpdateShortRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'text_caption' => 'nullable|string',
+            'text_caption' => 'required|string',
         ];
     }
 }

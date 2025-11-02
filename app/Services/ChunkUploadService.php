@@ -25,21 +25,20 @@ class ChunkUploadService
     ) {
         $_user = Auth::user();
         $_aux_directory = 'chunks/' . 'user_' . $_user->id;
-        if (!Storage::disk(getDisk())->exists($_aux_directory)) {
-            Storage::disk(getDisk())->makeDirectory($_aux_directory);
+        if (!Storage::disk(getVideoDisk())->exists($_aux_directory)) {
+            Storage::disk(getVideoDisk())->makeDirectory($_aux_directory);
         }
         // Instead, you can create a unique hash or name and uuid to avoid the file to override.
         $tempFileName =  $file->getClientOriginalName();
 
-        $this->chunkPath = Storage::disk(getDisk())->path(
+        $this->chunkPath = Storage::disk(getVideoDisk())->path(
             $_aux_directory . "/{$tempFileName}"
         );
     }
 
     public function merge(): string|null
     {
-        Storage::disk(getDisk())->append($this->chunkPath, $this->file->get());
-        // File::append($this->chunkPath, $this->file->get());
+        File::append($this->chunkPath, $this->file->get());
 
         if (!$this->isLastChunk) {
             return null;
@@ -74,6 +73,6 @@ class ChunkUploadService
 
     public function deleteChunk(): void
     {
-        Storage::disk(getDisk())->delete($this->chunkPath);
+        Storage::disk(getVideoDisk())->delete($this->chunkPath);
     }
  }

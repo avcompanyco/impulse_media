@@ -21,7 +21,7 @@ trait HasVideoShort
             return;
         }
 
-        Storage::disk(getDisk())->delete($this->short_video);
+        Storage::disk(getVideoDisk())->delete($this->short_video);
 
         $this->forceFill([
             'short_video' => '',
@@ -37,9 +37,9 @@ trait HasVideoShort
             if (!$this->short_video) {
                 return $this->defaultShortVideo();
             }
-    
-            $disk = Storage::disk(getDisk());
-    
+
+            $disk = Storage::disk(getVideoDisk());
+
             try {
                 // URL temporal válida por 1 hora
                 return $disk->temporaryUrl($this->short_video, now()->addHour());
@@ -69,6 +69,7 @@ trait HasVideoShort
         }
 
         if ($video instanceof UploadedFile) {
+            // el video no es chunk, se guarda directamente usando el disco con getDisk()
             tap($this->short_video, function ($previous) use ($video, $storagePath) {
                 $this->forceFill([
                     'short_video' => $video->storePublicly(
@@ -82,6 +83,7 @@ trait HasVideoShort
                 }
             });
         } else if ($video instanceof File) {
+            // el video no es chunk, se guarda directamente usando el disco con getDisk()
             tap($this->short_video, function ($previous) use ($video, $storagePath) {
                 $this->forceFill([
                     'short_video' => Storage::disk(getDisk())->put($storagePath, $video),
@@ -96,24 +98,25 @@ trait HasVideoShort
                 $originalExtension = pathinfo($video, PATHINFO_EXTENSION);
                 $filename = uniqid('short_') . '.' . $originalExtension;
                 $destinationPath = $storagePath . '/' . $filename;
-                
+
                 $disk = Storage::disk(getDisk());
                 $chunkSize = 2 * 1024 * 1024; // 2MB chunks
-                
-                // Abrir el archivo fuente para lectura
-                $sourceHandle = fopen($video, 'rb');
-                if (!$sourceHandle) {
-                    throw new \Exception('No se pudo abrir el archivo fuente: ' . $video);
-                }
-                
-                // Crear un stream temporal para escribir los chunks
-                $tempStream = fopen('php://temp', 'w+b');
-                if (!$tempStream) {
-                    fclose($sourceHandle);
-                    throw new \Exception('No se pudo crear el stream temporal');
-                }
-                
+
                 try {
+                    // Abrir el archivo fuente para lectura
+                    $sourceHandle = fopen($video, 'rb');
+                    if (!$sourceHandle) {
+                        throw new \Exception('No se pudo abrir el archivo fuente: ' . $video);
+                    }
+
+                    // Crear un stream temporal para escribir los chunks
+                    $tempStream = fopen('php://temp', 'w+b');
+                    if (!$tempStream) {
+                        fclose($sourceHandle);
+                        throw new \Exception('No se pudo crear el stream temporal');
+                    }
+
+
                     // Leer y escribir en chunks para evitar cargar todo el archivo en memoria
                     while (!feof($sourceHandle)) {
                         $chunk = fread($sourceHandle, $chunkSize);
@@ -122,26 +125,29 @@ trait HasVideoShort
                         }
                         fwrite($tempStream, $chunk);
                     }
-                    
+
                     // Rewind el stream temporal para poder leerlo desde el inicio
                     rewind($tempStream);
-                    
+
                     // Guardar el stream en el disco de destino
                     $disk->put($destinationPath, $tempStream);
-                    
+
                     $this->forceFill([
                         'short_video' => $destinationPath,
                     ])->save();
-                    
+
                     if ($previous) {
                         Storage::disk(getDisk())->delete($previous);
                     }
-                    
                 } finally {
                     // Cerrar todos los handles
-                    fclose($sourceHandle);
-                    fclose($tempStream);
-                    
+                    if (isset($sourceHandle) && $sourceHandle) {
+                        fclose($sourceHandle);
+                    }
+                    if (isset($tempStream) && $tempStream) {
+                        fclose($tempStream);
+                    }
+
                     // Eliminar el archivo temporal después de moverlo
                     if (file_exists($video)) {
                         unlink($video);
@@ -159,5 +165,4 @@ trait HasVideoShort
     {
         return '';
     }
-
 }

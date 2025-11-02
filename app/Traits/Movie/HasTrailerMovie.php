@@ -21,7 +21,7 @@ trait HasTrailerMovie
             return;
         }
 
-        Storage::disk(getDisk())->delete($this->trailer_video);
+        Storage::disk(getVideoDisk())->delete($this->trailer_video);
 
         $this->forceFill([
             'trailer_video' => '',
@@ -38,7 +38,7 @@ trait HasTrailerMovie
                 return $this->defaultTrailerVideo();
             }
     
-            $disk = Storage::disk(getDisk());
+            $disk = Storage::disk(getVideoDisk());
     
             try {
                 // URL temporal válida por 1 hora
@@ -66,6 +66,7 @@ trait HasTrailerMovie
         }
 
         if ($video instanceof UploadedFile) {
+            // el video no es chunk, se guarda directamente usando el disco con getDisk()
             tap($this->trailer_video, function ($previous) use ($video, $storagePath) {
                 $this->forceFill([
                     'trailer_video' => $video->storePublicly(
@@ -79,6 +80,7 @@ trait HasTrailerMovie
                 }
             });
         } else if ($video instanceof File) {
+            // el video no es chunk, se guarda directamente usando el disco con getDisk()
             tap($this->trailer_video, function ($previous) use ($video, $storagePath) {
                 $this->forceFill([
                     'trailer_video' => Storage::disk(getDisk())->put($storagePath, $video),
@@ -97,20 +99,22 @@ trait HasTrailerMovie
                 $disk = Storage::disk(getDisk());
                 $chunkSize = 2 * 1024 * 1024; // 2MB chunks
                 
-                // Abrir el archivo fuente para lectura
-                $sourceHandle = fopen($video, 'rb');
-                if (!$sourceHandle) {
-                    throw new \Exception('No se pudo abrir el archivo fuente: ' . $video);
-                }
-                
-                // Crear un stream temporal para escribir los chunks
-                $tempStream = fopen('php://temp', 'w+b');
-                if (!$tempStream) {
-                    fclose($sourceHandle);
-                    throw new \Exception('No se pudo crear el stream temporal');
-                }
+                $tempStream = null;
+                $sourceHandle = null;
                 
                 try {
+                    // Abrir el archivo fuente para lectura
+                    $sourceHandle = fopen($video, 'rb');
+                    if (!$sourceHandle) {
+                        throw new \Exception('No se pudo abrir el archivo fuente: ' . $video);
+                    }
+                    
+                    // Crear un stream temporal para escribir los chunks
+                    $tempStream = fopen('php://temp', 'w+b');
+                    if (!$tempStream) {
+                        fclose($sourceHandle);
+                        throw new \Exception('No se pudo crear el stream temporal');
+                    }
                     // Leer y escribir en chunks para evitar cargar todo el archivo en memoria
                     while (!feof($sourceHandle)) {
                         $chunk = fread($sourceHandle, $chunkSize);
@@ -136,8 +140,12 @@ trait HasTrailerMovie
                     
                 } finally {
                     // Cerrar todos los handles
-                    fclose($sourceHandle);
-                    fclose($tempStream);
+                    if (isset($sourceHandle) && $sourceHandle) {
+                        fclose($sourceHandle);
+                    }
+                    if (isset($tempStream) && $tempStream) {
+                        fclose($tempStream);
+                    }
                     
                     // Eliminar el archivo temporal después de moverlo
                     if (file_exists($video)) {

@@ -70,6 +70,7 @@ watch(() => props.short, (newVal) => {
                         <label for="shortDescription" class="form-label">Caption</label>
                         <textarea name="text_caption" id="shortDescription" class="form-control" rows="3"
                             placeholder="Add a caption...">{{ textCaption }}</textarea>
+                        <ErrorLabel :message="errors.text_caption" />
                     </div>
                     <button type="submit" class="save-btn" :disabled="!canPublish">
                         <i class="fa-solid fa-circle-notch fa-spin" v-if="processing"></i>

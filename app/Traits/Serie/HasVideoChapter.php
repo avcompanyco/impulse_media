@@ -21,7 +21,7 @@ trait HasVideoChapter
             return;
         }
 
-        Storage::disk(getDisk())->delete($this->chapter_video);
+        Storage::disk(getVideoDisk())->delete($this->chapter_video);
 
         $this->forceFill([
             'chapter_video' => '',
@@ -38,7 +38,7 @@ trait HasVideoChapter
                 return $this->defaultChapterVideo();
             }
     
-            $disk = Storage::disk(getDisk());
+            $disk = Storage::disk(getVideoDisk());
     
             try {
                 // URL temporal válida por 1 hora
@@ -67,6 +67,7 @@ trait HasVideoChapter
         }
 
         if ($video instanceof UploadedFile) {
+            // el video no es chunk, se guarda directamente usando el disco con getDisk()
             tap($this->chapter_video, function ($previous) use ($video, $storagePath) {
                 $this->forceFill([
                     'chapter_video' => $video->storePublicly(
@@ -80,6 +81,7 @@ trait HasVideoChapter
                 }
             });
         } else if ($video instanceof File) {
+            // el video no es chunk, se guarda directamente usando el disco con getDisk()
             tap($this->chapter_video, function ($previous) use ($video, $storagePath) {
                 $this->forceFill([
                     'chapter_video' => Storage::disk(getDisk())->put($storagePath, $video),
@@ -98,20 +100,23 @@ trait HasVideoChapter
                 $disk = Storage::disk(getDisk());
                 $chunkSize = 2 * 1024 * 1024; // 2MB chunks
                 
-                // Open the source file for reading
-                $sourceHandle = fopen($video, 'rb');
-                if (!$sourceHandle) {
-                    throw new \Exception('Could not open the source file: ' . $video);
-                }
-                
-                // Create a temporary stream to write the chunks
-                $tempStream = fopen('php://temp', 'w+b');
-                if (!$tempStream) {
-                    fclose($sourceHandle);
-                    throw new \Exception('Could not create the temporary stream');
-                }
-                
+                $tempStream = null;
+                $sourceHandle = null;
+
                 try {
+                    // Open the source file for reading
+                    $sourceHandle = fopen($video, 'rb');
+                    if (!$sourceHandle) {
+                        throw new \Exception('Could not open the source file: ' . $video);
+                    }
+                    
+                    // Create a temporary stream to write the chunks
+                    $tempStream = fopen('php://temp', 'w+b');
+                    if (!$tempStream) {
+                        fclose($sourceHandle);
+                        throw new \Exception('Could not create the temporary stream');
+                    }
+                    
                     // Read and write in chunks to avoid loading the entire file into memory
                     while (!feof($sourceHandle)) {
                         $chunk = fread($sourceHandle, $chunkSize);
@@ -137,8 +142,12 @@ trait HasVideoChapter
                     
                 } finally {
                     // Close all handles
-                    fclose($sourceHandle);
-                    fclose($tempStream);
+                    if (isset($sourceHandle) && $sourceHandle) {
+                        fclose($sourceHandle);
+                    }
+                    if (isset($tempStream) && $tempStream) {
+                        fclose($tempStream);
+                    }
                     
                     // Delete the temporary file after moving it
                     if (file_exists($video)) {

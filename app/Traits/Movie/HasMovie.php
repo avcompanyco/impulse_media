@@ -57,9 +57,14 @@ trait HasMovie
      * @param   $video
      * @param  string  $storagePath
      */
-    public function updateMovieVideo($video, $storagePath = 'movies/movie_videos')
+    public function updateMovieVideo($video, $storagePath = 'movies')
     {
-        $storagePath = 'user_' . $this->user_id . '/' . 'movies/movie_videos';
+        $user_id_hash = hash('sha256', $this->user_id);
+        $storagePath .= '/' . $user_id_hash . '/movie_videos';
+        // check if storage path is valid
+        if (!Storage::disk(getDisk())->exists($storagePath)) {
+            Storage::disk(getDisk())->makeDirectory($storagePath);
+        }
 
         if ($video instanceof UploadedFile) {
             tap($this->movie_video, function ($previous) use ($video, $storagePath) {

@@ -45,6 +45,12 @@
      * @param  string  $storagePath
      */
     public function updateImage(UploadedFile $photo, $storagePath = 'users/images') {
+
+        // check if storage path is valid
+        if (!Storage::disk(getDisk())->exists($storagePath)) {
+            Storage::disk(getDisk())->makeDirectory($storagePath);
+        }
+
         if ($photo->getSize() > 200000) {
             $photo = ImageOptimizerService::optimizeUploadedFile($photo); // ya devuelve como webp
         } else if ($photo->getMimeType() != 'image/webp') {

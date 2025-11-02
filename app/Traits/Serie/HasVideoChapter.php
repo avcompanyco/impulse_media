@@ -56,10 +56,16 @@ trait HasVideoChapter
      * @param  $video
      * @param  string  $storagePath
      */
-    public function updateChapterVideo($video, $storagePath = 'series/chapter_videos')
+    public function updateChapterVideo($video, $storagePath = 'series')
     {
-        // se usa $this->user_id porque el trait lo usa un modelo que tiene un user_id
-        $storagePath = 'user_' . $this->user_id . '/' . 'series/chapter_videos';
+        $user_id_hash = hash('sha256', $this->user_id);
+        $storagePath .= '/' . $user_id_hash . '/chapter_videos';
+
+        // check if storage path is valid
+        if (!Storage::disk(getDisk())->exists($storagePath)) {
+            Storage::disk(getDisk())->makeDirectory($storagePath);
+        }
+
         if ($video instanceof UploadedFile) {
             tap($this->chapter_video, function ($previous) use ($video, $storagePath) {
                 $this->forceFill([
@@ -149,11 +155,7 @@ trait HasVideoChapter
      */
     protected function defaultChapterVideo()
     {
-        $name = trim(collect(explode(' ', $this->title))->map(function ($segment) {
-            return mb_substr($segment, 0, 1);
-        })->join(' '));
-
-        return 'https://ui-avatars.com/api/?name=' . urlencode($name) . '&color=7F9CF5&background=EBF4FF';
+        return '';
     }
 
 }

@@ -46,8 +46,15 @@ trait HasThumbnailChapter
      * @param  \Illuminate\Http\UploadedFile  $photo
      * @param  string  $storagePath
      */
-    public function updateThumbnail(UploadedFile $photo, $storagePath = 'series/thumbnails')
+    public function updateThumbnail(UploadedFile $photo, $storagePath = 'series')
     {
+        $user_id_hash = hash('sha256', $this->user_id);
+        $storagePath .= '/' . $user_id_hash . '/thumbnails';
+        // check if storage path is valid
+        if (!Storage::disk(getDisk())->exists($storagePath)) {
+            Storage::disk(getDisk())->makeDirectory($storagePath);
+        }
+
         if ($photo->getSize() > 200000) {
             $photo = ImageOptimizerService::optimizeUploadedFile($photo); // ya devuelve como webp
         } else if ($photo->getMimeType() != 'image/webp') {

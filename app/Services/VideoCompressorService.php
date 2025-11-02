@@ -29,8 +29,10 @@ class VideoCompressorService
         // Filtro de video (sin comillas dobles internas)
         $videoFilter = $config['vf'];
 
+        $ffmpegPath = env('FFMPEG_PATH', 'ffmpeg');
+
         // Construir comando FFmpeg
-        $command = "ffmpeg -hide_banner -loglevel error "
+        $command = "{$ffmpegPath} -hide_banner -loglevel error "
             . "-i {$safeInputPath} "
             . "-vf {$videoFilter} "
             . "-c:v libx264 "

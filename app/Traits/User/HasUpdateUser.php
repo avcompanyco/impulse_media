@@ -88,9 +88,32 @@ trait HasUpdateUser
                     throw new \Exception(__("Invalid plan selected"));
                 }
     
-                // Ensure user has Stripe customer ID
+                // Ensure the user has a Stripe customer ID
                 if (!$user->hasStripeId()) {
-                    $user->createAsStripeCustomer();
+                     // Create Stripe customer with address information
+                     $stripeCustomerData = [
+                        'email' => $user->email,
+                        'name' => $user->name,
+                        'metadata' => [
+                            'user_id' => $user->id,
+                        ]
+                    ];
+
+                    if ($user->address || $user->country || $user->city || $user->state || $user->postal_code) {
+                        $stripeCustomerData['address'] = [
+                            'line1' => $user->address ?? '',
+                            'city' => $user->city ?? '',
+                            'state' => $user->state ?? '',
+                            'postal_code' => $user->postal_code ?? '',
+                            'country' => $user->country ?? 'US',
+                        ];
+                    }
+
+                    if ($user->phone) {
+                        $stripeCustomerData['phone'] = $user->phone;
+                    }
+
+                    $user->createAsStripeCustomer($stripeCustomerData);
                 }
     
                 // Handle subscription change

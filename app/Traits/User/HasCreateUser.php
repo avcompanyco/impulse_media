@@ -76,26 +76,48 @@ trait HasCreateUser
             if (env('APP_ENV') == 'production') {
                 // Ensure the user has a Stripe customer ID
                 if (!$user->hasStripeId()) {
-                    $user->createAsStripeCustomer();
+                    // Create Stripe customer with address information
+                    $stripeCustomerData = [
+                        'email' => $user->email,
+                        'name' => $user->name,
+                        'metadata' => [
+                            'user_id' => $user->id,
+                        ]
+                    ];
+
+                    if ($user->address || $user->country || $user->city || $user->state || $user->postal_code) {
+                        $stripeCustomerData['address'] = [
+                            'line1' => $user->address ?? '',
+                            'city' => $user->city ?? '',
+                            'state' => $user->state ?? '',
+                            'postal_code' => $user->postal_code ?? '',
+                            'country' => $user->country ?? 'US',
+                        ];
+                    }
+
+                    if ($user->phone) {
+                        $stripeCustomerData['phone'] = $user->phone;
+                    }
+
+                    $user->createAsStripeCustomer($stripeCustomerData);
                 }
-    
+
                 // Use plan's trial days if not specified
                 $trialDays = $trialDays ?? $plan->free_days_trial ?? 0;
-    
+
                 // Create subscription through Laravel Cashier
                 $subscriptionBuilder = $user->newSubscription('default', $plan->stripe_price_id);
-                
+
                 if ($trialDays > 0) {
                     $subscriptionBuilder->trialDays($trialDays);
                 }
-    
+
                 // Create the subscription
                 $subscription = $subscriptionBuilder->create();
             }
 
             // Update user's plan_id
             $user->update(['plan_id' => $plan->id]);
-
         } catch (\Exception $e) {
             // If subscription creation fails, we still keep the user but without a plan
             logger()->error('Failed to create subscription for user', [
@@ -103,7 +125,7 @@ trait HasCreateUser
                 'plan_id' => $plan->id,
                 'error' => $e->getMessage()
             ]);
-            
+
             throw new \Exception(__("User created successfully but failed to assign plan: ") . $e->getMessage());
         }
     }

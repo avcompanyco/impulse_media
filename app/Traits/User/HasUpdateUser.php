@@ -71,43 +71,48 @@ trait HasUpdateUser
     private function updateUserPlan(User $user, ?int $oldPlanId, ?int $newPlanId, ?int $trialDays = null)
     {
         try {
-            // If removing plan (setting to null)
-            if ($newPlanId === null) {
-                // Cancel current subscription if exists
+            if (env('APP_ENV') == 'production') {
+                // If removing plan (setting to null)
+                if ($newPlanId === null) {
+                    // Cancel current subscription if exists
+                    if ($user->subscribed('default')) {
+                        $user->subscription('default')->cancelNow();
+                    }
+                    $user->update(['plan_id' => null]);
+                    return;
+                }
+    
+                // Get the new plan
+                $newPlan = Plan::find($newPlanId);
+                if (!$newPlan || !$newPlan->stripe_price_id) {
+                    throw new \Exception(__("Invalid plan selected"));
+                }
+    
+                // Ensure user has Stripe customer ID
+                if (!$user->hasStripeId()) {
+                    $user->createAsStripeCustomer();
+                }
+    
+                // Handle subscription change
                 if ($user->subscribed('default')) {
-                    $user->subscription('default')->cancelNow();
+                    // Update existing subscription
+                    $subscription = $user->subscription('default');
+                    $subscription->swap($newPlan->stripe_price_id);
+                } else {
+                    // Create new subscription
+                    $trialDays = $trialDays ?? $newPlan->free_days_trial ?? 0;
+                    
+                    $subscriptionBuilder = $user->newSubscription('default', $newPlan->stripe_price_id);
+                    
+                    if ($trialDays > 0) {
+                        $subscriptionBuilder->trialDays($trialDays);
+                    }
+    
+                    $subscriptionBuilder->create();
                 }
-                return;
             }
 
-            // Get the new plan
-            $newPlan = Plan::find($newPlanId);
-            if (!$newPlan || !$newPlan->stripe_price_id) {
-                throw new \Exception(__("Invalid plan selected"));
-            }
-
-            // Ensure user has Stripe customer ID
-            if (!$user->hasStripeId()) {
-                $user->createAsStripeCustomer();
-            }
-
-            // Handle subscription change
-            if ($user->subscribed('default')) {
-                // Update existing subscription
-                $subscription = $user->subscription('default');
-                $subscription->swap($newPlan->stripe_price_id);
-            } else {
-                // Create new subscription
-                $trialDays = $trialDays ?? $newPlan->free_days_trial ?? 0;
-                
-                $subscriptionBuilder = $user->newSubscription('default', $newPlan->stripe_price_id);
-                
-                if ($trialDays > 0) {
-                    $subscriptionBuilder->trialDays($trialDays);
-                }
-
-                $subscriptionBuilder->create();
-            }
+            $user->update(['plan_id' => $newPlanId]);
 
         } catch (\Exception $e) {
             logger()->error('Failed to update user plan', [

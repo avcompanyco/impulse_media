@@ -28,6 +28,8 @@ class UserResource extends JsonResource
             'roles_display' => $this->whenLoaded('roles', function () {
                 return $this->roles->pluck('name')->join(', ') ?: __('No roles assigned');
             }),
+            'plan' => $this->getCurrentPlan(),
+            'plan_id' => $this->plan_id,
             'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
             'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),
         ];

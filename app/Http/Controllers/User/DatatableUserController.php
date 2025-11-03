@@ -31,11 +31,12 @@ class DatatableUserController extends Controller
                         ->orWhere('email', 'like', '%' . $search . '%');
                 });
 
-                $users->whereHas('roles', function ($query){
-                    // role name user spatie permissions
-                    $query->where('name', 'user');
-                });
             }
+            $users->whereHas('roles', function ($query){
+                // role name user spatie permissions
+                $query->where('name', 'user');
+            });
+            
             $users->with('roles');
 
             return new UserCollection($users->paginate($perPage, ['*'], 'page', $page));

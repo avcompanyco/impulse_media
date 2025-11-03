@@ -58,6 +58,11 @@ trait HasCreateUser
                 $plan = Plan::find($planId);
                 if ($plan && $plan->stripe_price_id) {
                     $this->createSubscriptionForUser($user, $plan, $trialDays);
+                } else {
+                    $plant = Plan::where('price', 0)->first();
+                    if ($plant && $plant->stripe_price_id) {
+                        $this->createSubscriptionForUser($user, $plant, $trialDays);
+                    }
                 }
             }
 
@@ -68,23 +73,25 @@ trait HasCreateUser
     private function createSubscriptionForUser(User $user, Plan $plan, ?int $trialDays = null)
     {
         try {
-            // Ensure the user has a Stripe customer ID
-            if (!$user->hasStripeId()) {
-                $user->createAsStripeCustomer();
+            if (env('APP_ENV') == 'production') {
+                // Ensure the user has a Stripe customer ID
+                if (!$user->hasStripeId()) {
+                    $user->createAsStripeCustomer();
+                }
+    
+                // Use plan's trial days if not specified
+                $trialDays = $trialDays ?? $plan->free_days_trial ?? 0;
+    
+                // Create subscription through Laravel Cashier
+                $subscriptionBuilder = $user->newSubscription('default', $plan->stripe_price_id);
+                
+                if ($trialDays > 0) {
+                    $subscriptionBuilder->trialDays($trialDays);
+                }
+    
+                // Create the subscription
+                $subscription = $subscriptionBuilder->create();
             }
-
-            // Use plan's trial days if not specified
-            $trialDays = $trialDays ?? $plan->free_days_trial ?? 0;
-
-            // Create subscription through Laravel Cashier
-            $subscriptionBuilder = $user->newSubscription('default', $plan->stripe_price_id);
-            
-            if ($trialDays > 0) {
-                $subscriptionBuilder->trialDays($trialDays);
-            }
-
-            // Create the subscription
-            $subscription = $subscriptionBuilder->create();
 
             // Update user's plan_id
             $user->update(['plan_id' => $plan->id]);

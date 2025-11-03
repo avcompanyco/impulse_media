@@ -40,7 +40,6 @@ onMounted(async () => {
             class="movies-section"
             style="margin-bottom: 80px;"
         >
-        <pre>{{ data }}</pre>
             <div class="movies-row" data-slider="slasher">
                 <div v-for="(content, index) in data"
                     :key="`movie_${content.id}_card_${index + 1}`" class="movie-card">
@@ -52,7 +51,7 @@ onMounted(async () => {
                     <Link 
                         v-else
                         :href="ShowSerieController({ serie: content.contentable.id })">
-                        <img :src="content.vertical_image_url" alt="Movie Poster">
+                        <img :src="content.contentable.vertical_image_url" alt="Movie Poster">
                     </Link>
                 </div>
             </div>

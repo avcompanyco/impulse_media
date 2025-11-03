@@ -96,18 +96,15 @@ trait HasUpdateUser
                         'name' => $user->name,
                         'metadata' => [
                             'user_id' => $user->id,
-                        ]
-                    ];
-
-                    if ($user->address || $user->country || $user->city || $user->state || $user->postal_code) {
-                        $stripeCustomerData['address'] = [
+                        ],
+                        'address' => [
                             'line1' => $user->address ?? '',
                             'city' => $user->city ?? '',
                             'state' => $user->state ?? '',
                             'postal_code' => $user->postal_code ?? '',
                             'country' => $user->country ?? 'US',
-                        ];
-                    }
+                        ]
+                    ];
 
                     if ($user->phone) {
                         $stripeCustomerData['phone'] = $user->phone;

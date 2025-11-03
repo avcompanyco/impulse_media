@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import { Link } from '@inertiajs/vue3';
-import ShowShortController from '@/actions/App/Http/Controllers/Short/ShowShortController';
+import IndexShortController from '@/actions/App/Http/Controllers/Short/IndexShortController';
 
 const props = defineProps<{
     short: any;
@@ -56,7 +56,7 @@ onUnmounted(() => {
 
 <template>
     <div class="content-card" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
-        <Link :href="ShowShortController({short: short.id})">
+        <Link :href="IndexShortController({ query: { short: short.id }})">
             <video 
                 ref="videoRef"
                 :src="short.short_video_url" 
@@ -74,11 +74,6 @@ onUnmounted(() => {
                 </div>
             </div>
         </Link>
-        <!-- <button class="options-menu-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
-        <div class="options-dropdown">
-            <button onclick="window.location.href='edit_content.html'">Edit</button>
-            <button onclick="alert('Content deleted!')">Delete</button>
-        </div> -->
     </div>
 </template>
 

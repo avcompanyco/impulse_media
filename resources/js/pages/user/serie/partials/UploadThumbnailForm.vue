@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, useId } from 'vue';
 import { Form, router } from '@inertiajs/vue3';
 import UploadThumbnailChapterController from '@/actions/App/Http/Controllers/Serie/UploadThumbnailChapterController';
 import DeleteThumbnailChapterController from '@/actions/App/Http/Controllers/Serie/DeleteThumbnailChapterController';
@@ -31,6 +31,8 @@ const handleImageChange = (event: Event) => {
     }
 };
 
+const episodeID = useId();
+
 const handleDrop = (event: DragEvent) => {
     event.preventDefault();
     isDragOver.value = false;
@@ -38,7 +40,7 @@ const handleDrop = (event: DragEvent) => {
     const files = event.dataTransfer?.files;
     if (files && files.length > 0) {
         // set the file to the input
-        const input = document.getElementById('episodeImage') as HTMLInputElement;
+        const input = document.getElementById(`episodeImage_${episodeID}`) as HTMLInputElement;
         if (input) {
             input.files = files;
         }
@@ -81,7 +83,7 @@ function removeImage () {
         preserveScroll: true,
         onSuccess: () => {
             previewImage.value = null;
-            const fileInput = document.getElementById('episodeImage') as HTMLInputElement;
+            const fileInput = document.getElementById(`episodeImage_${episodeID}`) as HTMLInputElement;
             if (fileInput) {
                 fileInput.value = '';
             }
@@ -90,7 +92,7 @@ function removeImage () {
 }
 
 const triggerFileInput = () => {
-    const fileInput = document.getElementById('episodeImage') as HTMLInputElement;
+    const fileInput = document.getElementById(`episodeImage_${episodeID}`) as HTMLInputElement;
     fileInput?.click();
 };
 </script>
@@ -137,7 +139,7 @@ const triggerFileInput = () => {
             <input 
                 type="file" 
                 name="thumbnail" 
-                id="episodeImage" 
+                :id="`episodeImage_${episodeID}`" 
                 accept="image/*" 
                 @change="handleImageChange"
             >

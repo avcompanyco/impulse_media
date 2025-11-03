@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import UserDashboardLayout from '@/layouts/UserDashboardLayout.vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 
 import ShowMovieController from '@/actions/App/Http/Controllers/Movie/ShowMovieController';
 import ShowSerieController from '@/actions/App/Http/Controllers/Serie/ShowSerieController';
+import ShowSubcategoryController from '@/actions/App/Http/Controllers/Subcategory/ShowSubcategoryController';
 
 const props = defineProps<{
     category: any;
@@ -17,35 +18,45 @@ function mergeInRandomOrderMoviesAndSeries(subcategory: any) {
     return [...subcategory.movies, ...subcategory.series].sort(() => Math.random() - 0.5);
 }
 
+function goTuSubcategory(subcategoryId: number) {
+    router.visit(ShowSubcategoryController({subcategory: subcategoryId}))
+}
+
 </script>
 
 <template>
     <UserDashboardLayout 
         :title="`${category.name} - ${$page.props.name || 'Impulsemedia'}`" 
         :headerTitle="`${category.name} - ${$page.props.name || 'Impulsemedia'}`">
-        <h1 class="page-title">{{ category.name }}</h1>
+        <h1 
+            class="page-title" 
+            style="cursor:pointer"
+            @click="goTuSubcategory(category.id)"
+            >{{ category.name }}</h1>
         <div 
             v-for="subcategory in subcategories" 
             :key="`subcategory_${subcategory.id}_card`" 
             class="movies-section"
             style="margin-bottom: 80px;"
         >
-            <h2 class="section-title">{{ subcategory.name }}</h2>
-            <div class="movies-row" data-slider="slasher">
-                <div v-for="(item, index) in mergeInRandomOrderMoviesAndSeries(subcategory)"
-                    :key="`movie_${item.id}_card_${index + 1}`" class="movie-card">
-                    <Link 
-                        v-if="item.content.type == 'movies'"
-                        :href="ShowMovieController({ movie: item.id })">
-                        <img :src="item.vertical_image_url" alt="Movie Poster">
-                    </Link>
-                    <Link 
-                        v-else
-                        :href="ShowSerieController({ serie: item.id })">
-                        <img :src="item.vertical_image_url" alt="Movie Poster">
-                    </Link>
+            <template v-if="subcategory.movies.length > 0 || subcategory.series.length > 0">
+                <h2 class="section-title">{{ subcategory.name }}</h2>
+                <div class="movies-row" data-slider="slasher">
+                    <div v-for="(item, index) in mergeInRandomOrderMoviesAndSeries(subcategory)"
+                        :key="`movie_${item.id}_card_${index + 1}`" class="movie-card">
+                        <Link 
+                            v-if="item.content.type == 'movies'"
+                            :href="ShowMovieController({ movie: item.id })">
+                            <img :src="item.vertical_image_url" alt="Movie Poster">
+                        </Link>
+                        <Link 
+                            v-else
+                            :href="ShowSerieController({ serie: item.id })">
+                            <img :src="item.vertical_image_url" alt="Movie Poster">
+                        </Link>
+                    </div>
                 </div>
-            </div>
+            </template>
         </div>
         <br />
     </UserDashboardLayout>

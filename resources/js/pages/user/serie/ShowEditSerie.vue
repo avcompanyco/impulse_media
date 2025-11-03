@@ -198,7 +198,10 @@ function selectSeason(seasonId: number) {
                         <div class="column-header">
                             <span class="column-title">Episodes</span>
                             <template v-if="seasonSelected != 0">
-                                <AddChapterModal :serie="serie.id" :season="seasonSelected" @chapter-added="getSeasons" />
+                                <AddChapterModal 
+                                    :serie="serie.id" 
+                                    :season="seasonSelected" 
+                                    @chapter-added="getSeasons" />
                             </template>
                         </div>
                         <div id="episodesList" class="item-list">

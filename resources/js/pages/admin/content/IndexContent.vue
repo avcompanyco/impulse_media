@@ -23,6 +23,7 @@ const props = defineProps<{
         <template #header-actions>
             <CreateCategoryModal />
         </template>
+        
         <div class="dashboard-module">
             <div class="categories-container" id="categoriesContainer">
                 <div class="category-card" v-for="category in categories" :key="category.id">

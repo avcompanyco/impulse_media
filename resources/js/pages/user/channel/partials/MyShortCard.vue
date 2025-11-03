@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
-import ShowShortController from '@/actions/App/Http/Controllers/Short/ShowShortController';
+import IndexShortController from '@/actions/App/Http/Controllers/Short/IndexShortController';
 // import ShowEditShortController from '@/actions/App/Http/Controllers/Short/ShowEditShortController';
 import DeleteShortModal from './DeleteShortModal.vue';
 import ShowEditShortController from '@/actions/App/Http/Controllers/Short/ShowEditShortController';
@@ -69,7 +69,7 @@ onUnmounted(() => {
 
 <template>
     <div class="content-card" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
-        <Link :href="ShowShortController({short: short.id})">
+        <Link :href="IndexShortController({ query: { short: short.id }})">
             <video 
                 ref="videoRef"
                 :src="short.short_video_url" 

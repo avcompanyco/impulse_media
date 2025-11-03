@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, useId } from 'vue';
 import { Form, router } from '@inertiajs/vue3';
 import UploadChapterVideoChapterController from '@/actions/App/Http/Controllers/Serie/UploadChapterVideoChapterController';
 import DeleteChapterVideoChapterController from '@/actions/App/Http/Controllers/Serie/DeleteChapterVideoChapterController';
@@ -36,6 +36,8 @@ function handleVideoChange(event: Event) {
     }
 }
 
+const episodeID = useId();
+
 function handleDrop(event: DragEvent) {
     event.preventDefault();
     isDragOver.value = false;
@@ -45,7 +47,7 @@ function handleDrop(event: DragEvent) {
         const file = files[0];
         if (file.type.startsWith('video/')) {
             selectedFile.value = file;
-            const input = document.getElementById('episodeVideoFile') as HTMLInputElement;
+            const input = document.getElementById(`episodeVideoFile_${episodeID}`) as HTMLInputElement;
             if (input) {
                 const dt = new DataTransfer();
                 dt.items.add(file);
@@ -115,7 +117,7 @@ const uploadChunks = async (file: File) => {
         uploadProgress.value = 0;
         selectedFile.value = null;
         
-        const fileInput = document.getElementById('episodeVideoFile') as HTMLInputElement;
+        const fileInput = document.getElementById(`episodeVideoFile_${episodeID}`) as HTMLInputElement;
         if (fileInput) {
             fileInput.value = '';
         }
@@ -124,7 +126,7 @@ const uploadChunks = async (file: File) => {
 
 function triggerFileInput() {
     if (isUploading.value) return;
-    const fileInput = document.getElementById('episodeVideoFile') as HTMLInputElement;
+    const fileInput = document.getElementById(`episodeVideoFile_${episodeID}`) as HTMLInputElement;
     fileInput?.click();
 }
 
@@ -205,7 +207,7 @@ function removeVideo() {
             <input 
                 type="file" 
                 name="chapter_video" 
-                id="episodeVideoFile" 
+                :id="`episodeVideoFile_${episodeID}`" 
                 accept="video/*" 
                 @change="handleVideoChange"
                 :disabled="isUploading"

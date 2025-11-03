@@ -34,6 +34,7 @@ function goTuSubcategory(subcategoryId: number) {
             @click="goTuSubcategory(category.id)"
             >{{ category.name }}</h1>
         <div 
+            v-if="subcategories.length > 0"
             v-for="subcategory in subcategories" 
             :key="`subcategory_${subcategory.id}_card`" 
             class="movies-section"
@@ -58,6 +59,14 @@ function goTuSubcategory(subcategoryId: number) {
                 </div>
             </template>
         </div>
+        <template v-else>
+            <div class="movies-section" style="margin-bottom: 80px;">
+                <div style="text-align: center; padding: 3rem 1rem;">
+                    <h2 class="section-title" style="color: rgba(255, 255, 255, 0.6);">This category is empty</h2>
+                    <p style="color: rgba(255, 255, 255, 0.4); margin-top: 1rem;">No content available at this time.</p>
+                </div>
+            </div>
+        </template>
         <br />
     </UserDashboardLayout>
 </template>

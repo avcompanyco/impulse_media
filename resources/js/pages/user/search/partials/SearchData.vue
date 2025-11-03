@@ -40,6 +40,7 @@ onMounted(async () => {
             class="movies-section"
             style="margin-bottom: 80px;"
         >
+        <pre>{{ data }}</pre>
             <div class="movies-row" data-slider="slasher">
                 <div v-for="(content, index) in data"
                     :key="`movie_${content.id}_card_${index + 1}`" class="movie-card">

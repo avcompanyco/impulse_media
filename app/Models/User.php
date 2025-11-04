@@ -82,10 +82,12 @@ class User extends Authenticatable
      */
     public function getCurrentPlan()
     {
-        if ($this->subscribed('default')) {
-            $subscription = $this->subscription('default');
-            return Plan::where('stripe_price_id', $subscription->stripe_price)->first();
-        }
+        if (env('APP_ENV') == 'production') {
+            if ($this->subscribed('default')) {
+                $subscription = $this->subscription('default');
+                return Plan::where('stripe_price_id', $subscription->stripe_price)->first();
+            }
+        } 
         
         return $this->plan;
     }

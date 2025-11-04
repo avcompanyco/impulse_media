@@ -24,48 +24,51 @@ trait HasUpdatePlan
                 throw new \Exception(__("Plan already exists"));
             }
 
-            $stripe = new StripeClient(config('cashier.secret'));
-
-            // Actualizar el producto en Stripe si el nombre o descripción cambió
-            if (isset($data['name']) || isset($data['description'])) {
-                $productData = [];
-                if (isset($data['name'])) {
-                    $productData['name'] = $data['name'];
+            if (env('APP_ENV') == 'production') {
+                $stripe = new StripeClient(config('cashier.secret'));
+    
+                // Actualizar el producto en Stripe si el nombre o descripción cambió
+                if (isset($data['name']) || isset($data['description'])) {
+                    $productData = [];
+                    if (isset($data['name'])) {
+                        $productData['name'] = $data['name'];
+                    }
+                    if (isset($data['description'])) {
+                        $productData['description'] = $data['description'];
+                    }
+                    
+                    $stripe->products->update($plan->stripe_product_id, $productData);
                 }
-                if (isset($data['description'])) {
-                    $productData['description'] = $data['description'];
+    
+                // Si cambió el precio o el período de facturación, crear un nuevo precio en Stripe
+                if (isset($data['price']) || isset($data['billing_period'])) {
+                    // Convertir nuestro billing_period a la nomenclatura de Stripe
+                    $interval = match($data['billing_period'] ?? $plan->billing_period) {
+                        BillingPeriod::DAILY->value => 'day',
+                        BillingPeriod::MONTHLY->value => 'month',
+                        BillingPeriod::YEARLY->value => 'year',
+                        default => 'month',
+                    };
+    
+                    // Crear un nuevo precio en Stripe
+                    $price = $stripe->prices->create([
+                        'product' => $plan->stripe_product_id,
+                        'unit_amount' => ($data['price'] ?? $plan->price) * 100,
+                        'currency' => config('cashier.currency'),
+                        'recurring' => [
+                            'interval' => $interval,
+                        ],
+                    ]);
+    
+                    // Archivar el precio anterior en Stripe
+                    $stripe->prices->update($plan->stripe_price_id, [
+                        'active' => false,
+                    ]);
+    
+                    $data['stripe_price_id'] = $price->id;
                 }
-                
-                $stripe->products->update($plan->stripe_product_id, $productData);
             }
 
-            // Si cambió el precio o el período de facturación, crear un nuevo precio en Stripe
-            if (isset($data['price']) || isset($data['billing_period'])) {
-                // Convertir nuestro billing_period a la nomenclatura de Stripe
-                $interval = match($data['billing_period'] ?? $plan->billing_period) {
-                    BillingPeriod::DAILY->value => 'day',
-                    BillingPeriod::MONTHLY->value => 'month',
-                    BillingPeriod::YEARLY->value => 'year',
-                    default => 'month',
-                };
-
-                // Crear un nuevo precio en Stripe
-                $price = $stripe->prices->create([
-                    'product' => $plan->stripe_product_id,
-                    'unit_amount' => ($data['price'] ?? $plan->price) * 100,
-                    'currency' => config('cashier.currency'),
-                    'recurring' => [
-                        'interval' => $interval,
-                    ],
-                ]);
-
-                // Archivar el precio anterior en Stripe
-                $stripe->prices->update($plan->stripe_price_id, [
-                    'active' => false,
-                ]);
-
-                $data['stripe_price_id'] = $price->id;
-            }
 
             $plan->update($data);
             

@@ -24,7 +24,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Cashier::useCustomerModel(User::class);
-        Cashier::calculateTaxes();
+        // Cashier::calculateTaxes();
 
         // Https force
         if (env('APP_ENV') === 'production') {

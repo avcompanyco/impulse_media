@@ -16,7 +16,8 @@ class IndexPlanController extends Controller
             throw new \Exception(__("You are not authorized to access this resource"));
         }
 
-        $plans = Plan::orderBy('id', 'desc')->get();
+        $plans = Plan::orderBy('id', 'desc')->where('status', 'active')->get();
+        
         return Inertia::render('admin/plan/IndexPlan', [
             'plans' => $plans,
         ]);

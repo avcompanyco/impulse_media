@@ -31,7 +31,7 @@ const closeModal = () => {
 </script>
 
 <template>
-    <button class="btn btn-edit" @click="isOpen">Edit</button>
+    <button class="btn btn-edit" @click="isOpen = true">Edit</button>
     <Teleport to="body">
         <div id="editPlanModal" class="modal" :class="{ 'active': isOpen }">
             <div class="modal-content">

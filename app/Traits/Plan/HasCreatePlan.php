@@ -20,38 +20,41 @@ trait HasCreatePlan
             $data['movies_upload_count'] = $data['movies_upload_count'] ?? 0;
             $data['shorts_upload_count'] = $data['shorts_upload_count'] ?? 0;
             $data['series_upload_count'] = $data['series_upload_count'] ?? 0;
-    
-            $stripe = new StripeClient(config('cashier.secret'));
 
-            // Convertir nuestro billing_period a la nomenclatura de Stripe
-            $interval = match($data['billing_period']) {
-                BillingPeriod::DAILY->value => 'day',
-                BillingPeriod::MONTHLY->value => 'month',
-                BillingPeriod::YEARLY->value => 'year',
-                default => 'month',
-            };
+            if (env('APP_ENV') == 'production') {
+                $stripe = new StripeClient(config('cashier.secret'));
 
-            // Crear el producto en Stripe
-            $product = $stripe->products->create([
-                'name' => $data['name'],
-                'description' => $data['description'],
-            ]);
+                // Convertir nuestro billing_period a la nomenclatura de Stripe
+                $interval = match ($data['billing_period']) {
+                    BillingPeriod::DAILY->value => 'day',
+                    BillingPeriod::MONTHLY->value => 'month',
+                    BillingPeriod::YEARLY->value => 'year',
+                    default => 'month',
+                };
 
-            $price = $stripe->prices->create([
-                'product' => $product->id,
-                'unit_amount' => $data['price'] * 100,
-                'currency' => config('cashier.currency'),
-                'recurring' => [
-                    'interval' => $interval,
-                ],
-            ]);
+                // Crear el producto en Stripe
+                $product = $stripe->products->create([
+                    'name' => $data['name'],
+                    'description' => $data['description'],
+                ]);
 
-            $data['stripe_product_id'] = $product->id;
-            $data['stripe_price_id'] = $price->id;
+                $price = $stripe->prices->create([
+                    'product' => $product->id,
+                    'unit_amount' => $data['price'] * 100,
+                    'currency' => config('cashier.currency'),
+                    'recurring' => [
+                        'interval' => $interval,
+                    ],
+                ]);
+
+                $data['stripe_product_id'] = $product->id;
+                $data['stripe_price_id'] = $price->id;
+            }
+
             $data['status'] = 'active';
 
             $plan = Plan::create($data);
-    
+
             DB::commit();
 
             return $plan;

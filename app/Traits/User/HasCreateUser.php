@@ -26,6 +26,10 @@ trait HasCreateUser
             $trialDays = $data['trial_days'] ?? null;
             $planId = $data['plan_id'] ?? null;
 
+            if (empty($roles)) {
+                $roles = ['user'];
+            }
+
             // Remove non-user fields
             unset($data['roles'], $data['trial_days']);
 

@@ -320,6 +320,10 @@ Route::middleware('auth')->group(function () {
         Route::prefix('short')->group(function () {
             Route::get('/', \App\Http\Controllers\Short\IndexShortController::class)
                 ->name('user.short.index');
+            
+            Route::get('/random', \App\Http\Controllers\Short\RandomShortController::class)
+                ->name('user.short.random');
+            
             Route::get('/{short}', \App\Http\Controllers\Short\ShowShortController::class)
                 ->name('user.short.show');
 

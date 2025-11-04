@@ -36,7 +36,7 @@ class ShowShortController extends Controller
         $short = $short->load(['content']);
 
         return Inertia::render('user/short/ShowShort', [
-            'short' => $short
+            'short' => $short,
         ]);
     }
 }

@@ -7,12 +7,13 @@ use App\Http\Controllers\Controller;
 use App\Traits\Serie\HasDeleteChapterVideoChapter;
 use App\Models\Serie;
 use App\Models\ChapterSerie;
+use App\Models\SeasonSerie;
 
 class DeleteChapterVideoChapterController extends Controller
 {
     use HasDeleteChapterVideoChapter;
 
-    public function __invoke(Serie $serie, ChapterSerie $chapter)
+    public function __invoke(Serie $serie, SeasonSerie $season, ChapterSerie $chapter)
     {
         try {
             if (!$this->canAccess()) {

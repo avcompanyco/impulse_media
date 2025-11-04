@@ -80,6 +80,8 @@ function submitPublishForm() {
     publishForm.value.submit();
 }
 
+const isUploadingSomething = ref(false);
+
 </script>
 
 <template>
@@ -145,9 +147,9 @@ function submitPublishForm() {
                             </div>
                         </Form>
                         <div>
-                            <UploadTrailerSerieForm :serie="serie" />
-                            <UploadVerticalImageForm :serie="serie" />
-                            <UploadHorizontalImageForm :serie="serie" />
+                            <UploadTrailerSerieForm :serie="serie" v-model:disable="isUploadingSomething" />
+                            <UploadVerticalImageForm :serie="serie" v-model:disable="isUploadingSomething" />
+                            <UploadHorizontalImageForm :serie="serie" v-model:disable="isUploadingSomething" />
                         </div>
                         <button type="submit" class="save-btn" :disabled="!canPublish" @click="submitPublishForm">
                             <i class="fa-solid fa-circle-notch fa-spin" v-if="isLoading"></i>

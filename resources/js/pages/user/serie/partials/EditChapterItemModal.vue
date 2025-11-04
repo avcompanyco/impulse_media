@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import UploadEpisodeForm from './UploadEpisodeForm.vue';
 import UploadThumbnailForm from './UploadThumbnailForm.vue';
 import UpdateChapterController from '@/actions/App/Http/Controllers/Serie/UpdateChapterController';
@@ -12,6 +12,11 @@ const props = defineProps<{
     season: number,
     chapter: any,
 }>();
+
+const chapterRef = ref(props.chapter);
+watch(chapterRef, (newVal) => {
+    chapterRef.value = newVal;
+});
 
 const isOpen = ref(false);
 
@@ -36,6 +41,8 @@ function closeModal() {
     isOpen.value = false;
 }
 
+const isUploadingSomething = ref(false);
+
 </script>
 
 <template>
@@ -52,7 +59,7 @@ function closeModal() {
                 <Form ref="episodeForm" id="editEpisodeForm" v-bind="UpdateChapterController.form({
                     serie: props.serie,
                     season: props.season,
-                    chapter: props.chapter.id,
+                    chapter: chapterRef.id,
                 })" v-on:start="isLoading = true"
                 :options="{
                     preserveScroll: true,
@@ -61,16 +68,16 @@ function closeModal() {
                     <div class="form-section">
                         <label for="editEpisodeNumber" class="form-label">Episode Number</label>
                         <input name="chapter_number" type="number" id="editEpisodeNumber" class="form-control" 
-                               :value="props.chapter.chapter_number" placeholder="e.g., 1">
+                               :value="chapterRef.value.chapter_number" placeholder="e.g., 1">
                     </div>
                     <div class="form-section">
                         <label for="editEpisodeTitle" class="form-label">Episode Title</label>
                         <input name="title" type="text" id="editEpisodeTitle" class="form-control" 
-                               :value="props.chapter.title" placeholder="e.g., The Beginning">
+                               :value="chapterRef.value.title" placeholder="e.g., The Beginning">
                     </div>
                 </Form>
-                <UploadThumbnailForm :serie="serie" :season="season" :chapter="chapter" />
-                <UploadEpisodeForm :serie="serie" :season="season" :chapter="chapter" />
+                <UploadThumbnailForm :serie="serie" :season="season" :chapter="chapterRef" v-model:disable="isUploadingSomething" />
+                <UploadEpisodeForm :serie="serie" :season="season" v-model="chapterRef" v-model:disable="isUploadingSomething" />
 
                 <div class="modal-actions">
                     <button type="button" class="action-button" style="background-color:#6c757d;" @click="closeModal">Cancel</button>

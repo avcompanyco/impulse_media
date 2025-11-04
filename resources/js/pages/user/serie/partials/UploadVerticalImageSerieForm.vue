@@ -1,17 +1,24 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { Form, router } from '@inertiajs/vue3';
 import UploadVerticalImageSerieController from '@/actions/App/Http/Controllers/Serie/UploadVerticalImageSerieController';
 import DeleteVerticalImageSerieController from '@/actions/App/Http/Controllers/Serie/DeleteVerticalImageSerieController';
+import ErrorLabel from '@/components/form/ErrorLabel.vue';
 
 const props = defineProps<{
     serie: any;
 }>();
 
+const isDisable = defineModel<boolean>('disable', { default: false });
+
 const form = ref(null);
 const isDragOver = ref(false);
 const previewImage = ref<string | null>(null);
-import ErrorLabel from '@/components/form/ErrorLabel.vue';
+const isUploading = ref(false);
+
+const isDisableUpload = computed(() => {
+    return isDisable.value || isUploading.value;
+});
 
 const hasImage = computed(() => {
     return props.serie.vertical_image || previewImage.value;
@@ -21,7 +28,14 @@ const imageUrl = computed(() => {
     return previewImage.value || props.serie.vertical_image_url;
 });
 
+// Watch isUploading to update isDisable
+watch(isUploading, (newValue) => {
+    isDisable.value = newValue;
+});
+
 const handleImageChange = (event: Event) => {
+    if (isDisableUpload.value) return;
+    
     const target = event.target as HTMLInputElement;
     const file = target.files?.[0];
     if (file) {
@@ -32,6 +46,8 @@ const handleImageChange = (event: Event) => {
 const handleDrop = (event: DragEvent) => {
     event.preventDefault();
     isDragOver.value = false;
+    
+    if (isDisableUpload.value) return;
     
     const files = event.dataTransfer?.files;
     if (files && files.length > 0) {
@@ -48,7 +64,9 @@ const handleDrop = (event: DragEvent) => {
 
 const handleDragOver = (event: DragEvent) => {
     event.preventDefault();
-    isDragOver.value = true;
+    if (!isDisableUpload.value) {
+        isDragOver.value = true;
+    }
 };
 
 const handleDragLeave = (event: DragEvent) => {
@@ -65,12 +83,15 @@ const processImage = (file: File) => {
 
     // Simulate form submit
     if (form.value) {
+        isUploading.value = true;
         // @ts-ignore
         form.value.submit();
     }
 };
 
 function removeImage () {
+    if (isDisableUpload.value) return;
+    
     router.delete(DeleteVerticalImageSerieController.url(props.serie), {
         preserveScroll: true,
         onSuccess: () => {
@@ -84,6 +105,7 @@ function removeImage () {
 }
 
 const triggerFileInput = () => {
+    if (isDisableUpload.value) return;
     const fileInput = document.getElementById('serieImageVertical') as HTMLInputElement;
     fileInput?.click();
 };
@@ -91,12 +113,17 @@ const triggerFileInput = () => {
 </script>
 <template>
     <Form ref="form" v-bind="UploadVerticalImageSerieController.form(serie)" :reset-on-success="['vertical_image']"
-        v-slot="{ errors, processing }" :options="{ preserveScroll: true }">
+        v-slot="{ errors, processing }" :options="{ preserveScroll: true }"
+        v-on:finish="isUploading = false">
         <div class="form-section">
             <label class="form-label">Promotional Image (Vertical)</label>
             <div 
                 class="upload-box"
-                :class="{ 'drag-over': isDragOver, 'has-image': hasImage }"
+                :class="{ 
+                    'drag-over': isDragOver, 
+                    'has-image': hasImage,
+                    'disabled': isDisableUpload
+                }"
                 @click="triggerFileInput"
                 @drop="handleDrop"
                 @dragover="handleDragOver"
@@ -112,12 +139,22 @@ const triggerFileInput = () => {
                     <img :src="imageUrl" alt="Vertical Image" class="image-preview"/>
                     <div class="image-overlay">
                         <div class="image-actions">
-                            <button type="button" @click.stop="triggerFileInput" class="action-btn edit-btn">
+                            <button 
+                                type="button" 
+                                @click.stop="triggerFileInput" 
+                                class="action-btn edit-btn"
+                                :disabled="isDisableUpload"
+                            >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" 
                                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" 
                                     stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-edit"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                             </button>
-                            <button type="button" @click.stop="removeImage" class="action-btn delete-btn">
+                            <button 
+                                type="button" 
+                                @click.stop="removeImage" 
+                                class="action-btn delete-btn"
+                                :disabled="isDisableUpload"
+                            >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
                             </button>
                         </div>
@@ -130,6 +167,7 @@ const triggerFileInput = () => {
                 id="serieImageVertical" 
                 accept="image/*" 
                 @change="handleImageChange"
+                :disabled="isDisableUpload"
             >
             <ErrorLabel :error="errors.vertical_image" />
         </div>
@@ -189,6 +227,12 @@ const triggerFileInput = () => {
 .upload-box.drag-over {
     border-color: var(--primary-color);
     background-color: rgba(var(--primary-color-rgb), 0.1);
+}
+
+.upload-box.disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    pointer-events: none;
 }
 
 .upload-box.has-image {
@@ -271,9 +315,14 @@ const triggerFileInput = () => {
     font-size: 0.9rem;
 }
 
-.action-btn:hover {
+.action-btn:hover:not(:disabled) {
     /* background: white; */
     transform: scale(1.1);
+}
+
+.action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .edit-btn, .delete-btn {

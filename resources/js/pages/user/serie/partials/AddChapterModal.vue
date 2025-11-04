@@ -34,8 +34,8 @@ async function getChapter() {
     }
 }
 
-watch(() => chapter, () => {
-    getChapter();
+watch(() => chapter, async () => {
+    await getChapter();
 });
 
 async function addNewChapter() {
@@ -57,6 +57,7 @@ function closeModal() {
     chapter.value = null;
 }
 
+const isUploadingSomething = ref(false);
 </script>
 
 <template>
@@ -87,8 +88,8 @@ function closeModal() {
                         <input name="title" type="text" id="episodeTitle" class="form-control" placeholder="e.g., The Beginning">
                     </div>
                 </Form>
-                <UploadThumbnailForm v-if="chapter" :serie="serie" :season="season" :chapter="chapter" />
-                <UploadEpisodeForm v-if="chapter" :serie="serie" :season="season" :chapter="chapter" />
+                <UploadThumbnailForm v-if="chapter" :serie="serie" :season="season" :chapter="chapter" v-model:disable="isUploadingSomething" />
+                <UploadEpisodeForm v-if="chapter" :serie="serie" :season="season" v-model="chapter" v-model:disable="isUploadingSomething" />
 
                 <div class="modal-actions">
                     <button type="button" class="action-button" style="background-color:#6c757d;" @click="closeModal">Cancel</button>

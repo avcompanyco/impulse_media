@@ -118,6 +118,8 @@ function selectSeason(seasonId: number) {
     seasonSelected.value = seasonId;
 }
 
+const isUploadingSomething = ref(false);
+
 </script>
 
 <template>
@@ -168,9 +170,9 @@ function selectSeason(seasonId: number) {
                 </div>
             </Form>
             <div>
-                <UploadTrailerSerieForm :serie="serie" />
-                <UploadVerticalImageSerieForm :serie="serie" />
-                <UploadHorizontalImageSerieForm :serie="serie" />
+                <UploadTrailerSerieForm :serie="serie" v-model:disable="isUploadingSomething" />
+                <UploadVerticalImageSerieForm :serie="serie" v-model:disable="isUploadingSomething" />
+                <UploadHorizontalImageSerieForm :serie="serie" v-model:disable="isUploadingSomething" />
             </div>
 
             <div class="series-management-container">

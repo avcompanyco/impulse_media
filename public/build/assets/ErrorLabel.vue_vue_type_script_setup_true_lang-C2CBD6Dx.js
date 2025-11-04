@@ -1,0 +1,1 @@
+import{d as s,c as a,g as o,o as t,t as r}from"./app-BOx7At0t.js";const n={key:0,class:"text-danger small"},_=s({__name:"ErrorLabel",props:{message:{}},setup(m){return(e,p)=>e.message?(t(),a("p",n,r(e.message),1)):o("",!0)}});export{_};

@@ -129,7 +129,9 @@ const episodesComputed = computed(() => {
                             <div class="column-header">
                                 <span class="column-title">Episodes</span>
                                 <template v-if="serieSelected != 0 && seasonSelected != 0">
-                                    <AddChapterModal :serie="serieSelected" :season="seasonSelected" @chapter-added="getSeasons" />
+                                    <Suspense>
+                                        <AddChapterModal :serie="serieSelected" :season="seasonSelected" @chapter-added="getSeasons" />
+                                    </Suspense>
                                 </template>
                             </div>
                             <div id="episodesList" class="item-list">

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { Form, router } from '@inertiajs/vue3';
 import UploadTrailerVideoSerieController from '@/actions/App/Http/Controllers/Serie/UploadTrailerVideoSerieController';
 import DeleteTrailerVideoSerieController from '@/actions/App/Http/Controllers/Serie/DeleteTrailerVideoSerieController';
@@ -9,6 +9,8 @@ const props = defineProps<{
     serie: any;
 }>();
 
+const isDisable = defineModel<boolean>('disable', { default: false });
+
 const form = ref(null);
 const isDragOver = ref(false);
 const selectedFile = ref<File | null>(null);
@@ -16,6 +18,10 @@ const isUploading = ref(false);
 const uploadProgress = ref(0);
 
 const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB
+
+const isDisableUpload = computed(() => {
+    return isDisable.value || isUploading.value;
+});
 
 const hasVideo = computed(() => {
     // @ts-ignore
@@ -27,7 +33,14 @@ const videoName = computed(() => {
     return selectedFile.value?.name || (props.serie.trailer_video ? 'Current trailer' : '');
 });
 
+// Watch isUploading to update isDisable
+watch(isUploading, (newValue) => {
+    isDisable.value = newValue;
+});
+
 function handleVideoChange(event: Event) {
+    if (isDisableUpload.value) return;
+    
     const target = event.target as HTMLInputElement;
     const file = target.files?.[0];
     if (file) {
@@ -39,6 +52,8 @@ function handleVideoChange(event: Event) {
 function handleDrop(event: DragEvent) {
     event.preventDefault();
     isDragOver.value = false;
+    
+    if (isDisableUpload.value) return;
     
     const files = event.dataTransfer?.files;
     if (files && files.length > 0) {
@@ -58,7 +73,9 @@ function handleDrop(event: DragEvent) {
 
 function handleDragOver(event: DragEvent) {
     event.preventDefault();
-    isDragOver.value = true;
+    if (!isDisableUpload.value) {
+        isDragOver.value = true;
+    }
 }
 
 function handleDragLeave(event: DragEvent) {
@@ -67,7 +84,7 @@ function handleDragLeave(event: DragEvent) {
 }
 
 const uploadChunks = async (file: File) => {
-    if (!file) return;
+    if (!file || isDisableUpload.value) return;
 
     isUploading.value = true;
     uploadProgress.value = 0;
@@ -96,6 +113,7 @@ const uploadChunks = async (file: File) => {
                         if (page.props.flash?.complete) {
                             isUploading.value = false;
                             uploadProgress.value = 100;
+                            selectedFile.value = null;
                         }
                         resolve(void 0);
                     },
@@ -119,12 +137,14 @@ const uploadChunks = async (file: File) => {
 };
 
 function triggerFileInput() {
-    if (isUploading.value) return;
+    if (isDisableUpload.value) return;
     const fileInput = document.getElementById('serieTrailerFile') as HTMLInputElement;
     fileInput?.click();
 }
 
 function removeVideo() {
+    if (isDisableUpload.value) return;
+    
     router.delete(DeleteTrailerVideoSerieController.url(props.serie), {
         preserveScroll: true,
         onSuccess: (page) => {
@@ -142,7 +162,12 @@ function removeVideo() {
             <label class="form-label">Trailer File (Optional)</label>
             <div 
                 class="upload-box"
-                :class="{ 'drag-over': isDragOver, 'has-video': hasVideo, 'uploading': isUploading }"
+                :class="{ 
+                    'drag-over': isDragOver, 
+                    'has-video': hasVideo, 
+                    'uploading': isUploading,
+                    'disabled': isDisableUpload
+                }"
                 @click="triggerFileInput"
                 @drop="handleDrop"
                 @dragover="handleDragOver"
@@ -170,7 +195,12 @@ function removeVideo() {
                         <!-- <video :src="movie.trailer_video_url" controls class="video-preview"></video> -->
                     </p>
                     <div class="video-actions">
-                        <button type="button" @click.stop="triggerFileInput" class="action-btn edit-btn">
+                        <button 
+                            type="button" 
+                            @click.stop="triggerFileInput" 
+                            class="action-btn edit-btn"
+                            :disabled="isDisableUpload"
+                        >
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" 
                                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" 
                                 stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-edit">
@@ -178,7 +208,12 @@ function removeVideo() {
                                 <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
                             </svg>
                         </button>
-                        <button type="button" @click.stop="removeVideo" class="action-btn delete-btn">
+                        <button 
+                            type="button" 
+                            @click.stop="removeVideo" 
+                            class="action-btn delete-btn"
+                            :disabled="isDisableUpload"
+                        >
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" 
                                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" 
                                 stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2">
@@ -197,7 +232,7 @@ function removeVideo() {
                 id="serieTrailerFile" 
                 accept="video/*" 
                 @change="handleVideoChange"
-                :disabled="isUploading"
+                :disabled="isDisableUpload"
             >
             <ErrorLabel :error="errors.trailer_video" />
         </div>
@@ -263,6 +298,12 @@ function removeVideo() {
 .upload-box.uploading {
     cursor: not-allowed;
     border-color: var(--primary-color);
+}
+
+.upload-box.disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    pointer-events: none;
 }
 
 .upload-box.has-video {
@@ -379,8 +420,13 @@ function removeVideo() {
     transition: all 0.3s ease;
 }
 
-.action-btn:hover {
+.action-btn:hover:not(:disabled) {
     transform: scale(1.1);
+}
+
+.action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .edit-btn {

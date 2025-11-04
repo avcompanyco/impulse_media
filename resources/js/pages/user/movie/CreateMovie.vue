@@ -79,6 +79,8 @@ function successForm() {
     categorySelected.value = 0;
     subcategorySelected.value = 0;
 }
+
+const isUploadingSomething = ref(false);
 </script>
 
 <template>
@@ -99,10 +101,10 @@ function successForm() {
 
             <template v-if="isCanPublish">
                 <div>
-                    <UploadMovieForm v-model="movieRef" />
-                    <UploadTrailerForm v-model="movieRef" />
-                    <UploadVerticalImageForm v-model="movieRef" />
-                    <UploadHorizontalImageForm v-model="movieRef" />
+                    <UploadMovieForm v-model="movieRef" v-model:disable="isUploadingSomething" />
+                    <UploadTrailerForm v-model="movieRef" v-model:disable="isUploadingSomething" />
+                    <UploadVerticalImageForm v-model="movieRef" v-model:disable="isUploadingSomething" />
+                    <UploadHorizontalImageForm v-model="movieRef" v-model:disable="isUploadingSomething" />
                 </div>
                 <Form v-bind="PublishMovieController.form(movie)"
                     :reset-on-success="['title', 'description', 'category_id', 'subcategory_id']"

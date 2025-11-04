@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, useId } from 'vue';
+import { ref, computed, watch, useId } from 'vue';
 import { Form, router } from '@inertiajs/vue3';
 import UploadChapterVideoChapterController from '@/actions/App/Http/Controllers/Serie/UploadChapterVideoChapterController';
 import DeleteChapterVideoChapterController from '@/actions/App/Http/Controllers/Serie/DeleteChapterVideoChapterController';
@@ -8,8 +8,12 @@ import ErrorLabel from '@/components/form/ErrorLabel.vue';
 const props = defineProps<{
     serie: number;
     season: number;
-    chapter: any;
 }>();
+
+const chapter = defineModel<any>();
+
+
+const isDisable = defineModel<boolean>('disable', { default: false });
 
 const form = ref(null);
 const isDragOver = ref(false);
@@ -19,15 +23,28 @@ const uploadProgress = ref(0);
 
 const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB
 
+const isDisableUpload = computed(() => {
+    return isDisable.value || isUploading.value;
+});
+
 const hasVideo = computed(() => {
-    return props.chapter.chapter_video || selectedFile.value;
+    // @ts-ignore
+    return chapter.value.chapter_video || selectedFile.value;
 });
 
 const videoName = computed(() => {
-    return selectedFile.value?.name || (props.chapter.chapter_video ? 'Current episode video' : '');
+    // @ts-ignore
+    return selectedFile.value?.name || (chapter.value.chapter_video ? 'Current episode' : '');
+});
+
+// Watch isUploading to update isDisable
+watch(isUploading, (newValue) => {
+    isDisable.value = newValue;
 });
 
 function handleVideoChange(event: Event) {
+    if (isDisableUpload.value) return;
+    
     const target = event.target as HTMLInputElement;
     const file = target.files?.[0];
     if (file) {
@@ -41,6 +58,8 @@ const episodeID = useId();
 function handleDrop(event: DragEvent) {
     event.preventDefault();
     isDragOver.value = false;
+    
+    if (isDisableUpload.value) return;
     
     const files = event.dataTransfer?.files;
     if (files && files.length > 0) {
@@ -60,7 +79,9 @@ function handleDrop(event: DragEvent) {
 
 function handleDragOver(event: DragEvent) {
     event.preventDefault();
-    isDragOver.value = true;
+    if (!isDisableUpload.value) {
+        isDragOver.value = true;
+    }
 }
 
 function handleDragLeave(event: DragEvent) {
@@ -69,7 +90,7 @@ function handleDragLeave(event: DragEvent) {
 }
 
 const uploadChunks = async (file: File) => {
-    if (!file) return;
+    if (!file || isDisableUpload.value) return;
 
     isUploading.value = true;
     uploadProgress.value = 0;
@@ -92,7 +113,7 @@ const uploadChunks = async (file: File) => {
                 router.post(UploadChapterVideoChapterController.url({
                     serie: props.serie,
                     season: props.season,
-                    chapter: props.chapter.id,
+                    chapter: chapter.value.id,
                 }), formData, {
                     preserveScroll: true,
                     forceFormData: true,
@@ -100,8 +121,10 @@ const uploadChunks = async (file: File) => {
                         uploadProgress.value = Math.round(((chunkIndex + 1) / totalChunks) * 100);
                         // @ts-ignore
                         if (page.props.flash?.complete) {
+                            chapter.value.chapter_video = selectedFile.value?.name;
                             isUploading.value = false;
                             uploadProgress.value = 100;
+                            selectedFile.value = null;
                         }
                         resolve(void 0);
                     },
@@ -125,21 +148,24 @@ const uploadChunks = async (file: File) => {
 };
 
 function triggerFileInput() {
-    if (isUploading.value) return;
+    if (isDisableUpload.value) return;
     const fileInput = document.getElementById(`episodeVideoFile_${episodeID}`) as HTMLInputElement;
     fileInput?.click();
 }
 
 function removeVideo() {
+    if (isDisableUpload.value) return;
+    
     router.delete(DeleteChapterVideoChapterController.url({
         serie: props.serie,
         season: props.season,
-        chapter: props.chapter.id,
+        chapter: chapter.value.id,
     }), {
         preserveScroll: true,
         onSuccess: (page) => {
             selectedFile.value = null;
             uploadProgress.value = 0;
+            chapter.value.chapter_video = '';
         }
     });
 }
@@ -149,14 +175,19 @@ function removeVideo() {
     <Form ref="form" v-bind="UploadChapterVideoChapterController.form({
         serie: props.serie,
         season: props.season,
-        chapter: props.chapter.id,
+        chapter: chapter.id,
     })" :reset-on-success="[]"
         v-slot="{ errors, processing }" :options="{ preserveScroll: true }">
         <div class="form-section">
             <label class="form-label">Episode Video</label>
             <div 
                 class="upload-box"
-                :class="{ 'drag-over': isDragOver, 'has-video': hasVideo, 'uploading': isUploading }"
+                :class="{ 
+                    'drag-over': isDragOver, 
+                    'has-video': hasVideo, 
+                    'uploading': isUploading,
+                    'disabled': isDisableUpload
+                }"
                 @click="triggerFileInput"
                 @drop="handleDrop"
                 @dragover="handleDragOver"
@@ -181,9 +212,15 @@ function removeVideo() {
                     <i class="fa-solid fa-film"></i>
                     <p class="video-name">
                         {{ videoName }}
+                        <!-- <video :src="chapter.chapter_video_url" controls class="video-preview"></video> -->
                     </p>
                     <div class="video-actions">
-                        <button type="button" @click.stop="triggerFileInput" class="action-btn edit-btn">
+                        <button 
+                            type="button" 
+                            @click.stop="triggerFileInput" 
+                            class="action-btn edit-btn"
+                            :disabled="isDisableUpload"
+                        >
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" 
                                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" 
                                 stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-edit">
@@ -191,7 +228,12 @@ function removeVideo() {
                                 <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
                             </svg>
                         </button>
-                        <button type="button" @click.stop="removeVideo" class="action-btn delete-btn">
+                        <button 
+                            type="button" 
+                            @click.stop="removeVideo" 
+                            class="action-btn delete-btn"
+                            :disabled="isDisableUpload"
+                        >
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" 
                                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" 
                                 stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2">
@@ -210,7 +252,7 @@ function removeVideo() {
                 :id="`episodeVideoFile_${episodeID}`" 
                 accept="video/*" 
                 @change="handleVideoChange"
-                :disabled="isUploading"
+                :disabled="isDisableUpload"
             >
             <ErrorLabel :error="errors.chapter_video" />
         </div>
@@ -276,6 +318,12 @@ function removeVideo() {
 .upload-box.uploading {
     cursor: not-allowed;
     border-color: var(--primary-color);
+}
+
+.upload-box.disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    pointer-events: none;
 }
 
 .upload-box.has-video {
@@ -361,6 +409,18 @@ function removeVideo() {
     word-break: break-word;
 }
 
+.video-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.video-preview video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
 .video-actions {
     display: flex;
     gap: 0.75rem;
@@ -380,8 +440,13 @@ function removeVideo() {
     transition: all 0.3s ease;
 }
 
-.action-btn:hover {
+.action-btn:hover:not(:disabled) {
     transform: scale(1.1);
+}
+
+.action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .edit-btn {

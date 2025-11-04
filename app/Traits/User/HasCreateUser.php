@@ -59,9 +59,9 @@ trait HasCreateUser
                 if ($plan && $plan->stripe_price_id) {
                     $this->createSubscriptionForUser($user, $plan, $trialDays);
                 } else {
-                    $plant = Plan::where('price', 0)->first();
-                    if ($plant && $plant->stripe_price_id) {
-                        $this->createSubscriptionForUser($user, $plant, $trialDays);
+                    $plan = Plan::where('price', 0)->first();
+                    if ($plan && $plan->stripe_price_id) {
+                        $this->createSubscriptionForUser($user, $plan, $trialDays);
                     }
                 }
             }
@@ -74,49 +74,35 @@ trait HasCreateUser
     {
         try {
             if (env('APP_ENV') == 'production') {
-                // Ensure the user has a Stripe customer ID
                 if (!$user->hasStripeId()) {
-                    // Create Stripe customer with address information
-                    $stripeCustomerData = [
-                        'email' => $user->email,
-                        'name' => $user->name,
-                        'metadata' => [
-                            'user_id' => $user->id,
-                        ],
-                        'address' => [
-                            'line1' => $user->address ?? '',
-                            'city' => $user->city ?? '',
-                            'state' => $user->state ?? '',
-                            'postal_code' => $user->postal_code ?? '',
-                            'country' => $user->country ?? 'US',
-                        ]
-                    ];
-
-                    if ($user->phone) {
-                        $stripeCustomerData['phone'] = $user->phone;
-                    }
-
-                    $user->createAsStripeCustomer($stripeCustomerData);
+                    $this->createStripeCustomer($user);
                 }
 
-                // Use plan's trial days if not specified
                 $trialDays = $trialDays ?? $plan->free_days_trial ?? 0;
 
-                // Create subscription through Laravel Cashier
-                $subscriptionBuilder = $user->newSubscription('default', $plan->stripe_price_id);
-
-                if ($trialDays > 0) {
-                    $subscriptionBuilder->trialDays($trialDays);
+                // Verificar si el plan es gratuito (price = 0)
+                if ($plan->price == 0) {
+                    // Para planes gratuitos, no necesitas método de pago
+                    $subscription = $user->newSubscription('default', $plan->stripe_price_id)
+                        ->trialDays($trialDays)
+                        ->create();
+                } else {
+                    // Para planes de pago, necesitas manejar el método de pago
+                    // Por ahora, asignar el plan gratuito como fallback
+                    $freePlan = Plan::where('price', 0)->first();
+                    if ($freePlan) {
+                        $subscription = $user->newSubscription('default', $freePlan->stripe_price_id)
+                            ->trialDays($trialDays)
+                            ->create();
+                        $plan = $freePlan; // Actualizar el plan al gratuito
+                    } else {
+                        throw new \Exception("No free plan available for fallback");
+                    }
                 }
-
-                // Create the subscription
-                $subscription = $subscriptionBuilder->create();
             }
 
-            // Update user's plan_id
             $user->update(['plan_id' => $plan->id]);
         } catch (\Exception $e) {
-            // If subscription creation fails, we still keep the user but without a plan
             logger()->error('Failed to create subscription for user', [
                 'user_id' => $user->id,
                 'plan_id' => $plan->id,

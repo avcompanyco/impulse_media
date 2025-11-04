@@ -133,7 +133,7 @@ trait HasVideoShort
                     }
 
                     // 3. Guardar stream en disco
-                    $disk->put($destinationPath, $compressedHandle, 'public'); 
+                    $disk->put($destinationPath, $compressedHandle); 
 
                     // 4. Actualizar DB
                     $this->forceFill([

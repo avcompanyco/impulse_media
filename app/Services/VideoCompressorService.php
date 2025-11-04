@@ -82,4 +82,46 @@ class VideoCompressorService
 
         return $configs[$quality] ?? $configs['720p'];
     }
+
+    /**
+     * Convierte un video a formato MP4 sin compresión adicional.
+     *
+     * @param string $inputPath Ruta del video de entrada
+     * @param string $outputPath Ruta de salida del video en MP4
+     * @return string Ruta de salida si la conversión fue exitosa
+     * @throws \Exception Si FFmpeg devuelve un error
+     */
+    public function justConvertToMp4($inputPath, $outputPath)
+    {
+        // Verificar que el archivo de entrada exista
+        if (!file_exists($inputPath)) {
+            throw new \Exception("El archivo de entrada no existe: {$inputPath}");
+        }
+
+        $ffmpegPath = env('FFMPEG_PATH', 'ffmpeg');
+
+        // Escapar rutas (protección contra inyección de comandos)
+        $safeInputPath = escapeshellarg($inputPath);
+        $safeOutputPath = escapeshellarg($outputPath);
+
+        // Construir comando FFmpeg para conversión simple a MP4
+        $command = "{$ffmpegPath} -hide_banner -loglevel error "
+            . "-i {$safeInputPath} "
+            . "-c:v libx264 "
+            . "-preset fast "
+            . "-c:a aac "
+            . "-b:a 128k "
+            . "-movflags +faststart "
+            . "-y {$safeOutputPath} 2>&1";
+
+        // Ejecutar FFmpeg
+        exec($command, $output, $returnCode);
+
+        if ($returnCode === 0) {
+            return $outputPath;
+        }
+
+        // Si hay error, lanzar excepción con mensaje detallado
+        throw new \Exception("FFmpeg error (Code {$returnCode}):\nComando: {$command}\nSalida: " . implode("\n", $output));
+    }
 }

@@ -6,6 +6,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Facades\File;
+use App\Services\VideoCompressorService;
 
 trait HasVideoChapter
 {
@@ -66,92 +67,128 @@ trait HasVideoChapter
             Storage::disk(getDisk())->makeDirectory($storagePath);
         }
 
-        if ($video instanceof UploadedFile) {
+        $compressor = new VideoCompressorService();
+
+        if ($video instanceof UploadedFile || $video instanceof File) {
             // el video no es chunk, se guarda directamente usando el disco con getDisk()
-            tap($this->chapter_video, function ($previous) use ($video, $storagePath) {
-                $this->forceFill([
-                    'chapter_video' => $video->storePublicly(
+            tap($this->chapter_video, function ($previous) use ($video, $storagePath, $compressor) {
+
+                $sourcePath = $video->getRealPath();
+                $originalExtension = strtolower($video->getClientOriginalExtension());
+
+                // Si el video ya es mp4, guardarlo directamente
+                if ($originalExtension === 'mp4') {
+                    $storedPath = Storage::disk(getDisk())->putFile(
                         $storagePath,
-                        ['disk' => getDisk()]
-                    ),
-                ])->save();
+                        $video
+                    );
 
-                if ($previous) {
-                    Storage::disk(getDisk())->delete($previous);
-                }
-            });
-        } else if ($video instanceof File) {
-            // el video no es chunk, se guarda directamente usando el disco con getDisk()
-            tap($this->chapter_video, function ($previous) use ($video, $storagePath) {
-                $this->forceFill([
-                    'chapter_video' => Storage::disk(getDisk())->put($storagePath, $video),
-                ])->save();
-                if ($previous) {
-                    Storage::disk(getDisk())->delete($previous);
-                }
-            });
-        } else if (is_string($video)) {
-            // If $video is string (path del archivo), move it using streams to avoid memory problems
-            tap($this->chapter_video, function ($previous) use ($video, $storagePath) {
-                $originalExtension = pathinfo($video, PATHINFO_EXTENSION);
-                $filename = uniqid('chapter_') . '.' . $originalExtension;
-                $destinationPath = $storagePath . '/' . $filename;
-                
-                $disk = Storage::disk(getDisk());
-                $chunkSize = 2 * 1024 * 1024; // 2MB chunks
-                
-                $tempStream = null;
-                $sourceHandle = null;
-
-                try {
-                    // Open the source file for reading
-                    $sourceHandle = fopen($video, 'rb');
-                    if (!$sourceHandle) {
-                        throw new \Exception('Could not open the source file: ' . $video);
-                    }
-                    
-                    // Create a temporary stream to write the chunks
-                    $tempStream = fopen('php://temp', 'w+b');
-                    if (!$tempStream) {
-                        fclose($sourceHandle);
-                        throw new \Exception('Could not create the temporary stream');
-                    }
-                    
-                    // Read and write in chunks to avoid loading the entire file into memory
-                    while (!feof($sourceHandle)) {
-                        $chunk = fread($sourceHandle, $chunkSize);
-                        if ($chunk === false) {
-                            throw new \Exception('Error reading the chunk of the file');
-                        }
-                        fwrite($tempStream, $chunk);
-                    }
-                    
-                    // Rewind the temporary stream to be able to read it from the beginning
-                    rewind($tempStream);
-                    
-                    // Save the stream in the destination disk
-                    $disk->put($destinationPath, $tempStream);
-                    
                     $this->forceFill([
-                        'chapter_video' => $destinationPath,
+                        'chapter_video' => $storedPath,
                     ])->save();
-                    
+
                     if ($previous) {
                         Storage::disk(getDisk())->delete($previous);
                     }
-                    
-                } finally {
-                    // Close all handles
-                    if (isset($sourceHandle) && $sourceHandle) {
-                        fclose($sourceHandle);
+                } else {
+                    // Si no es mp4, convertirlo
+                    $convertedPath = tempnam(sys_get_temp_dir(), 'conv_chapter_') . '.mp4';
+
+                    try {
+                        $compressor->justConvertToMp4($sourcePath, $convertedPath);
+                        $storedPath = Storage::disk(getDisk())->putFile(
+                            $storagePath,
+                            new File($convertedPath),
+                        );
+
+                        $this->forceFill([
+                            'chapter_video' => $storedPath,
+                        ])->save();
+
+                        if ($previous) {
+                            Storage::disk(getDisk())->delete($previous);
+                        }
+                    } finally {
+                        if (file_exists($convertedPath)) {
+                            unlink($convertedPath);
+                        }
                     }
-                    if (isset($tempStream) && $tempStream) {
-                        fclose($tempStream);
+                }
+            });
+        } else if (is_string($video)) {
+            // Si $video es string (path del archivo), moverlo usando streams para evitar problemas de memoria
+            tap($this->chapter_video, function ($previous) use ($video, $storagePath, $compressor) {
+
+                $sourcePath = $video;
+                $originalExtension = strtolower(pathinfo($video, PATHINFO_EXTENSION));
+
+                // Si el video ya es mp4, guardarlo directamente
+                if ($originalExtension === 'mp4') {
+                    $filename = uniqid('chapter_') . '.mp4';
+                    $destinationPath = $storagePath . '/' . $filename;
+
+                    $disk = Storage::disk(getDisk());
+                    $sourceHandle = null;
+
+                    try {
+                        $sourceHandle = fopen($sourcePath, 'rb');
+                        if (!$sourceHandle) {
+                            throw new \Exception('No se pudo abrir el archivo fuente: ' . $sourcePath);
+                        }
+
+                        $disk->put($destinationPath, $sourceHandle);
+
+                        $this->forceFill([
+                            'chapter_video' => $destinationPath,
+                        ])->save();
+
+                        if ($previous) {
+                            Storage::disk(getDisk())->delete($previous);
+                        }
+                    } finally {
+                        if (isset($sourceHandle) && $sourceHandle) {
+                            fclose($sourceHandle);
+                        }
+                        if (file_exists($sourcePath)) {
+                            unlink($sourcePath);
+                        }
                     }
-                    
-                    // Delete the temporary file after moving it
-                    if (file_exists($video)) {
-                        unlink($video);
+                } else {
+                    // Si no es mp4, convertirlo
+                    $filename = uniqid('chapter_') . '.mp4';
+                    $destinationPath = $storagePath . '/' . $filename;
+                    $convertedPath = tempnam(sys_get_temp_dir(), 'conv_chapter_') . '.mp4';
+
+                    $disk = Storage::disk(getDisk());
+                    $convertedHandle = null;
+
+                    try {
+                        $compressor->justConvertToMp4($sourcePath, $convertedPath);
+
+                        $convertedHandle = fopen($convertedPath, 'rb');
+                        if (!$convertedHandle) {
+                            throw new \Exception('No se pudo abrir el archivo comprimido: ' . $convertedPath);
+                        }
+
+                        $disk->put($destinationPath, $convertedHandle);
+
+                        $this->forceFill([
+                            'chapter_video' => $destinationPath,
+                        ])->save();
+
+                        if ($previous) {
+                            Storage::disk(getDisk())->delete($previous);
+                        }
+                    } finally {
+                        if (isset($convertedHandle) && $convertedHandle) {
+                            fclose($convertedHandle);
+                        }
+                        if (file_exists($convertedPath)) {
+                            unlink($convertedPath);
+                        }
+                        if (file_exists($sourcePath)) {
+                            unlink($sourcePath);
+                        }
                     }
                 }
             });

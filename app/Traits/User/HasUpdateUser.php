@@ -55,14 +55,14 @@ trait HasUpdateUser
                 $this->updateUserPlan($user, $oldPlanId, $newPlanId, $trialDays);
             }
 
-            // Sync roles if provided
-            if (isset($data['roles'])) {
-                if (is_array($data['roles']) && !empty($data['roles'])) {
-                    $user->syncRoles($data['roles']);
-                } else {
-                    $user->syncRoles([]);
-                }
-            }
+            // // Sync roles if provided
+            // if (isset($data['roles'])) {
+            //     if (is_array($data['roles']) && !empty($data['roles'])) {
+            //         $user->syncRoles($data['roles']);
+            //     } else {
+            //         $user->syncRoles([]);
+            //     }
+            // }
 
             return $user;
         });

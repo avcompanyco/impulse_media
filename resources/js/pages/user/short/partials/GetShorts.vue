@@ -23,7 +23,7 @@ interface Short {
 
 // Reactive data
 const shorts = ref<Short[]>([]);
-const currentShortIndex = ref(-1); // -1 indica que no hay short seleccionado
+const currentShortIndex = ref(-1);
 const isLoadingMoreShorts = ref(false);
 const hasInitialShorts = ref(false);
 
@@ -41,7 +41,6 @@ async function getNextTenShorts() {
             const newShorts = response.shorts;
             shorts.value.push(...newShorts);
 
-            // Si es la primera carga, establecer el primer short como current
             if (currentShortIndex.value === -1 && newShorts.length > 0) {
                 currentShortIndex.value = 0;
                 updateCurrentShort();
@@ -55,7 +54,7 @@ async function getNextTenShorts() {
     }
 }
 
-// Watch for shorts array changes to auto-select first short
+// Watch for shorts array changes
 watch(shorts, (newShorts) => {
     if (newShorts.length > 0 && currentShortIndex.value === -1) {
         currentShortIndex.value = 0;
@@ -64,10 +63,9 @@ watch(shorts, (newShorts) => {
     }
 }, { deep: true });
 
-// Check if we need to load more shorts when approaching the end
+// Check if we need to load more shorts
 function checkLoadMoreShorts() {
     const remainingShorts = shorts.value.length - currentShortIndex.value - 1;
-    // Solo cargar más shorts cuando queden 3 o menos Y no estemos ya cargando
     if (remainingShorts <= 3 && !isLoadingMoreShorts.value) {
         getNextTenShorts();
     }
@@ -84,30 +82,25 @@ function updateCurrentShort() {
     }
 }
 
-// Navigation functions - CORREGIDO
+// Navigation functions
 const nextShort = () => {
     if (shorts.value.length === 0) {
         getNextTenShorts();
         return;
     }
 
-    // Verificar si estamos en el ÚLTIMO short del array actual
     const isLastShort = currentShortIndex.value === shorts.value.length - 1;
     
     if (!isLastShort) {
-        // Navigate within current shorts array
         currentShortIndex.value++;
         updateCurrentShort();
-        checkLoadMoreShorts(); // Solo verificar si necesitamos cargar más
+        checkLoadMoreShorts();
     } else {
-        // SOLO cargar más shorts cuando estamos en el último short
         getNextTenShorts().then(() => {
-            // Después de cargar, avanzar al siguiente short si hay disponibles
             if (currentShortIndex.value < shorts.value.length - 1) {
                 currentShortIndex.value++;
                 updateCurrentShort();
             }
-            // Si después de cargar seguimos en el último, no hacemos nada más
         });
     }
 };
@@ -116,11 +109,9 @@ const prevShort = () => {
     if (shorts.value.length === 0) return;
 
     if (currentShortIndex.value > 0) {
-        // Navigate within current shorts array
         currentShortIndex.value--;
         updateCurrentShort();
     }
-    // Si está en el primer short, no hacer nada
 };
 
 // Reset video when changing short
@@ -133,7 +124,6 @@ function resetVideo() {
     showControls.value = true;
     showControlsTemporarily();
 
-    // Auto-play the new video después de un pequeño delay
     nextTick(() => {
         setTimeout(() => {
             if (videoPlayer.value && currentShort.value) {
@@ -159,10 +149,13 @@ const isMuted = ref(false);
 const currentTime = ref(0);
 const duration = ref(0);
 
-// Touch/swipe handling
+// Touch/swipe handling - MEJORADO
 const touchStartY = ref(0);
 const touchStartX = ref(0);
+const touchEndY = ref(0);
+const touchEndX = ref(0);
 const isDragging = ref(false);
+const minSwipeDistance = 50; // Distancia mínima para considerar un swipe
 
 // Auto-hide controls timeout
 let controlsTimeout: number;
@@ -238,52 +231,71 @@ const handleKeyPress = (event: KeyboardEvent) => {
     }
 };
 
-// Touch/swipe handling
+// Touch/swipe handling - COMPLETAMENTE REESCRITO
 const handleTouchStart = (event: TouchEvent) => {
     touchStartY.value = event.touches[0].clientY;
     touchStartX.value = event.touches[0].clientX;
-    isDragging.value = false;
+    isDragging.value = true;
+    
+    // Prevenir el comportamiento por defecto para mejor experiencia táctil
+    event.preventDefault();
 };
 
 const handleTouchMove = (event: TouchEvent) => {
-    if (!isDragging.value) {
-        const currentY = event.touches[0].clientY;
-        const currentX = event.touches[0].clientX;
-        const deltaY = Math.abs(currentY - touchStartY.value);
-        const deltaX = Math.abs(currentX - touchStartX.value);
-
-        // Only start dragging if vertical movement is greater than horizontal
-        if (deltaY > deltaX && deltaY > 10) {
-            isDragging.value = true;
-        }
+    if (!isDragging.value) return;
+    
+    // Actualizar posición final durante el movimiento
+    touchEndY.value = event.touches[0].clientY;
+    touchEndX.value = event.touches[0].clientX;
+    
+    // Prevenir scroll mientras se hace swipe
+    const deltaY = touchEndY.value - touchStartY.value;
+    if (Math.abs(deltaY) > 10) {
+        event.preventDefault();
     }
 };
 
 const handleTouchEnd = (event: TouchEvent) => {
     if (!isDragging.value) return;
-
-    const touchEndY = event.changedTouches[0].clientY;
-    const deltaY = touchStartY.value - touchEndY;
-
-    // Minimum swipe distance
-    if (Math.abs(deltaY) > 50) {
+    
+    // Usar las coordenadas guardadas o las finales del evento
+    const endY = touchEndY.value || event.changedTouches[0].clientY;
+    const endX = touchEndX.value || event.changedTouches[0].clientX;
+    
+    const deltaY = endY - touchStartY.value;
+    const deltaX = endX - touchStartX.value;
+    
+    // Determinar si es un swipe vertical significativo
+    const isVerticalSwipe = Math.abs(deltaY) > Math.abs(deltaX);
+    
+    if (isVerticalSwipe && Math.abs(deltaY) > minSwipeDistance) {
         if (deltaY > 0) {
-            // Swiped up - next short
-            nextShort();
-        } else {
-            // Swiped down - previous short
+            // Swipe DOWN - previous short
             prevShort();
+        } else {
+            // Swipe UP - next short
+            nextShort();
+        }
+        
+        // Pequeña animación visual de feedback
+        if (videoContainer.value) {
+            videoContainer.value.style.transform = 'translateY(0)';
+            videoContainer.value.style.transition = 'transform 0.2s ease';
         }
     }
-
+    
+    // Resetear estados
     isDragging.value = false;
+    touchStartY.value = 0;
+    touchStartX.value = 0;
+    touchEndY.value = 0;
+    touchEndX.value = 0;
 };
 
 // Video event handlers
 const handleVideoLoaded = () => {
     if (videoPlayer.value && currentShort.value) {
         duration.value = videoPlayer.value.duration;
-        // Solo auto-play si no está ya reproduciéndose
         if (videoPlayer.value.paused) {
             videoPlayer.value.play().then(() => {
                 isPlaying.value = true;
@@ -297,7 +309,6 @@ const handleVideoLoaded = () => {
 
 const handleVideoEnded = () => {
     isPlaying.value = false;
-    // Auto-play next short después de un delay
     setTimeout(() => {
         nextShort();
     }, 1500);
@@ -337,26 +348,26 @@ const formatTime = (seconds: number): string => {
 
 // Lifecycle
 onMounted(() => {
-    // Cargar shorts iniciales
     getNextTenShorts();
-
-    // Add event listeners
     document.addEventListener('keydown', handleKeyPress);
 
-    if (videoContainer.value) {
-        videoContainer.value.addEventListener('touchstart', handleTouchStart, { passive: true });
-        videoContainer.value.addEventListener('touchmove', handleTouchMove, { passive: true });
-        videoContainer.value.addEventListener('touchend', handleTouchEnd, { passive: true });
+    // MEJORADO: Agregar event listeners directamente al contenedor principal
+    const container = document.getElementById('shortsContainer');
+    if (container) {
+        container.addEventListener('touchstart', handleTouchStart, { passive: false });
+        container.addEventListener('touchmove', handleTouchMove, { passive: false });
+        container.addEventListener('touchend', handleTouchEnd, { passive: true });
     }
 });
 
 onUnmounted(() => {
     document.removeEventListener('keydown', handleKeyPress);
 
-    if (videoContainer.value) {
-        videoContainer.value.removeEventListener('touchstart', handleTouchStart);
-        videoContainer.value.removeEventListener('touchmove', handleTouchMove);
-        videoContainer.value.removeEventListener('touchend', handleTouchEnd);
+    const container = document.getElementById('shortsContainer');
+    if (container) {
+        container.removeEventListener('touchstart', handleTouchStart);
+        container.removeEventListener('touchmove', handleTouchMove);
+        container.removeEventListener('touchend', handleTouchEnd);
     }
 
     clearTimeout(controlsTimeout);
@@ -369,7 +380,6 @@ function addToFollow(userId: number) {
         preserveScroll: false,
         onFinish: () => {
             addFollowLoading.value = false;
-            // Actualizar el estado de follow en el short actual
             if (currentShort.value) {
                 const shortIndex = shorts.value.findIndex(s => s.id === currentShort.value!.id);
                 if (shortIndex !== -1) {
@@ -387,7 +397,6 @@ function removeFromFollow(userId: number) {
         preserveScroll: false,
         onFinish: () => {
             removeFollowLoading.value = false;
-            // Actualizar el estado de follow en el short actual
             if (currentShort.value) {
                 const shortIndex = shorts.value.findIndex(s => s.id === currentShort.value!.id);
                 if (shortIndex !== -1) {
@@ -400,14 +409,15 @@ function removeFromFollow(userId: number) {
 </script>
 
 <template>
-    <div class="shorts-container" id="shortsContainer" @click="handleContainerClick" style="height: 100%;">
+    <div class="shorts-container" id="shortsContainer" @click="handleContainerClick" 
+         style="height: 100%; touch-action: pan-y; position: relative;">
         <div class="short-video-slide">
-            <!-- Loading state mientras se cargan los primeros shorts -->
+            <!-- Loading state -->
             <div v-if="!hasInitialShorts && isLoadingMoreShorts" class="loading-short-player"
-                style="height: 100vh; display: flex; align-items: center; justify-content: center; background: #000;">
+                style="height: 100vh; display: flex; align-items: center; justify-content: center;">
                 <div class="loading-indicator" style="color: white; text-align: center;">
                     <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
-                    <p>Cargando shorts...</p>
+                    <p>Loading shorts...</p>
                 </div>
             </div>
 
@@ -467,7 +477,7 @@ function removeFromFollow(userId: number) {
                     <p class="video-description">{{ currentShort.text_caption }}</p>
                 </div>
 
-                <!-- Indicador de carga de más shorts (solo se muestra cuando se están cargando más) -->
+                <!-- Loading indicator -->
                 <div v-if="isLoadingMoreShorts && hasInitialShorts" class="loading-more-indicator"
                     style="position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 10px; border-radius: 5px;">
                     <i class="fa-solid fa-circle-notch fa-spin"></i>
@@ -475,7 +485,7 @@ function removeFromFollow(userId: number) {
                 </div>
             </div>
 
-            <!-- Empty state solo si no hay shorts después de intentar cargar -->
+            <!-- Empty state -->
             <div v-else-if="shorts.length === 0 && !isLoadingMoreShorts" class="short-player"
                 style="width: 100%; height: 100vh; background-color: #000; display: flex; align-items: center; justify-content: center;">
                 <div class="empty-state" style="color: white; text-align: center;">
@@ -743,5 +753,64 @@ a.user-info-link {
 .nav-icon {
     width: 24px;
     height: 24px;
+}
+
+
+/* Estilos adicionales para mejorar la experiencia táctil */
+.shorts-container {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    overflow: hidden;
+}
+
+.short-player {
+    touch-action: pan-y;
+}
+
+/* Ocultar flechas en móvil */
+@media (max-width: 768px) {
+    .shorts-nav-arrow {
+        display: none;
+    }
+}
+
+/* Mostrar flechas en desktop */
+@media (min-width: 769px) {
+    .shorts-nav-arrow {
+        display: block;
+        position: fixed;
+        right: 20px;
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        color: white;
+        font-size: 1.2rem;
+        cursor: pointer;
+        z-index: 1000;
+        transition: background 0.3s ease;
+    }
+    
+    .shorts-nav-arrow:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+    
+    .shorts-nav-arrow.up {
+        top: 50%;
+        transform: translateY(-100%);
+    }
+    
+    .shorts-nav-arrow.down {
+        bottom: 50%;
+        transform: translateY(100%);
+    }
+    
+    .shorts-nav-arrow:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+    }
 }
 </style>

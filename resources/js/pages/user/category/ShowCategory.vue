@@ -31,7 +31,6 @@ function goTuSubcategory(subcategoryId: number) {
         <h1 
             class="page-title" 
             style="cursor:pointer"
-            @click="goTuSubcategory(category.id)"
             >{{ category.name }}</h1>
         <div 
             v-if="subcategories.length > 0"
@@ -41,7 +40,10 @@ function goTuSubcategory(subcategoryId: number) {
             style="margin-bottom: 80px;"
         >
             <template v-if="subcategory.movies.length > 0 || subcategory.series.length > 0">
-                <h2 class="section-title">{{ subcategory.name }}</h2>
+                <h2 class="section-title"
+                    style="cursor:pointer"
+                    @click="goTuSubcategory(subcategory.id)"
+                    >{{ subcategory.name }}</h2>
                 <div class="movies-row" data-slider="slasher">
                     <div v-for="(item, index) in mergeInRandomOrderMoviesAndSeries(subcategory)"
                         :key="`movie_${item.id}_card_${index + 1}`" class="movie-card">

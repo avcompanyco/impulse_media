@@ -75,7 +75,27 @@ trait HasCreateUser
         try {
             if (env('APP_ENV') == 'production') {
                 if (!$user->hasStripeId()) {
-                    $this->createStripeCustomer($user);
+                     // Create Stripe customer with address information
+                     $stripeCustomerData = [
+                        'email' => $user->email,
+                        'name' => $user->name,
+                        'metadata' => [
+                            'user_id' => $user->id,
+                        ],
+                        'address' => [
+                            'line1' => $user->address ?? '',
+                            'city' => $user->city ?? '',
+                            'state' => $user->state ?? '',
+                            'postal_code' => $user->postal_code ?? '',
+                            'country' => $user->country ?? 'US',
+                        ]
+                    ];
+
+                    if ($user->phone) {
+                        $stripeCustomerData['phone'] = $user->phone;
+                    }
+
+                    $user->createAsStripeCustomer($stripeCustomerData);
                 }
 
                 $trialDays = $trialDays ?? $plan->free_days_trial ?? 0;

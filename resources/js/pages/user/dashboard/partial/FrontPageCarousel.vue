@@ -23,6 +23,8 @@ interface Content {
         id: number;
         name: string;
         image_url: string;
+        username: string;
+        is_followed: boolean;
     };
 }
 
@@ -148,14 +150,14 @@ function unfollowUser(userId: number) {
             <button 
                 v-if="currentContent.type == 'movies'" 
                 class="action-button primary"
-                @click="router.visit(ShowMovieController({movie: currentContent.id}))"
+                @click="router.visit(ShowMovieController({movie: currentContent.contentable.id}))"
                 >
                 Watch Now
             </button>
             <button 
                 v-if="currentContent.type == 'series'" 
                 class="action-button primary"
-                @click="router.visit(ShowSerieController({serie: currentContent.id}))"
+                @click="router.visit(ShowSerieController({serie: currentContent.contentable.id}))"
                 >
                 Watch Now
             </button>

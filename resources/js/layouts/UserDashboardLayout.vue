@@ -60,7 +60,6 @@ watch(() => usePage().props, (newVal: any) => {
 
     <Head>
         <title>{{ title }}</title>
-        <link rel="stylesheet" href="../../css/user_dashboard.css">
     </Head>
 
     <div class="menu-overlay" id="menuOverlay" :class="{ active: isSideMenuOpen }"></div>

@@ -3,7 +3,6 @@ import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { router, usePage } from '@inertiajs/vue3';
 import AddToFollowController from '@/actions/App/Http/Controllers/Follow/AddToFollowController';
 import RemoveToFollowController from '@/actions/App/Http/Controllers/Follow/RemoveToFollowController';
-import PlaceholderPattern from '@/components/PlaceholderPattern.vue';
 import RandomShortController from '@/actions/App/Http/Controllers/Short/RandomShortController';
 
 interface User {
@@ -26,6 +25,12 @@ const shorts = ref<Short[]>([]);
 const currentShortIndex = ref(-1);
 const isLoadingMoreShorts = ref(false);
 const hasInitialShorts = ref(false);
+
+// Transition state
+const transitionDirection = ref<'up' | 'down' | null>(null);
+const isTransitioning = ref(false);
+const previousShort = ref<Short | null>(null);
+const nextShortPreview = ref<Short | null>(null);
 
 // Load next chunk of shorts
 async function getNextTenShorts() {
@@ -78,12 +83,19 @@ const currentShort = ref<Short | null>(null);
 function updateCurrentShort() {
     if (shorts.value.length > 0 && currentShortIndex.value >= 0 && currentShortIndex.value < shorts.value.length) {
         currentShort.value = shorts.value[currentShortIndex.value];
+        
+        // Update previous and next previews
+        previousShort.value = currentShortIndex.value > 0 ? shorts.value[currentShortIndex.value - 1] : null;
+        nextShortPreview.value = currentShortIndex.value < shorts.value.length - 1 ? shorts.value[currentShortIndex.value + 1] : null;
+        
         resetVideo();
     }
 }
 
-// Navigation functions
+// Navigation functions with transitions
 const nextShort = () => {
+    if (isTransitioning.value) return;
+    
     if (shorts.value.length === 0) {
         getNextTenShorts();
         return;
@@ -92,25 +104,57 @@ const nextShort = () => {
     const isLastShort = currentShortIndex.value === shorts.value.length - 1;
     
     if (!isLastShort) {
-        currentShortIndex.value++;
-        updateCurrentShort();
-        checkLoadMoreShorts();
+        transitionDirection.value = 'up';
+        isTransitioning.value = true;
+        
+        setTimeout(() => {
+            currentShortIndex.value++;
+            updateCurrentShort();
+            checkLoadMoreShorts();
+            
+            setTimeout(() => {
+                transitionDirection.value = null;
+                isTransitioning.value = false;
+            }, 400);
+        }, 100);
     } else {
         getNextTenShorts().then(() => {
             if (currentShortIndex.value < shorts.value.length - 1) {
-                currentShortIndex.value++;
-                updateCurrentShort();
+                transitionDirection.value = 'up';
+                isTransitioning.value = true;
+                
+                setTimeout(() => {
+                    currentShortIndex.value++;
+                    updateCurrentShort();
+                    
+                    setTimeout(() => {
+                        transitionDirection.value = null;
+                        isTransitioning.value = false;
+                    }, 400);
+                }, 100);
             }
         });
     }
 };
 
 const prevShort = () => {
+    if (isTransitioning.value) return;
+    
     if (shorts.value.length === 0) return;
 
     if (currentShortIndex.value > 0) {
-        currentShortIndex.value--;
-        updateCurrentShort();
+        transitionDirection.value = 'down';
+        isTransitioning.value = true;
+        
+        setTimeout(() => {
+            currentShortIndex.value--;
+            updateCurrentShort();
+            
+            setTimeout(() => {
+                transitionDirection.value = null;
+                isTransitioning.value = false;
+            }, 400);
+        }, 100);
     }
 };
 
@@ -474,72 +518,95 @@ function removeFromFollow(userId: number) {
             </div>
 
             <!-- Main content when shorts are loaded -->
-            <div v-else-if="currentShort" class="short-player"
-                style="width: 100%; height: 100vh; background-color: #000; position: relative;">
-                <!-- Main video -->
-                <video ref="videoPlayer" class="main-video" :src="currentShort.short_video_url" preload="metadata" loop
-                    :muted="isMuted" @click="handleVideoClick" @loadeddata="handleVideoLoaded" @ended="handleVideoEnded"
-                    @play="isPlaying = true" @pause="isPlaying = false" @timeupdate="updateProgress"
-                    style="width: 100%; height: 100%; object-fit: cover;" />
+            <div v-else-if="currentShort" class="shorts-viewport">
+                <!-- Previous short preview (arriba) -->
+                <div v-if="previousShort && transitionDirection === 'down'" 
+                     class="short-player preview-previous"
+                     style="width: 100%; height: 100vh; background-color: #000; position: absolute; top: 50%;">
+                    <video class="main-video" :src="previousShort.short_video_url" preload="metadata"
+                        style="width: 100%; height: 100%; object-fit: cover;" />
+                </div>
 
-                <!-- Video controls -->
-                <div v-show="showControls" class="video-controls" @click.stop style="z-index: 99999;">
-                    <button @click="togglePlayPause($event)" class="control-btn">
-                        <i v-if="isPlaying" class="fas fa-pause"></i>
-                        <i v-else class="fas fa-play"></i>
-                    </button>
+                <!-- Current short -->
+                <div class="short-player current-short"
+                    :class="{
+                        'slide-out-up': transitionDirection === 'up',
+                        'slide-out-down': transitionDirection === 'down'
+                    }"
+                    style="width: 100%; height: 100vh; background-color: #000; position: relative;">
+                    <!-- Main video -->
+                    <video ref="videoPlayer" class="main-video" :src="currentShort.short_video_url" preload="metadata" loop
+                        :muted="isMuted" @click="handleVideoClick" @loadeddata="handleVideoLoaded" @ended="handleVideoEnded"
+                        @play="isPlaying = true" @pause="isPlaying = false" @timeupdate="updateProgress"
+                        style="width: 100%; height: 100%; object-fit: cover;" />
 
-                    <div class="progress-container" @click="handleProgressClick($event)">
-                        <div class="progress-track">
-                            <div class="progress-fill"
-                                :style="{ width: duration > 0 ? (currentTime / duration) * 100 + '%' : '0%' }">
+                    <!-- Video controls -->
+                    <div v-show="showControls" class="video-controls" @click.stop style="z-index: 99999;">
+                        <button @click="togglePlayPause($event)" class="control-btn">
+                            <i v-if="isPlaying" class="fas fa-pause"></i>
+                            <i v-else class="fas fa-play"></i>
+                        </button>
+
+                        <div class="progress-container" @click="handleProgressClick($event)">
+                            <div class="progress-track">
+                                <div class="progress-fill"
+                                    :style="{ width: duration > 0 ? (currentTime / duration) * 100 + '%' : '0%' }">
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="time-display">
-                        <span>{{ formatTime(currentTime) }} / {{ formatTime(duration) }}</span>
-                    </div>
-
-                    <button @click="toggleMute($event)" class="control-btn">
-                        <i v-if="isMuted" class="fas fa-volume-mute"></i>
-                        <i v-else class="fas fa-volume-high"></i>
-                    </button>
-                </div>
-
-                <!-- Video overlay with user info -->
-                <div class="video-overlay" @click.stop>
-                    <div class="user-info">
-                        <div class="user-avatar-container" @click.stop="handleUserInfoClick($event, currentShort.user.username)">
-                            <img :src="currentShort.user.image_url" alt="User Avatar" class="user-avatar">
+                        <div class="time-display">
+                            <span>{{ formatTime(currentTime) }} / {{ formatTime(duration) }}</span>
                         </div>
-                        <span class="username" @click.stop="handleUserInfoClick($event, currentShort.user.username)">
-                            @{{ currentShort.user.username }}
-                        </span>
 
-                        <template v-if="currentShort.user.id !== $page.props.auth.user.id">
-                            <button v-if="!currentShort.user.is_followed" class="follow-btn"
-                                @click.stop="handleFollowClick($event, currentShort.user.id, false)" 
-                                :disabled="addFollowLoading">
-                                <i class="fa-solid fa-circle-notch fa-spin" v-if="addFollowLoading"></i>
-                                <span v-else>Follow</span>
-                            </button>
-                            <button v-else class="follow-btn unfollow" 
-                                @click.stop="handleFollowClick($event, currentShort.user.id, true)"
-                                :disabled="removeFollowLoading">
-                                <i class="fa-solid fa-circle-notch fa-spin" v-if="removeFollowLoading"></i>
-                                <span v-else>Unfollow</span>
-                            </button>
-                        </template>
+                        <button @click="toggleMute($event)" class="control-btn">
+                            <i v-if="isMuted" class="fas fa-volume-mute"></i>
+                            <i v-else class="fas fa-volume-high"></i>
+                        </button>
                     </div>
-                    <p class="video-description">{{ currentShort.text_caption }}</p>
+
+                    <!-- Video overlay with user info -->
+                    <div class="video-overlay" @click.stop>
+                        <div class="user-info">
+                            <div class="user-avatar-container" @click.stop="handleUserInfoClick($event, currentShort.user.username)">
+                                <img :src="currentShort.user.image_url" alt="User Avatar" class="user-avatar">
+                            </div>
+                            <span class="username" @click.stop="handleUserInfoClick($event, currentShort.user.username)">
+                                @{{ currentShort.user.username }}
+                            </span>
+
+                            <template v-if="currentShort.user.id !== $page.props.auth.user.id">
+                                <button v-if="!currentShort.user.is_followed" class="follow-btn"
+                                    @click.stop="handleFollowClick($event, currentShort.user.id, false)" 
+                                    :disabled="addFollowLoading">
+                                    <i class="fa-solid fa-circle-notch fa-spin" v-if="addFollowLoading"></i>
+                                    <span v-else>Follow</span>
+                                </button>
+                                <button v-else class="follow-btn unfollow" 
+                                    @click.stop="handleFollowClick($event, currentShort.user.id, true)"
+                                    :disabled="removeFollowLoading">
+                                    <i class="fa-solid fa-circle-notch fa-spin" v-if="removeFollowLoading"></i>
+                                    <span v-else>Unfollow</span>
+                                </button>
+                            </template>
+                        </div>
+                        <p class="video-description">{{ currentShort.text_caption }}</p>
+                    </div>
+
+                    <!-- Loading indicator -->
+                    <div v-if="isLoadingMoreShorts && hasInitialShorts" class="loading-more-indicator"
+                        style="position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 10px; border-radius: 5px;">
+                        <i class="fa-solid fa-circle-notch fa-spin"></i>
+                        <span style="margin-left: 8px;">Cargando más shorts...</span>
+                    </div>
                 </div>
 
-                <!-- Loading indicator -->
-                <div v-if="isLoadingMoreShorts && hasInitialShorts" class="loading-more-indicator"
-                    style="position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 10px; border-radius: 5px;">
-                    <i class="fa-solid fa-circle-notch fa-spin"></i>
-                    <span style="margin-left: 8px;">Cargando más shorts...</span>
+                <!-- Next short preview (abajo) -->
+                <div v-if="nextShortPreview && transitionDirection === 'up'" 
+                     class="short-player preview-next"
+                     style="width: 100%; height: 100vh; background-color: #000; position: absolute; top: 50%; ">
+                    <video class="main-video" :src="nextShortPreview.short_video_url" preload="metadata"
+                        style="width: 100%; height: 100%; object-fit: cover;" />
                 </div>
             </div>
 
@@ -563,13 +630,100 @@ function removeFromFollow(userId: number) {
         <i class="fa-solid fa-chevron-up"></i>
     </button>
     <button class="shorts-nav-arrow down" id="shortsDownBtn" aria-label="Next short" @click.stop="nextShort"
-        :disabled="!currentShort">
+        :disabled="!currentShort"
+        style="margin-bottom: -20px;">
         <i class="fa-solid fa-chevron-down"></i>
     </button>
 </template>
 
 <style scoped>
-/* Tus estilos existentes se mantienen igual, solo agregamos estos ajustes */
+/* Viewport para contener las transiciones */
+.shorts-viewport {
+    position: relative;
+    width: 100%;
+    /* height: 100vh; */
+    overflow: hidden;
+    height: 100%;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-bottom: 80px;
+}
+
+
+/* Transiciones mejoradas para swipe */
+@keyframes slideOutUp {
+    from {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateY(-100%);
+        opacity: 0.5;
+    }
+}
+
+@keyframes slideOutDown {
+    from {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateY(100%);
+        opacity: 0.5;
+    }
+}
+
+@keyframes slideInFromBottom {
+    from {
+        transform: translateY(100%);
+        opacity: 0.5;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideInFromTop {
+    from {
+        transform: translateY(-100%);
+        opacity: 0.5;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.current-short {
+    z-index: 10;
+}
+
+.slide-out-up {
+    animation: slideOutUp 0.4s ease-out forwards;
+}
+
+.slide-out-down {
+    animation: slideOutDown 0.4s ease-out forwards;
+}
+
+.preview-next {
+    z-index: 5;
+    animation: slideInFromBottom 0.4s ease-out forwards;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.preview-previous {
+    z-index: 5;
+    animation: slideInFromTop 0.4s ease-out forwards;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 
 /* Asegurar que los controles tengan buen z-index */
 .video-controls {
@@ -643,8 +797,8 @@ function removeFromFollow(userId: number) {
     justify-content: center;
     box-sizing: border-box;
     padding: 20px 0px 80px 0px;
-    top: -20px;
-    bottom: 80px;
+    /* top: -20px;
+    bottom: 80px; */
     padding: 1.5rem;
 }
 

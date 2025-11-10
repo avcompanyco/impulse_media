@@ -15,6 +15,7 @@ use App\Enums\Content\ContentType;
 use App\Enums\Content\ContentStatus;
 use App\Enums\User\UserStatusEnum;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class User extends Authenticatable
 {
@@ -201,8 +202,29 @@ class User extends Authenticatable
     {
         if ($this->subscribed('default')) {
             $trial_ends_at = $this->subscription('default')->trial_ends_at;
-            return $trial_ends_at->diffInDays(now());
+            return now()->diffInDays($trial_ends_at);
         }
         return null;
+    }
+
+    public function getNextPaymentDate()
+    {
+
+        $subscription = $this->subscription('default');
+
+        $next_payment_date = " - ";
+
+        if ($subscription) {
+            // Get the Stripe Subscription object
+            $stripeSubscription = $subscription->asStripeSubscription();
+
+            $nextPaymentTimestamp = $stripeSubscription->current_period_end;
+
+            $nextPaymentDate = Carbon::createFromTimestamp($nextPaymentTimestamp);
+
+            $next_payment_date = $nextPaymentDate->toFormattedDateString();
+        }
+
+        return $next_payment_date;
     }
 }

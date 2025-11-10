@@ -31,6 +31,7 @@ class UserResource extends JsonResource
             'plan' => $this->getCurrentPlan(),
             'plan_id' => $this->plan_id,
             'trial_days' => $this->getTrialDaysEnds(),
+            'next_payment_date' => $this->getNextPaymentDate(),
             'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
             'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),
         ];

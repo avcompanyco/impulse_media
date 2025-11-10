@@ -105,9 +105,9 @@ trait HasCreateUser
                 $trialDays = $trialDays ?? $plan->free_days_trial ?? 0;
 
                 // Verificar si el plan es gratuito (price = 0)
-                if ($plan->price == 0) {
+                if ($plan->price > 0) {
                     // Para planes gratuitos, no necesitas método de pago
-                    $subscription = $user->newSubscription('default', $plan->stripe_price_id)
+                    $user->newSubscription('default', $plan->stripe_price_id)
                         ->trialUntil(now()->addDays($trialDays)->endOfDay())
                         ->create();
                 } else {

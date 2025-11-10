@@ -172,6 +172,7 @@ onMounted(() => {
                         <th>Full Name</th>
                         <th>Email</th>
                         <th>Status</th>
+                        <th>Next Payment Date</th>
                         <th>Created</th>
                         <th>Actions</th>
                     </tr>
@@ -193,6 +194,7 @@ onMounted(() => {
                                 {{ user.status }}
                             </span>
                         </td>
+                        <td>{{ user.next_payment_date }}</td>
                         <td>{{ new Date(user.created_at).toLocaleDateString() }}</td>
                         <td class="action-buttons">
                             <button 

@@ -43,6 +43,7 @@ export interface User {
     plan?: Plan | null;
     plan_id?: number | null;
     trial_days?: number | null;
+    next_payment_date?: string | null;
 }
 
 export interface Plan {

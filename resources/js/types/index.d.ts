@@ -42,6 +42,7 @@ export interface User {
     is_followed: boolean;
     plan?: Plan | null;
     plan_id?: number | null;
+    trial_days?: number | null;
 }
 
 export interface Plan {

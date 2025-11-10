@@ -34,7 +34,7 @@ watch(() => props.user, (user) => {
         form.email = user.email;
         form.status = user.status;
         form.plan_id = user.plan_id || null;
-        form.trial_days = null;
+        form.trial_days = user.trial_days || null;
         form.password = '';
         form.password_confirmation = '';
         isOpen.value = true;

@@ -37,9 +37,6 @@ class DatatableUserController extends Controller
                 $query->where('name', 'user');
             });
 
-            // append trial_days attribute
-            $users->append('trial_days');
-            
             $users->with('roles');
 
             return new UserCollection($users->paginate($perPage, ['*'], 'page', $page));
@@ -47,7 +44,6 @@ class DatatableUserController extends Controller
             return response()->json([]);
         }
     }
-
 
     public function canAccess()
     {

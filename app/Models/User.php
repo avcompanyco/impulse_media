@@ -197,7 +197,7 @@ class User extends Authenticatable
         return $this->hasMany(Binacle::class);
     }
 
-    public function getTrialDaysAttribute()
+    public function getTrialDays()
     {
         if ($this->subscribed('default')) {
             return $this->subscription('default')->trialDays();

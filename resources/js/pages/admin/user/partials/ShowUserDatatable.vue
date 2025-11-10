@@ -144,7 +144,7 @@ onMounted(() => {
 });
 
 function substringEmail(email: string) {
-    return email.substring(0, 25) + '...';
+    return email.substring(0, 20) + '...';
 }
 
 function copyClipboard(email: string) {
@@ -203,7 +203,7 @@ function copyClipboard(email: string) {
                         <td>
                             <div class="email-container">
                                 <span>{{ substringEmail(user.email) }}</span>
-                                <button class="btn btn-copy" @click="copyClipboard(user.email)">
+                                <button class="btn btn-copy" style="background: #2196f3; color: white; margin-left: 5px;" @click="copyClipboard(user.email)">
                                     <i class="fas fa-copy"></i>
                                 </button>
                             </div>

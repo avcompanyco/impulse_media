@@ -196,16 +196,18 @@ onMounted(() => {
                         </td>
                         <td>{{ user.next_payment_date }}</td>
                         <td>{{ new Date(user.created_at).toLocaleDateString() }}</td>
-                        <td class="action-buttons">
-                            <button 
-                                class="btn btn-edit" 
-                                :data-id="user.id" 
-                                :disabled="loading"
-                                @click="editUser(user)"
-                            >
-                                Edit
-                            </button>
-                            <DeleteUserModal :user="user" />
+                        <td>
+                            <div class="action-buttons">
+                                <button 
+                                    class="btn btn-edit" 
+                                    :data-id="user.id" 
+                                    :disabled="loading"
+                                    @click="editUser(user)"
+                                >
+                                    Edit
+                                </button>
+                                <DeleteUserModal :user="user" />
+                            </div>
                         </td>
                     </tr>
                 </tbody>

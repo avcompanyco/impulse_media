@@ -143,6 +143,18 @@ onMounted(() => {
     fetchUsers();
 });
 
+function substringEmail(email: string) {
+    return email.substring(0, 25) + '...';
+}
+
+function copyClipboard(email: string) {
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(email);
+    } else {
+        alert('Clipboard is not supported in this browser');
+    }
+}
+
 </script>
 
 <template>
@@ -165,7 +177,7 @@ onMounted(() => {
         </div>
         
         <div class="table-responsive" style="width: 100%; overflow-x: auto;">
-            <table class="admin-table">
+            <table class="admin-table" style="width: 100%;">
                 <thead>
                     <tr>
                         <th>Username</th>
@@ -188,7 +200,14 @@ onMounted(() => {
                             <Link :href="ShowMovieChannelController.url({username: user.username})">{{ user.username }}</Link>
                         </td>
                         <td>{{ user.name }}</td>
-                        <td>{{ user.email }}</td>
+                        <td>
+                            <div class="email-container">
+                                <span>{{ substringEmail(user.email) }}</span>
+                                <button class="btn btn-copy" @click="copyClipboard(user.email)">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </td>
                         <td>
                             <span :class="['status-badge', `status-${user.status?.toLowerCase()}`]">
                                 {{ user.status }}

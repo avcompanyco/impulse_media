@@ -85,7 +85,9 @@ class User extends Authenticatable
         if (env('APP_ENV') == 'production') {
             if ($this->subscribed('default')) {
                 $subscription = $this->subscription('default');
-                return Plan::where('stripe_price_id', $subscription->stripe_price)->first();
+                $stripePrice = \Stripe\Price::retrieve($subscription->stripe_price);
+                $stripeProduct = \Stripe\Product::retrieve($stripePrice->product);
+                return Plan::where('stripe_product_id', $stripeProduct->id)->first();
             }
         } 
         

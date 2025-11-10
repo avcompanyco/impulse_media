@@ -3,7 +3,7 @@ import { computed, ref, watch, onMounted } from 'vue';
 import UserDashboardLayout from '@/layouts/UserDashboardLayout.vue';
 import ErrorLabel from '@/components/form/ErrorLabel.vue';
 import { Link, router } from '@inertiajs/vue3';
-import type { User } from '@/types';
+import type { User, Plan } from '@/types';
 
 import { destroy as LogoutRoute } from '@/actions/App/Http/Controllers/Auth/AuthenticatedSessionController'
 import ManageProfileController from '@/actions/App/Http/Controllers/UserProfile/ManageProfileController';
@@ -11,6 +11,8 @@ import ShowManageSubscriptionProfileController from '@/actions/App/Http/Controll
 
 const props = defineProps<{
     user: User;
+    plan: Plan;
+    next_payment_date: string | null;
 }>();
 
 const isLoggingOut = ref(false);
@@ -51,8 +53,9 @@ function logout() {
                 <h2 class="section-title">Subcription</h2>
                 <div class="info-card">
                     <div>
-                        <p class="info-text">Plan: Golden</p>
-                        <p class="info-text">Next payment: 2/June/2025</p>
+                        <p v-if="plan" class="info-text">Plan: {{ plan.name }}</p>
+                        <p v-if="next_payment_date" class="info-text">Next payment: {{ next_payment_date }}</p>
+                        <p v-else class="info-text">No active subscription</p>
                     </div>
                     <Link :href="ShowManageSubscriptionProfileController.url()" class="manage-button">Manage</Link>
                 </div>

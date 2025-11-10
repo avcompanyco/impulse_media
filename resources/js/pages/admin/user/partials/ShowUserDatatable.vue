@@ -164,7 +164,7 @@ onMounted(() => {
             <span>Loading users...</span>
         </div>
         
-        <div class="table-responsive">
+        <div class="table-responsive" style="width: 100%; overflow-x: auto;">
             <table class="admin-table">
                 <thead>
                     <tr>

@@ -200,7 +200,7 @@ class User extends Authenticatable
     public function getTrialDaysEnds()
     {
         if ($this->subscribed('default')) {
-            $trial_ends_at = $this->subscription('default')->trialEndsAt();
+            $trial_ends_at = $this->subscription('default')->trial_ends_at;
             return $trial_ends_at->diffInDays(now());
         }
         return null;

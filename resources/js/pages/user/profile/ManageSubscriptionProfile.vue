@@ -68,7 +68,7 @@ function updatePlan() {
                             'text-warning': subscription.cancelled,
                             'text-info': subscription.on_trial 
                         }">
-                            {{ subscription.on_trial ? 'On Trial' : subscription.cancelled ? 'Cancelled' : subscription.stripe_status }}
+                            {{ subscription.on_trial ? 'On Trial' : subscription.cancelled ? 'Cancelled' : ` ${subscription.stripe_status}` }}
                         </span>
                     </p>
                     <p v-if="subscription.trial_ends_at" class="info-text-sm">

@@ -27,7 +27,7 @@ class SubscriptionController extends Controller
 
         return $request->user()
             ->newSubscription('default', $plan->stripe_price_id)
-            ->trialDays($plan->free_days_trial)
+            ->trialUntil(now()->addDays($plan->free_days_trial)->endOfDay())
             ->allowPromotionCodes()
             ->checkout([
                 'success_url' => route('subscription.success').'?session_id={CHECKOUT_SESSION_ID}',

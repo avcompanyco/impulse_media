@@ -108,15 +108,14 @@ trait HasCreateUser
                 if ($plan->price == 0) {
                     // Para planes gratuitos, no necesitas método de pago
                     $subscription = $user->newSubscription('default', $plan->stripe_price_id)
-                        ->trialDays($trialDays)
+                        ->trialUntil(now()->addDays($trialDays)->endOfDay())
                         ->create();
                 } else {
                     // Para planes de pago, necesitas manejar el método de pago
-                    // Por ahora, asignar el plan gratuito como fallback
                     $freePlan = Plan::where('price', 0)->first();
                     if ($freePlan) {
                         $subscription = $user->newSubscription('default', $freePlan->stripe_price_id)
-                            ->trialDays($trialDays)
+                            ->trialUntil(now()->addDays($trialDays)->endOfDay())
                             ->create();
                         $plan = $freePlan; // Actualizar el plan al gratuito
                     } else {

@@ -42,7 +42,7 @@ trait HasUpdateUser
                 if ($user->image && Storage::disk('public')->exists($user->image)) {
                     Storage::disk('public')->delete($user->image);
                 }
-                
+
                 $imagePath = $data['image']->store('users', 'public');
                 $data['image'] = $imagePath;
             }
@@ -71,69 +71,33 @@ trait HasUpdateUser
     private function updateUserPlan(User $user, ?int $oldPlanId, ?int $newPlanId, ?int $trialDays = null)
     {
         try {
-            if (env('APP_ENV') == 'production') {
-                // If removing plan (setting to null)
-                if ($newPlanId === null) {
-                    // Cancel current subscription if exists
-                    if ($user->subscribed('default')) {
-                        $user->subscription('default')->cancelNow();
-                    }
-                    $user->update(['plan_id' => null]);
-                    return;
-                }
-    
-                // Get the new plan
-                $newPlan = Plan::find($newPlanId);
-                if (!$newPlan || !$newPlan->stripe_price_id) {
-                    throw new \Exception(__("Invalid plan selected"));
-                }
-    
-                // Ensure the user has a Stripe customer ID
-                if (!$user->hasStripeId()) {
-                     // Create Stripe customer with address information
-                     $stripeCustomerData = [
-                        'email' => $user->email,
-                        'name' => $user->name,
-                        'metadata' => [
-                            'user_id' => $user->id,
-                        ],
-                        'address' => [
-                            'line1' => $user->address ?? '',
-                            'city' => $user->city ?? '',
-                            'state' => $user->state ?? '',
-                            'postal_code' => $user->postal_code ?? '',
-                            'country' => $user->country ?? 'US',
-                        ]
-                    ];
-
-                    if ($user->phone) {
-                        $stripeCustomerData['phone'] = $user->phone;
-                    }
-
-                    $user->createAsStripeCustomer($stripeCustomerData);
-                }
-    
-                // Handle subscription change
-                if ($user->subscribed('default')) {
-                    // Update existing subscription
-                    $subscription = $user->subscription('default');
-                    $subscription->swap($newPlan->stripe_price_id);
-                } else {
-                    // Create new subscription
-                    $trialDays = $trialDays ?? $newPlan->free_days_trial ?? 0;
-                    
-                    $subscriptionBuilder = $user->newSubscription('default', $newPlan->stripe_price_id);
-                    
-                    if ($trialDays > 0) {
-                        $subscriptionBuilder->trialDays($trialDays);
-                    }
-    
-                    $subscriptionBuilder->create();
-                }
+            if (env('APP_ENV') !== 'production') {
+                $user->update(['plan_id' => $newPlanId]);
+                return;
             }
 
-            $user->update(['plan_id' => $newPlanId]);
+            // Eliminacion del plan al usuario
+            if ($newPlanId === null) {
+                $this->cancelUserSubscription($user);
+                $user->update(['plan_id' => null]);
+                return;
+            }
 
+            $newPlan = Plan::find($newPlanId);
+            if (!$newPlan || !$newPlan->stripe_price_id) {
+                throw new \Exception(__("Invalid plan selected"));
+            }
+
+            $this->ensureStripeCustomerExists($user);
+
+            if ($user->subscribed('default')) {
+                $this->handleExistingSubscription($user, $newPlan);
+            } else {
+                $this->createNewSubscription($user, $newPlan, $trialDays);
+            }
+
+            // Actualizar el plan_id del usuario
+            $user->update(['plan_id' => $newPlanId]);
         } catch (\Exception $e) {
             logger()->error('Failed to update user plan', [
                 'user_id' => $user->id,
@@ -141,8 +105,91 @@ trait HasUpdateUser
                 'new_plan_id' => $newPlanId,
                 'error' => $e->getMessage()
             ]);
-            
+
             throw new \Exception(__("Failed to update user plan: ") . $e->getMessage());
         }
     }
+
+    /**
+     * Cancelar suscripción existente del usuario
+     */
+    private function cancelUserSubscription(User $user): void
+    {
+        if ($user->subscribed('default')) {
+            $subscription = $user->subscription('default');
+
+            if ($subscription->onTrial() || $subscription->active()) {
+                $subscription->cancel();
+            }
+        }
+    }
+
+    /**
+     * Asegurar que el usuario existe como cliente en Stripe
+     */
+    private function ensureStripeCustomerExists(User $user): void
+    {
+        if (!$user->hasStripeId()) {
+            $stripeCustomerData = [
+                'email' => $user->email,
+                'name' => $user->name,
+                'metadata' => [
+                    'user_id' => $user->id,
+                ],
+                'address' => [
+                    'line1' => $user->address ?? '',
+                    'city' => $user->city ?? '',
+                    'state' => $user->state ?? '',
+                    'postal_code' => $user->postal_code ?? '',
+                    'country' => $user->country ?? 'US',
+                ]
+            ];
+
+            if ($user->phone) {
+                $stripeCustomerData['phone'] = $user->phone;
+            }
+
+            $user->createAsStripeCustomer($stripeCustomerData);
+        }
+    }
+
+    /**
+     * Manejar suscripción existente (cambio de plan)
+     */
+    private function handleExistingSubscription(User $user, Plan $newPlan, ?int $trialDays = null): void
+    {
+        $subscription = $user->subscription('default');
+
+        if ($subscription->onTrial()) {
+            $subscription->extendTrial(now()->addDays($trialDays)->endOfDay());
+        }
+
+        $subscription->swap($newPlan->stripe_price_id);
+    }
+
+    /**
+     * Crear nueva suscripción
+     */
+    private function createNewSubscription(User $user, Plan $newPlan, ?int $trialDays = null): void
+    {
+        $trialDays = $trialDays ?? $newPlan->free_days_trial ?? 0;
+
+        $subscriptionBuilder = $user->newSubscription('default', $newPlan->stripe_price_id);
+
+        if ($trialDays > 0) {
+            $trialEndDate = now()->addDays($trialDays)->endOfDay();
+            $subscriptionBuilder->trialUntil($trialEndDate);
+        }
+
+        $subscription = $subscriptionBuilder->create();
+
+        // Log para debugging
+        logger()->info('New subscription created', [
+            'user_id' => $user->id,
+            'plan_id' => $newPlan->id,
+            'stripe_price_id' => $newPlan->stripe_price_id,
+            'trial_ends_at' => $subscription->trial_ends_at,
+        ]);
+    }
+
 }

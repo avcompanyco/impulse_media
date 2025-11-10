@@ -36,6 +36,9 @@ class DatatableUserController extends Controller
                 // role name user spatie permissions
                 $query->where('name', 'user');
             });
+
+            // append trial_days attribute
+            $users->append('trial_days');
             
             $users->with('roles');
 

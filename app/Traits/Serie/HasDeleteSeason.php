@@ -13,7 +13,7 @@ trait HasDeleteSeason
 
         if ($season->allChapters()->count() > 0) {
             // Delete all chapters
-            foreach ($season->allChapters() as $chapter) {
+            foreach ($season->allChapters as $chapter) {
                 $chapter->deleteAll();
                 $chapter->delete();
             }

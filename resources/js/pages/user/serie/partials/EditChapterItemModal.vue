@@ -68,12 +68,12 @@ const isUploadingSomething = ref(false);
                     <div class="form-section">
                         <label for="editEpisodeNumber" class="form-label">Episode Number</label>
                         <input name="chapter_number" type="number" id="editEpisodeNumber" class="form-control" 
-                               :value="chapterRef.value.chapter_number" placeholder="e.g., 1">
+                               :value="chapterRef.chapter_number" placeholder="e.g., 1">
                     </div>
                     <div class="form-section">
                         <label for="editEpisodeTitle" class="form-label">Episode Title</label>
                         <input name="title" type="text" id="editEpisodeTitle" class="form-control" 
-                               :value="chapterRef.value.title" placeholder="e.g., The Beginning">
+                               :value="chapterRef.title" placeholder="e.g., The Beginning">
                     </div>
                 </Form>
                 <UploadThumbnailForm :serie="serie" :season="season" :chapter="chapterRef" v-model:disable="isUploadingSomething" />

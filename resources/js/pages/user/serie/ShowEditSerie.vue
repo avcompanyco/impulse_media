@@ -120,6 +120,12 @@ function selectSeason(seasonId: number) {
 
 const isUploadingSomething = ref(false);
 
+function getSeasonsWithDelay(delay = 1000) {
+    setTimeout(() => {
+        getSeasons();
+    }, delay);
+}
+
 </script>
 
 <template>
@@ -190,7 +196,7 @@ const isUploadingSomething = ref(false);
                                      @click="selectSeason(season.id)">
                                     <span>Season {{ index + 1 }}</span>
                                     <div class="list-item-actions">
-                                        <DeleteSeasonItem :season="season" :serie="serie.id" @season-deleted="getSeasons" />
+                                        <DeleteSeasonItem :season="season" :serie="serie.id" @season-deleted="getSeasonsWithDelay" />
                                     </div>
                                 </div>
                             </template>

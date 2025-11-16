@@ -68,7 +68,7 @@ const isUploadingSomething = ref(false);
                     <div class="form-section">
                         <label for="editEpisodeNumber" class="form-label">Episode Number</label>
                         <input name="chapter_number" type="number" id="editEpisodeNumber" class="form-control" 
-                               :value="chapterRef.chapter_number" placeholder="e.g., 1">
+                               :value="chapterRef.chapter_number" placeholder="e.g., 1" min="1" max="1000">
                     </div>
                     <div class="form-section">
                         <label for="editEpisodeTitle" class="form-label">Episode Title</label>

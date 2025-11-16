@@ -81,7 +81,11 @@ const isUploadingSomething = ref(false);
                     <input type="hidden" id="episodeSeasonIndex">
                     <div class="form-section">
                         <label for="episodeNumber" class="form-label">Episode Number</label>
-                        <input name="chapter_number" type="number" id="episodeNumber" class="form-control" placeholder="e.g., 1">
+                        <!-- min: 1, max: 1000 -->
+                        <input 
+                            name="chapter_number" 
+                            type="number" 
+                            id="episodeNumber" class="form-control" placeholder="e.g., 1" min="1" max="1000">
                     </div>
                     <div class="form-section">
                         <label for="episodeTitle" class="form-label">Episode Title</label>

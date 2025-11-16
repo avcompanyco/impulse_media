@@ -137,7 +137,7 @@ const episodesComputed = computed(() => {
                             <div id="episodesList" class="item-list">
                                 <div v-for="(episode, index) in episodesComputed"
                                     :key="`episode_${index}_${episode.id}`" class="list-item">
-                                    {{ index + 1 }}. {{ episode.title }}
+                                    {{ episode.chapter_number || index + 1 }}. {{ episode.title }}
                                 </div>
                                 <div v-if="serieSelected == 0">
                                     Select a series to begin.

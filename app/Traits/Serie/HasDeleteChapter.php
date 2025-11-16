@@ -8,10 +8,8 @@ trait HasDeleteChapter
 {
     public function delete(ChapterSerie $chapter)
     {
-
-        $chapter->deleteChapterVideo();
-        $chapter->deleteThumbnail();
-
+        $chapter->deleteAll();
+        
         $chapter->delete();
     }
 }

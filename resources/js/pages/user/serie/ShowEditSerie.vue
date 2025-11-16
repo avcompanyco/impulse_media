@@ -190,7 +190,7 @@ const isUploadingSomething = ref(false);
                                      @click="selectSeason(season.id)">
                                     <span>Season {{ index + 1 }}</span>
                                     <div class="list-item-actions">
-                                        <DeleteSeasonItem :season="season" :serie="serie.id" />
+                                        <DeleteSeasonItem :season="season" :serie="serie.id" @season-deleted="getSeasons" />
                                     </div>
                                 </div>
                             </template>

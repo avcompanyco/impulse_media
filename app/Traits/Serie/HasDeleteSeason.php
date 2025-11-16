@@ -11,6 +11,14 @@ trait HasDeleteSeason
             throw new \Exception(__("Season has chapters"));
         }
 
+        if ($season->allChapters()->count() > 0) {
+            // Delete all chapters
+            foreach ($season->allChapters() as $chapter) {
+                $chapter->deleteAll();
+                $chapter->delete();
+            }
+        }
+
         $season->delete();
     }
 }

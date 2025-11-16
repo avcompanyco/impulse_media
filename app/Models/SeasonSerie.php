@@ -34,4 +34,9 @@ class SeasonSerie extends Model
             ->orderBy('chapter_number', 'asc')
             ->where('status', ChapterStatus::PUBLISHED->value);
     }
+
+    public function allChapters()
+    {
+        return $this->hasMany(ChapterSerie::class, 'season_id', 'id');
+    }
 }

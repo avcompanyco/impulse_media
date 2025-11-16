@@ -472,7 +472,7 @@ onUnmounted(() => {
 function addToFollow(userId: number) {
     addFollowLoading.value = true;
     router.post(AddToFollowController({ user: userId }), {}, {
-        preserveState: false,
+        preserveState: true,
         preserveScroll: false,
         onFinish: () => {
             addFollowLoading.value = false;
@@ -489,7 +489,7 @@ function addToFollow(userId: number) {
 function removeFromFollow(userId: number) {
     removeFollowLoading.value = true;
     router.post(RemoveToFollowController({ user: userId }), {}, {
-        preserveState: false,
+        preserveState: true,
         preserveScroll: false,
         onFinish: () => {
             removeFollowLoading.value = false;

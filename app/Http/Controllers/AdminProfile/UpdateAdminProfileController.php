@@ -23,8 +23,11 @@ class UpdateAdminProfileController extends Controller
 
             $_user = User::find(Auth::user()->id);
 
-            $password = $data['password'];
-            unset($data['password']);
+            $password = null;
+            if (isset($data['password'])) {
+                $password = $data['password'];
+                unset($data['password']);
+            }
 
             $_user->fill($data)->save();
 

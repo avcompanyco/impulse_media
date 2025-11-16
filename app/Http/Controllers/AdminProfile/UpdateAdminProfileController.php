@@ -21,8 +21,6 @@ class UpdateAdminProfileController extends Controller
 
             $data = $request->validated();
 
-            dd($data);
-
             $_user = User::find(Auth::user()->id);
 
             $password = null;

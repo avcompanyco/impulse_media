@@ -21,6 +21,8 @@ class UpdateAdminProfileController extends Controller
 
             $data = $request->validated();
 
+            dd($data);
+
             $_user = User::find(Auth::user()->id);
 
             $password = null;
@@ -32,7 +34,7 @@ class UpdateAdminProfileController extends Controller
             $_user->fill($data)->save();
 
             if ($password) {
-                $_user->password = Hash::make($data['password']);
+                $_user->password = Hash::make($password);
                 $_user->save();
             }
 

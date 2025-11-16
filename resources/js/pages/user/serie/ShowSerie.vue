@@ -159,8 +159,8 @@ function playChapter(seasonId: number, chapterId: number) {
             <section v-if="serie.seasons && serie.seasons.length > 0" class="episodes-section">
                 <h2 class="section-title">Episodes</h2>
                 
-                <div v-for="season in serie.seasons" :key="season.id" class="season-container">
-                    <h3 class="season-title">Season {{ season.id }}</h3>
+                <div v-for="(season, seasonIndex) in serie.seasons" :key="season.id" class="season-container">
+                    <h3 class="season-title">Season {{ seasonIndex + 1 }}</h3>
                     
                     <div v-if="season.chapters && season.chapters.length > 0" class="episodes-grid">
                         <div 

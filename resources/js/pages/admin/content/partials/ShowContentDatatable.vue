@@ -3,6 +3,7 @@ import { ref, onMounted, watch, computed } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import DatatableContentController from '@/actions/App/Http/Controllers/Content/DatatableContentController';
 import ShowMovieChannelController from '@/actions/App/Http/Controllers/Channel/ShowMovieChannelController';
+import ViewContentController from '@/actions/App/Http/Controllers/Content/ViewContentController';
 
 import PauseContentController from '@/actions/App/Http/Controllers/Content/PauseContentController';
 import PublishContentController from '@/actions/App/Http/Controllers/Content/PublishContentController';
@@ -231,12 +232,12 @@ onMounted(() => {
                     </tr>
                     <tr v-for="content in contents" :key="content.id" :class="{ 'loading-row': loading }">
                         <td>
-                            <Link :href="content.url" target="_blank" class="content-title-link">
+                            <a :href="ViewContentController.url({content: content.id})" target="_blank" class="content-title-link">
                                 {{ content.title || 'Untitled' }}
-                            </Link>
+                            </a>
                         </td>
                         <td>
-                            <Link :href="ShowMovieChannelController.url({username: content.username})">{{ content.username }}</Link>
+                            @{{ content.username }}
                         </td>
                         <td>
                             <span class="type-badge">
@@ -245,9 +246,9 @@ onMounted(() => {
                         </td>
                         <td>{{ new Date(content.created_at).toLocaleDateString() }}</td>
                         <td>
-                            <Link :href="content.url" target="_blank" class="content-title-link">
+                            <a :href="ViewContentController.url({content: content.id})" target="_blank" class="content-title-link">
                                 View Content
-                            </Link>
+                            </a>
                         </td>
                         <td>
                             <span :class="['status-badge', getStatusBadgeClass(content.status)]">

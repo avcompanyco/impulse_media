@@ -29,6 +29,9 @@ Route::middleware('auth')->group(function () {
             Route::delete('/{content}/delete', \App\Http\Controllers\Content\DeleteContentController::class)
                 ->name('admin.content.delete');
 
+            Route::get('/{content}/view', \App\Http\Controllers\Content\ViewContentController::class)
+                ->name('admin.content.view');
+
             // Category Routes
             Route::prefix('categories')->group(function () {
 

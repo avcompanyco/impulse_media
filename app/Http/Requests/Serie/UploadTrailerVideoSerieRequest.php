@@ -23,7 +23,7 @@ class UploadTrailerVideoSerieRequest extends FormRequest
     public function rules(): array
     {
         return [    
-            'trailer_video' => 'required|file|max:102400', // 100MB max
+            'trailer_video' => 'required|file|max:512000', // 500MB max
             'is_last_chunk' => 'required|boolean',
         ];
     }

@@ -26,7 +26,7 @@ class StoreMovieRequest extends FormRequest
             'title' => 'required|string|max:255',
             'description' => 'required|string|max:1000',
             'movie_video' => 'required|file|mimes:mp4,webm,avi,mov,wmv,flv,mkv|max:512000', // 500MB max
-            'trailer_video' => 'required|file|mimes:mp4,webm,avi,mov,wmv,flv,mkv|max:102400', // 100MB max
+            'trailer_video' => 'required|file|mimes:mp4,webm,avi,mov,wmv,flv,mkv|max:512000', // 500MB max
             'horizontal_image' => 'required|file|mimes:jpeg,jpg,png,gif,bmp,webp,svg|max:10240', // 10MB max
             'vertical_image' => 'required|file|mimes:jpeg,jpg,png,gif,bmp,webp,svg|max:10240', // 10MB max
             'category_id' => 'required|integer|exists:categories,id',

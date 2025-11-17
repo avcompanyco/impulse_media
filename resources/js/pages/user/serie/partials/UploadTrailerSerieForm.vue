@@ -17,7 +17,7 @@ const selectedFile = ref<File | null>(null);
 const isUploading = ref(false);
 const uploadProgress = ref(0);
 
-const CHUNK_SIZE = 50 * 1024 * 1024; // 50MB
+const CHUNK_SIZE = 300 * 1024 * 1024; // 300MB
 
 const isDisableUpload = computed(() => {
     return isDisable.value || isUploading.value;

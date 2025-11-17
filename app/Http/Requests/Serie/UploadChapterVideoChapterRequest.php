@@ -23,7 +23,7 @@ class UploadChapterVideoChapterRequest extends FormRequest
     public function rules(): array
     {
         return [    
-            'chapter_video' => 'required|file|max:102400', // 100MB max
+            'chapter_video' => 'required|file|max:512000', // 500MB max
             'is_last_chunk' => 'required|boolean',
         ];
     }

@@ -23,7 +23,7 @@ class UploadShortRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'short_video' => 'required|file|max:102400', // 100MB max per chunk
+            'short_video' => 'required|file|max:512000', // 500MB max per chunk
             'is_last_chunk' => 'required|boolean',
         ];
     }

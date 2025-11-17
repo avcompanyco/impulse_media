@@ -23,7 +23,7 @@ class UploadMovieRequest extends FormRequest
     public function rules(): array
     {
         return [    
-            'movie_video' => 'required|file|max:102400', // 100MB max
+            'movie_video' => 'required|file|max:512000', // 500MB max
             'is_last_chunk' => 'required|boolean',
         ];
     }

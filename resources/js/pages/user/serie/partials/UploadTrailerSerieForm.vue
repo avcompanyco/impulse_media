@@ -16,6 +16,8 @@ const isDragOver = ref(false);
 const selectedFile = ref<File | null>(null);
 const isUploading = ref(false);
 const uploadProgress = ref(0);
+const currentChunk = ref(0);
+const totalChunks = ref(0);
 
 const CHUNK_SIZE = 300 * 1024 * 1024; // 300MB
 
@@ -83,6 +85,15 @@ function handleDragLeave(event: DragEvent) {
     isDragOver.value = false;
 }
 
+
+function handleProgress(event: any) {
+    // event.detail.progress?.percentage
+    const progress = Math.round(((currentChunk.value + 1) / totalChunks.value) * event.detail.progress?.percentage);
+    uploadProgress.value = progress;
+}
+
+router.on('progress', handleProgress);
+
 const uploadChunks = async (file: File) => {
     if (!file || isDisableUpload.value) return;
 
@@ -90,15 +101,16 @@ const uploadChunks = async (file: File) => {
     uploadProgress.value = 0;
 
     try {
-        const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+        totalChunks.value = Math.ceil(file.size / CHUNK_SIZE);
         
-        for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+        for (let chunkIndex = 0; chunkIndex < totalChunks.value; chunkIndex++) {
             const start = chunkIndex * CHUNK_SIZE;
             const end = Math.min(start + CHUNK_SIZE, file.size);
             const chunk = file.slice(start, end);
             
-            const isLastChunk = chunkIndex === totalChunks - 1;
+            const isLastChunk = chunkIndex === totalChunks.value - 1;
             
+            currentChunk.value = chunkIndex;
             const formData = new FormData();
             formData.append('trailer_video', chunk, file.name);
             formData.append('is_last_chunk', isLastChunk ? '1' : '0');
@@ -108,11 +120,10 @@ const uploadChunks = async (file: File) => {
                     preserveScroll: true,
                     forceFormData: true,
                     onSuccess: (page) => {
-                        uploadProgress.value = Math.round(((chunkIndex + 1) / totalChunks) * 100);
+                        uploadProgress.value = Math.round(((chunkIndex + 1) / totalChunks.value) * 100);
                         // @ts-ignore
                         if (page.props.flash?.complete) {
                             isUploading.value = false;
-                            uploadProgress.value = 100;
                             selectedFile.value = null;
                         }
                         resolve(void 0);

@@ -14,6 +14,7 @@ const isUploading = ref(false);
 const uploadProgress = ref(0);
 const totalChunks = ref(0);
 const currentChunk = ref(0);
+const isProcessingVideo = ref(false);
 
 const CHUNK_SIZE = 300 * 1024 * 1024; // 300MB
 
@@ -70,7 +71,7 @@ function handleDragLeave(event: DragEvent) {
 function handleProgress(event: any) {
     // event.detail.progress?.percentage
     const progress = Math.round(((currentChunk.value + 1) / totalChunks.value) * event.detail.progress?.percentage);
-    uploadProgress.value = progress;
+    uploadProgress.value += Math.round(progress / totalChunks.value);
 }
 
 router.on('progress', handleProgress);
@@ -95,6 +96,10 @@ const uploadChunks = async (file: File) => {
             const formData = new FormData();
             formData.append('short_video', chunk, file.name);
             formData.append('is_last_chunk', isLastChunk ? '1' : '0');
+
+            if (isLastChunk) {
+                isProcessingVideo.value = true;
+            }
                 
             await new Promise((resolve, reject) => {
                 router.post(UploadShortController.url(short.value), formData, {
@@ -105,6 +110,7 @@ const uploadChunks = async (file: File) => {
                         if (page.props.flash?.complete) {
                             isUploading.value = false;
                             selectedFile.value = null;
+                            isProcessingVideo.value = false;
                         }
                         resolve(void 0);
                     },
@@ -124,6 +130,7 @@ const uploadChunks = async (file: File) => {
         if (fileInput) {
             fileInput.value = '';
         }
+        isProcessingVideo.value = false;
     }
 };
 
@@ -170,6 +177,7 @@ function removeVideo() {
                         <div class="progress-fill" :style="{ width: uploadProgress + '%' }"></div>
                     </div>
                     <span class="progress-text">{{ uploadProgress }}%</span>
+                    <span v-if="isProcessingVideo" class="processing-text">Processing video...</span>
                 </div>
                 
                 <div v-else class="video-info">

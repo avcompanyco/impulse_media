@@ -173,9 +173,13 @@ function removeVideo() {
 }
 
 function handleProgress(event: any) {
-    // event.detail.progress?.percentage
-    const progress = Math.round(((currentChunk.value + 1) / totalChunks.value) * event.detail.progress?.percentage);
-    uploadProgress.value += Math.round(progress / totalChunks.value);
+    if (totalChunks.value <= 0) return;
+    
+    const chunkPercentage = (event.detail.progress?.percentage || 0) / 100;
+    const currentChunkWeight = (1 / totalChunks.value) * chunkPercentage;
+    const overallProgress = ((currentChunk.value / totalChunks.value) + currentChunkWeight) * 100;
+    
+    uploadProgress.value = Math.min(100, Math.round(overallProgress));
 }
 
 router.on('progress', handleProgress);

@@ -29,7 +29,7 @@ class UpdateProfileController extends Controller
             $_user->fill($data)->save();
 
             if ($password) {
-                $_user->password = Hash::make($data['password']);
+                $_user->password = Hash::make($password);
                 $_user->save();
             }
 

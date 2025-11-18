@@ -85,10 +85,15 @@ class User extends Authenticatable
     public function getCurrentPlan()
     {
         if (env('APP_ENV') == 'production') {
-            if ($this->subscribed('default')) {
-                $subscription = $this->subscription('default');
-                $stripe_product_id = $subscription->asStripeSubscription()->plan->product;
-                return Plan::where('stripe_product_id', $stripe_product_id)->first();
+            try {
+                if ($this->subscribed('default')) {
+                    $subscription = $this->subscription('default');
+                    $stripe_product_id = $subscription->asStripeSubscription()->plan->product;
+                    return Plan::where('stripe_product_id', $stripe_product_id)->first();
+                }
+            } catch (\Throwable $th) {
+                Log::error('Error getting current plan', ['error' => $th->getMessage()]);
+                return $this->plan;
             }
         } 
         

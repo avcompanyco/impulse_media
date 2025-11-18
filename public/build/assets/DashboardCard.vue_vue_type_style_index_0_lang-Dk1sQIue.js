@@ -1,1 +1,0 @@
-import{d as t,c as o,o as r,b as a,t as s}from"./app-BoD686xX.js";const n={class:"stat-card"},c={class:"stat-value"},i=t({__name:"DashboardCard",props:{title:{},value:{}},setup(l){return(e,p)=>(r(),o("div",n,[a("h3",null,s(e.title),1),a("p",c,s(e.value),1)]))}});export{i as _};

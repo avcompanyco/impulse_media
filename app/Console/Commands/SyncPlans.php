@@ -15,7 +15,7 @@ class SyncPlans extends Command
     public function handle()
     {
         $stripe = new StripeClient(config('cashier.secret'));
-        $plans = Plan::all();
+        $plans = Plan::where('status', 'active')->get();
 
         foreach ($plans as $plan) {
             // Crear producto en Stripe

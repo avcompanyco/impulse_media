@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SubscriptionController;
 use Inertia\Inertia;
+use App\Models\Plan;
 
 /************************* ADMIN ROUTES *************************/
 
@@ -345,6 +346,13 @@ Route::middleware('auth')->group(function () {
                 ->name('user.short.delete-video');
         });
     });
+});
+
+Route::get('pricing', function () {
+    $plans = Plan::where('status', 'active')->get();
+    return Inertia::render('Pricing', [
+        'plans' => $plans,
+    ]);
 });
 
 Route::post('subscription/webhook', [SubscriptionController::class, 'webhook'])

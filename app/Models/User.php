@@ -16,6 +16,7 @@ use App\Enums\Content\ContentStatus;
 use App\Enums\User\UserStatusEnum;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class User extends Authenticatable
 {
@@ -214,16 +215,21 @@ class User extends Authenticatable
 
         $next_payment_date = " - ";
 
-        if ($subscription) {
-            // Get the Stripe Subscription object
-            $stripeSubscription = $subscription->asStripeSubscription();
-
-            $nextPaymentTimestamp = $stripeSubscription->current_period_end;
-
-            $nextPaymentDate = Carbon::createFromTimestamp($nextPaymentTimestamp);
-
-            $next_payment_date = $nextPaymentDate->toFormattedDateString();
+        try {
+            if ($subscription) {
+                // Get the Stripe Subscription object
+                $stripeSubscription = $subscription->asStripeSubscription();
+    
+                $nextPaymentTimestamp = $stripeSubscription->current_period_end;
+    
+                $nextPaymentDate = Carbon::createFromTimestamp($nextPaymentTimestamp);
+    
+                $next_payment_date = $nextPaymentDate->toFormattedDateString();
+            }
+        } catch (\Throwable $th) {
+            Log::error('Error getting next payment date', ['error' => $th->getMessage()]);
         }
+
 
         return $next_payment_date;
     }

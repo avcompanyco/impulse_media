@@ -23,8 +23,9 @@ class UpdateProfileController extends Controller
 
             $_user = User::find(Auth::user()->id);
 
-            $password = $data['password'];
+            $password = $data['password'] ?? null;
             unset($data['password']);
+            unset($data['password_confirmation']);
 
             $_user->fill($data)->save();
 

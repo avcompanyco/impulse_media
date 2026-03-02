@@ -18,6 +18,8 @@ const props = defineProps<{
 const name = ref(props.user.name);
 const username = ref(props.user.username);
 const email = ref(props.user.email);
+const bio = ref(props.user.bio || '');
+const external_link = ref(props.user.external_link || '');
 const password = ref('');
 const password_confirmation = ref('');
 
@@ -98,6 +100,22 @@ function handleChangePicture(event: Event) {
                     <input type="email" class="form-control-custom" id="userEmail" name="email"
                         placeholder="Enter your email" v-model="email" required>
                     <ErrorLabel :message="errors.email" />
+                </div>
+
+                <div class="form-group-custom">
+                    <label for="userBio" class="form-label-custom">Bio</label>
+                    <textarea class="form-control-custom" id="userBio" name="bio"
+                        placeholder="Tell us about yourself..." v-model="bio" rows="4" maxlength="500"></textarea>
+                    <small class="form-text-sm">{{ bio.length }}/500 characters</small>
+                    <ErrorLabel :message="errors.bio" />
+                </div>
+
+                <div class="form-group-custom">
+                    <label for="userExternalLink" class="form-label-custom">External Link</label>
+                    <input type="url" class="form-control-custom" id="userExternalLink" name="external_link"
+                        placeholder="https://yourwebsite.com" v-model="external_link">
+                    <small class="form-text-sm">Link to your website or social media profile.</small>
+                    <ErrorLabel :message="errors.external_link" />
                 </div>
 
                 <div class="form-group-custom">

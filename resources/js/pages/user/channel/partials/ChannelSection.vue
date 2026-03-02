@@ -4,6 +4,7 @@ import { router } from '@inertiajs/vue3';
 
 import AddToFollowController from '@/actions/App/Http/Controllers/Follow/AddToFollowController';
 import RemoveToFollowController from '@/actions/App/Http/Controllers/Follow/RemoveToFollowController';
+import ShowCreatorProfileController from '@/actions/App/Http/Controllers/CreatorProfile/ShowCreatorProfileController';
 
 const props = defineProps<{
     user: any;
@@ -36,9 +37,9 @@ function removeFromFollow(userId: number) {
 <template>
     <section class="channel-header">
         <div class="channel-info-card">
-            <img :src="user.image_url" alt="Avatar" class="channel-avatar">
+            <img :src="user.image_url" alt="Avatar" class="channel-avatar" style="cursor: pointer;" @click="router.visit(ShowCreatorProfileController({ user: user.username }))">
             <div class="channel-details">
-                <h1 class="channel-name">@{{ user.username }}</h1>
+                <h1 class="channel-name" style="cursor: pointer;" @click="router.visit(ShowCreatorProfileController({ user: user.username }))">@{{ user.username }}</h1>
                 <div class="channel-stats">{{ user.followers_count }} Followers &bull; {{ user.content_count }} Videos
                 </div>
             </div>

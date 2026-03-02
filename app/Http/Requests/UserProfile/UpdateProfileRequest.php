@@ -48,6 +48,8 @@ class UpdateProfileRequest extends FormRequest
             ],
             // password is optional
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'bio' => ['nullable', 'string', 'max:500'],
+            'external_link' => ['nullable', 'string', 'max:255', 'url:http,https'],
         ];
     }
 
@@ -74,6 +76,9 @@ class UpdateProfileRequest extends FormRequest
             'password.string' => __('The password must be a string.'),
             'password.min' => __('The password must be at least 8 characters.'),
             'password.confirmed' => __('The password confirmation does not match.'),
+            'bio.max' => __('The bio must be less than 500 characters.'),
+            'external_link.max' => __('The external link must be less than 255 characters.'),
+            'external_link.url' => __('The external link must be a valid URL.'),
         ];
     }
 }

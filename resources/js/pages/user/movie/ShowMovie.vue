@@ -11,6 +11,7 @@ import ShowPlayerTrailerMovieController from '@/actions/App/Http/Controllers/Mov
 import AddToFollowController from '@/actions/App/Http/Controllers/Follow/AddToFollowController';
 import RemoveToFollowController from '@/actions/App/Http/Controllers/Follow/RemoveToFollowController';
 import ShowCategoryController from '@/actions/App/Http/Controllers/Category/ShowCategoryController';
+import ShowCreatorProfileController from '@/actions/App/Http/Controllers/CreatorProfile/ShowCreatorProfileController';
 
 const props = defineProps<{
     movie: any;
@@ -96,8 +97,8 @@ function unfollowUser(userId: number) {
                         </Link>
                     </div>
                     <div class="uploader-info">
-                        <img :src="movie.user.image_url" alt="Uploader Avatar" class="uploader-avatar">
-                        <span class="uploader-username">@{{ movie.user.username }}</span>
+                        <img :src="movie.user.image_url" alt="Uploader Avatar" class="uploader-avatar" style="cursor: pointer;" @click="router.visit(ShowCreatorProfileController({ user: movie.user.username }))">
+                        <span class="uploader-username" style="cursor: pointer;" @click="router.visit(ShowCreatorProfileController({ user: movie.user.username }))">@{{ movie.user.username }}</span>
                         <template v-if="movie.user.id !== $page.props.auth.user.id">
                             <button
                                 v-if="!movie.user.is_followed"

@@ -35,6 +35,8 @@ class User extends Authenticatable
         'email',
         'password',
         'image',
+        'bio',
+        'external_link',
         'plan_id',
         'status',
     ];

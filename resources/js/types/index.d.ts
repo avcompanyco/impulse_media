@@ -31,6 +31,8 @@ export interface User {
     image: string;
     image_url?: string;
     email: string;
+    bio?: string | null;
+    external_link?: string | null;
     status: string;
     email_verified_at: string | null;
     created_at: string;

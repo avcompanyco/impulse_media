@@ -171,6 +171,9 @@ Route::middleware('auth')->group(function () {
                 ->name('channel.show.short');
         });
 
+        Route::get('creator/{user:username}', \App\Http\Controllers\CreatorProfile\ShowCreatorProfileController::class)
+            ->name('user.creator.show');
+
         Route::prefix('profile')->group(function () {
             Route::get('/', \App\Http\Controllers\UserProfile\ShowProfileController::class)
                 ->name('user.profile.show');

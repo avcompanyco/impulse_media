@@ -12,6 +12,7 @@ import RemoveToWatchlistController from '@/actions/App/Http/Controllers/Watchlis
 import AddToFollowController from '@/actions/App/Http/Controllers/Follow/AddToFollowController';
 import RemoveToFollowController from '@/actions/App/Http/Controllers/Follow/RemoveToFollowController';
 import ShowCategoryController from '@/actions/App/Http/Controllers/Category/ShowCategoryController';
+import ShowCreatorProfileController from '@/actions/App/Http/Controllers/CreatorProfile/ShowCreatorProfileController';
 
 const props = defineProps<{
     serie: any;
@@ -109,8 +110,8 @@ function playChapter(seasonId: number, chapterId: number) {
                         </Link>
                     </div>
                     <div class="uploader-info">
-                        <img :src="serie.user.image_url" alt="Uploader Avatar" class="uploader-avatar">
-                        <span class="uploader-username">@{{ serie.user.username }}</span>
+                        <img :src="serie.user.image_url" alt="Uploader Avatar" class="uploader-avatar" style="cursor: pointer;" @click="router.visit(ShowCreatorProfileController({ user: serie.user.username }))">
+                        <span class="uploader-username" style="cursor: pointer;" @click="router.visit(ShowCreatorProfileController({ user: serie.user.username }))">@{{ serie.user.username }}</span>
                         <template v-if="serie.user.id !== $page.props.auth.user.id">
                             <button
                                 v-if="!serie.user.is_followed"

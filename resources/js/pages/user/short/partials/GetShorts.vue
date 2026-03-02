@@ -4,6 +4,7 @@ import { router, usePage } from '@inertiajs/vue3';
 import AddToFollowController from '@/actions/App/Http/Controllers/Follow/AddToFollowController';
 import RemoveToFollowController from '@/actions/App/Http/Controllers/Follow/RemoveToFollowController';
 import RandomShortController from '@/actions/App/Http/Controllers/Short/RandomShortController';
+import ShowCreatorProfileController from '@/actions/App/Http/Controllers/CreatorProfile/ShowCreatorProfileController';
 
 interface User {
     id: number;
@@ -437,9 +438,7 @@ const handleFollowClick = (event: Event, userId: number, isFollowed: boolean) =>
 // Handle user info click (para navegar al perfil)
 const handleUserInfoClick = (event: Event, username: string) => {
     event.stopPropagation();
-    // Aquí puedes agregar la navegación al perfil del usuario
-    console.log('Navegar al perfil de:', username);
-    // router.get(`/profile/${username}`);
+    router.visit(ShowCreatorProfileController({ user: username }));
 };
 
 // Lifecycle

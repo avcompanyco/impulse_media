@@ -6,6 +6,7 @@ import ShowSerieController from '@/actions/App/Http/Controllers/Serie/ShowSerieC
 import AddToFollowController from '@/actions/App/Http/Controllers/Follow/AddToFollowController';
 import RemoveToFollowController from '@/actions/App/Http/Controllers/Follow/RemoveToFollowController';
 import ShowMovieChannelController from '@/actions/App/Http/Controllers/Channel/ShowMovieChannelController';
+import ShowCreatorProfileController from '@/actions/App/Http/Controllers/CreatorProfile/ShowCreatorProfileController';
 
 interface Content {
     id: number;
@@ -139,8 +140,10 @@ function unfollowUser(userId: number) {
                 :src="currentContent.user.image_url" 
                 :alt="currentContent.user.name" 
                 class="user-avatar"
+                style="cursor: pointer;"
+                @click="router.visit(ShowCreatorProfileController({ user: currentContent.user.username }))"
             >
-            <span class="username" style="cursor: pointer;" @click="router.visit(ShowMovieChannelController({ user: currentContent.user.username }))">@{{ currentContent.user.username }}</span>
+            <span class="username" style="cursor: pointer;" @click="router.visit(ShowCreatorProfileController({ user: currentContent.user.username }))">@{{ currentContent.user.username }}</span>
         </div>
         <h1 class="movie-title">{{ currentContent.contentable.title }}</h1>
         <div class="content-meta">
@@ -176,9 +179,9 @@ function unfollowUser(userId: number) {
                 <button 
                     v-else
                     class="action-button secondary"
-                    @click="router.visit(ShowMovieChannelController({user: currentContent.user.username}))"
+                    @click="router.visit(ShowCreatorProfileController({user: currentContent.user.username}))"
                     >
-                    View Channel
+                    View Profile
                 </button>
             </template>
         </div>

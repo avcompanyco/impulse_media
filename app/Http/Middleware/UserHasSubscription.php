@@ -22,7 +22,7 @@ class UserHasSubscription
             return redirect()->route('login.user');
         }
         $user = User::find(Auth::user()->id);
-        if (env('APP_ENV') == 'production') {
+        if (env('APP_ENV') !== 'production') {
             if (!$user->subscribed('default')) {
                 return redirect()->route('subscription.cancel');
             }

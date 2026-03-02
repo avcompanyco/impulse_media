@@ -50,12 +50,22 @@ class SubscriptionController extends Controller
             $session = $stripe->checkout->sessions->retrieve($sessionId, [
                 'expand' => ['subscription'],
             ]);
-
+            
             // Verificar que el pago fue exitoso
             if ($session->payment_status === 'paid') {
-
+                
                 $user = User::where('stripe_id', $session->customer)->first();
-                $plan = $user->plan;
+                $plan = $user->getCurrentPlan();
+                if (!$plan) {
+                    // se verifica a que plan esta suscrito
+                    $subscription_plan_product = $session->subscription->plan->product;
+                    $_plan = Plan::where('stripe_product_id', $subscription_plan_product)->first();
+                    if ($_plan) {
+                        $user->plan_id = $_plan->id;
+                        $user->save();
+                        $plan = $_plan;
+                    }
+                }
 
                 return Inertia::render('subscription/Success', [
                     'session' => $session,

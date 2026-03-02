@@ -8,6 +8,7 @@ import ShowProfileController from '@/actions/App/Http/Controllers/UserProfile/Sh
 const props = defineProps<{
     plan: any;
 }>();
+console.log(props.plan);
 </script>
 
 <template>
@@ -21,7 +22,7 @@ const props = defineProps<{
                 <h1 class="page-title">Subscription Successful!</h1>
 
                 <div class="success-card">
-                    <h2 class="success-subtitle">Welcome to {{ plan.name }}</h2>
+                    <h2 class="success-subtitle">Welcome to {{ plan.name || "Your Plan" }}</h2>
                     <p class="success-message">
                         {{ plan.description }}.
                     </p>

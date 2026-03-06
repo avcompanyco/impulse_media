@@ -61,6 +61,8 @@ defineProps<{
     width: 100%;
     height: 100%;
     object-fit: cover;
+    filter: blur(4px);
+    transform: scale(1.05);
 }
 
 .auth-background-overlay {

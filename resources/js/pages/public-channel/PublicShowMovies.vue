@@ -49,6 +49,8 @@ function handleContentClick(event: Event) {
                     <div class="channel-details">
                         <h1 class="channel-name">@{{ user.username }}</h1>
                         <div class="channel-stats">{{ user.followers_count }} Followers &bull; {{ user.content_count }} Videos</div>
+                        <p v-if="user.bio" class="channel-bio">{{ user.bio }}</p>
+                        <a v-if="user.external_link" :href="user.external_link" target="_blank" rel="noopener noreferrer" class="channel-link">{{ user.external_link }}</a>
                     </div>
                 </div>
             </section>
@@ -121,6 +123,9 @@ function handleContentClick(event: Event) {
 .channel-details { flex-grow: 1; }
 .channel-name { font-size: 1.5rem; font-weight: 600; margin: 0 0 0.25rem 0; }
 .channel-stats { color: #ccc; font-size: 0.9rem; }
+.channel-bio { color: #ddd; font-size: 0.85rem; margin: 0.4rem 0 0.2rem 0; line-height: 1.4; }
+.channel-link { color: #a78bfa; font-size: 0.85rem; text-decoration: none; word-break: break-all; }
+.channel-link:hover { text-decoration: underline; }
 
 /* Tabs */
 .channel-tabs { display: flex; justify-content: flex-start; gap: 1rem; border-bottom: 1px solid #333; margin: 0 1rem 2rem 1rem; overflow-x: auto; }

@@ -39,6 +39,8 @@ function goToShortChannel() {
                 <div class="channel-details">
                     <h1 class="channel-name">@{{ $page.props.auth.user.username }}</h1>
                     <div class="channel-stats">{{ $page.props.auth.user.followers_count }} Followers &bull; {{ $page.props.auth.user.content_count }} Videos</div>
+                    <p v-if="$page.props.auth.user.bio" class="channel-bio">{{ $page.props.auth.user.bio }}</p>
+                    <a v-if="$page.props.auth.user.external_link" :href="$page.props.auth.user.external_link" target="_blank" rel="noopener noreferrer" class="channel-link">{{ $page.props.auth.user.external_link }}</a>
                 </div>
                 <button class="channel-action-btn edit" id="channelActionBtn" @click="goToProfile">Edit Profile</button>
             </div>
@@ -69,6 +71,9 @@ function goToShortChannel() {
 .channel-details { flex-grow: 1; }
 .channel-name { font-size: 1.5rem; font-weight: 600; margin: 0 0 0.25rem 0; }
 .channel-stats { color: #ccc; font-size: 0.9rem; }
+.channel-bio { color: #ddd; font-size: 0.85rem; margin: 0.4rem 0 0.2rem 0; line-height: 1.4; }
+.channel-link { color: #a78bfa; font-size: 0.85rem; text-decoration: none; word-break: break-all; }
+.channel-link:hover { text-decoration: underline; }
 .channel-action-btn { background-color: var(--primary-color); color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 20px; font-weight: 500; cursor: pointer; flex-shrink: 0; margin-left: auto; transition: background-color 0.2s ease; }
 .channel-action-btn.edit { background-color: rgba(255,255,255,0.2); }
 .channel-action-btn.following { background-color: #555; }

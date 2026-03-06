@@ -533,6 +533,7 @@ onUnmounted(() => {
                         class="main-video"
                         :src="previousShort.short_video_url"
                         preload="metadata"
+                        
                     />
                 </div>
 

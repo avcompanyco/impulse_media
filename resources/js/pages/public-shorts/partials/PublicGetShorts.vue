@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { router } from '@inertiajs/vue3';
 import ShortsPlayer from '@/components/ShortsPlayer.vue';
 import type { ShortItem } from '@/components/ShortsPlayer.vue';
 
@@ -40,6 +41,11 @@ async function getNextTenShorts() {
 // Initial load
 getNextTenShorts();
 
+// Navigate to user's public channel (movie as main page)
+function goToUserChannel(username: string) {
+    router.visit(`/public/channel/${username}/movie`);
+}
+
 // Intercept interactions to prompt login
 function handleInteraction(event: Event) {
     event.stopPropagation();
@@ -65,10 +71,10 @@ function handleInteraction(event: Event) {
         >
             <template #overlay="{ short }">
                 <div class="user-info">
-                    <div class="user-avatar-container" @click.stop="handleInteraction($event)">
+                    <div class="user-avatar-container" @click.stop="goToUserChannel(short.user.username)">
                         <img :src="short.user.image_url" alt="User Avatar" class="user-avatar" loading="lazy">
                     </div>
-                    <span class="username" @click.stop="handleInteraction($event)">
+                    <span class="username" @click.stop="goToUserChannel(short.user.username)">
                         @{{ short.user.username }}
                     </span>
                     <button class="follow-btn" @click.stop="handleInteraction($event)">

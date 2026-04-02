@@ -29,6 +29,33 @@
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
 
+        {{-- Google Consent Mode v2 (must load before any Google scripts) --}}
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('consent', 'default', {
+                'analytics_storage': 'denied',
+                'ad_storage': 'denied',
+                'ad_user_data': 'denied',
+                'ad_personalization': 'denied',
+                'wait_for_update': 500,
+            });
+            // Check if user already gave consent
+            (function() {
+                try {
+                    var c = JSON.parse(localStorage.getItem('cookie_consent') || '{}');
+                    if (c.timestamp) {
+                        gtag('consent', 'update', {
+                            'analytics_storage': c.analytics ? 'granted' : 'denied',
+                            'ad_storage': c.advertising ? 'granted' : 'denied',
+                            'ad_user_data': c.advertising ? 'granted' : 'denied',
+                            'ad_personalization': c.advertising ? 'granted' : 'denied',
+                        });
+                    }
+                } catch(e) {}
+            })();
+        </script>
+
         {{-- Google AdSense --}}
         <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4197071521851440" crossorigin="anonymous"></script>
 

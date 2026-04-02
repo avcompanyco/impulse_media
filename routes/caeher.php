@@ -366,5 +366,13 @@ Route::get('pricing', function () {
     ]);
 });
 
+Route::get('privacy-policy', function () {
+    return Inertia::render('legal/PrivacyPolicy');
+})->name('legal.privacy');
+
+Route::get('terms-of-service', function () {
+    return Inertia::render('legal/TermsOfService');
+})->name('legal.terms');
+
 Route::post('subscription/webhook', [SubscriptionController::class, 'webhook'])
     ->name('subscription.webhook');

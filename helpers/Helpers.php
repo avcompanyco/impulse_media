@@ -105,7 +105,7 @@ function googleMapEmbed($q, $center = "", $zoom = 15, $language = "", $region = 
  */
 function getDisk()
 {
-    return isset($_ENV['FILESYSTEM_DISK']) ? $_ENV['FILESYSTEM_DISK'] : 'local';
+    return config('filesystems.default', 'local');
 }
 
 /**

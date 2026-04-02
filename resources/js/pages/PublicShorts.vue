@@ -7,11 +7,21 @@ import PublicGetShorts from './public-shorts/partials/PublicGetShorts.vue';
 
 // Controls the "login required" intercept modal
 const showLoginModal = ref(false);
+const limitReached = ref(false);
 
-const openLoginModal = () => {
+// Interaction modal (closeable — "Join to interact")
+const openInteractionModal = () => {
+    limitReached.value = false;
+    showLoginModal.value = true;
+};
+// Limit modal (non-closeable — "Keep watching!")
+const openLimitModal = () => {
+    limitReached.value = true;
     showLoginModal.value = true;
 };
 const closeLoginModal = () => {
+    // Cannot close if limit reached
+    if (limitReached.value) return;
     showLoginModal.value = false;
 };
 </script>
@@ -43,7 +53,7 @@ const closeLoginModal = () => {
 
         <!-- Reels player -->
         <div class="public-shorts-content">
-            <PublicGetShorts @require-login="openLoginModal" />
+            <PublicGetShorts @require-login="openLimitModal" @interaction="openInteractionModal" />
         </div>
     </div>
 
@@ -51,12 +61,15 @@ const closeLoginModal = () => {
     <Teleport to="body">
         <div v-if="showLoginModal" class="modal-backdrop" @click.self="closeLoginModal">
             <div class="login-modal">
-                <button class="modal-close-btn" @click="closeLoginModal">&times;</button>
+                <button v-if="!limitReached" class="modal-close-btn" @click="closeLoginModal">&times;</button>
 
                 <img src="/images/logo.png" alt="Logo" class="modal-logo">
-                <h2 class="modal-title">Join to interact</h2>
+                <h2 class="modal-title">{{ limitReached ? 'Keep watching!' : 'Join to interact' }}</h2>
                 <p class="modal-subtitle">
-                    Create an account or log in to follow creators, build your watchlist, and access movies &amp; series.
+                    {{ limitReached
+                        ? 'You\'ve watched 7 shorts! Sign up or log in to continue enjoying unlimited content.'
+                        : 'Create an account or log in to follow creators, build your watchlist, and access movies & series.'
+                    }}
                 </p>
 
                 <Link :href="ShowRegisterUserController()" class="btn btn-modal-signup">

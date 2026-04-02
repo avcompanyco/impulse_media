@@ -69,6 +69,7 @@ const handleVideoEnded = () => {
                     :title="serie.title"
                     :subtitle="`Temporada ${season.id} • Episodio ${chapter.chapter_number}: ${chapter.title}`"
                     :poster-url="chapter.thumbnail_url"
+                    :show-ads="$page.props.show_ads"
                     @ended="handleVideoEnded"
                 >
                     <template #back-button>

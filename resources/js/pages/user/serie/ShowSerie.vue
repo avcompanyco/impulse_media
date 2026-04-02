@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import UserDashboardLayout from '@/layouts/UserDashboardLayout.vue';
 import { router, Link } from '@inertiajs/vue3';
 import CategorySection from '../movie/partials/CategorySection.vue';
@@ -91,6 +91,24 @@ function playChapter(seasonId: number, chapterId: number) {
         chapter: chapterId,
     }));
 }
+
+// Track view on page load
+onMounted(async () => {
+    try {
+        const contentId = props.serie?.content?.id;
+        if (!contentId) return;
+        await fetch(`/content/${contentId}/view`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-XSRF-TOKEN': decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] || ''),
+            },
+            credentials: 'same-origin',
+        });
+    } catch (e) {
+        // Silent fail
+    }
+});
 </script>
 
 <template>

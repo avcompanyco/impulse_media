@@ -19,6 +19,8 @@ trait HasUpdatePlan
             $data['movies_upload_count'] = $data['movies_upload_count'] ?? 0;
             $data['shorts_upload_count'] = $data['shorts_upload_count'] ?? 0;
             $data['series_upload_count'] = $data['series_upload_count'] ?? 0;
+            $data['plan_type'] = $data['plan_type'] ?? $plan->plan_type ?? 'creator';
+            $data['has_ads'] = $data['has_ads'] ?? false;
 
             if (Plan::where('name', $data['name'])->where('id', '!=', $plan->id)->exists()) {
                 throw new \Exception(__("Plan already exists"));

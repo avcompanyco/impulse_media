@@ -1,0 +1,1 @@
+import{q as e}from"./index-CSEUMRIG.js";const t=o=>({url:t.url(o),method:"post"});t.definition={methods:["post"],url:"/profile/subscription/update"};t.url=o=>t.definition.url+e(o);t.post=o=>({url:t.url(o),method:"post"});const r=o=>({action:t.url(o),method:"post"});r.post=o=>({action:t.url(o),method:"post"});t.form=r;export{t as U};

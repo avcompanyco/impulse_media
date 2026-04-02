@@ -14,6 +14,7 @@ use Laravel\Cashier\Billable;
 use App\Enums\Content\ContentType;
 use App\Enums\Content\ContentStatus;
 use App\Enums\User\UserStatusEnum;
+use App\Enums\User\UserType;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -39,6 +40,8 @@ class User extends Authenticatable
         'external_link',
         'plan_id',
         'status',
+        'user_type',
+        'accepted_terms_at',
     ];
 
     /**
@@ -59,6 +62,8 @@ class User extends Authenticatable
         'content_count',
         'is_following',
         'is_followed',
+        'is_spectator',
+        'is_creator',
     ];
 
     /**
@@ -72,6 +77,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'status' => UserStatusEnum::class,
+            'user_type' => UserType::class,
+            'accepted_terms_at' => 'datetime',
         ];
     }
 
@@ -183,6 +190,87 @@ class User extends Authenticatable
             return false;
         }
         return $this->isFollowedBy(Auth::user()->id);
+    }
+
+    /**
+     * Check if user is a spectator
+     */
+    public function isSpectator(): bool
+    {
+        return $this->user_type === UserType::SPECTATOR;
+    }
+
+    /**
+     * Check if user is a creator
+     */
+    public function isCreator(): bool
+    {
+        return $this->user_type === UserType::CREATOR;
+    }
+
+    public function getIsSpectatorAttribute(): bool
+    {
+        return $this->isSpectator();
+    }
+
+    public function getIsCreatorAttribute(): bool
+    {
+        return $this->isCreator();
+    }
+
+    /**
+     * Check if user has reached upload limit for a content type
+     */
+    public function hasReachedUploadLimit(string $contentType): bool
+    {
+        $plan = $this->getCurrentPlan();
+        if (!$plan) return true;
+        if ($plan->hasUnlimitedContent()) return false;
+
+        $currentCount = match ($contentType) {
+            'movie' => $this->movies()->count(),
+            'serie' => $this->series()->count(),
+            'short' => $this->shorts()->count(),
+            default => 0,
+        };
+
+        $limit = match ($contentType) {
+            'movie' => $plan->movies_upload_count,
+            'serie' => $plan->series_upload_count,
+            'short' => $plan->shorts_upload_count,
+            default => 0,
+        };
+
+        return $currentCount >= $limit;
+    }
+
+    /**
+     * Get upload usage for display
+     */
+    public function getUploadUsage(): array
+    {
+        $plan = $this->getCurrentPlan();
+        if (!$plan) return [];
+
+        $unlimited = $plan->hasUnlimitedContent();
+
+        return [
+            'movies' => [
+                'used' => $this->movies()->count(),
+                'limit' => $unlimited ? '∞' : $plan->movies_upload_count,
+                'unlimited' => $unlimited,
+            ],
+            'series' => [
+                'used' => $this->series()->count(),
+                'limit' => $unlimited ? '∞' : $plan->series_upload_count,
+                'unlimited' => $unlimited,
+            ],
+            'shorts' => [
+                'used' => $this->shorts()->count(),
+                'limit' => $unlimited ? '∞' : $plan->shorts_upload_count,
+                'unlimited' => $unlimited,
+            ],
+        ];
     }
 
     public function makeHiddenStripe()

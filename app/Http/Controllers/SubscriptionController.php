@@ -88,7 +88,11 @@ class SubscriptionController extends Controller
 
     public function cancel(Request $request)
     {
-        $plans = Plan::where('status', 'active')->get();
+        $user = Auth::user();
+        $userType = $user ? ($user->user_type ?? 'creator') : 'creator';
+        $plans = Plan::where('status', 'active')
+            ->where('plan_type', $userType)
+            ->get();
 
         return Inertia::render('subscription/Cancel', [
             'message' => __('Your subscription process was cancelled. You can try again anytime.'),
@@ -336,8 +340,12 @@ class SubscriptionController extends Controller
                         'ends_at' => null,
                     ]);
 
-                    $user->plan_id = null;
-                    $user->save();
+                    // Restore plan_id if it was cleared
+                    $plan = Plan::where('stripe_price_id', $userSubscription->stripe_price)->first();
+                    if ($plan && !$user->plan_id) {
+                        $user->plan_id = $plan->id;
+                        $user->save();
+                    }
                 }
 
                 // Record the payment

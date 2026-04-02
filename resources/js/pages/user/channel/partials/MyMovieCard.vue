@@ -8,6 +8,7 @@ import DeleteMovieModal from './DeleteMovieModal.vue';
 
 const props = defineProps<{
     movie: any;
+    viewsCount?: number;
 }>();
 
 const isDropdownOpen = ref(false);
@@ -20,12 +21,22 @@ function goToEditMovie() {
     router.visit(ShowEditMovieController({movie: props.movie.id}));
     isDropdownOpen.value = false;
 }
+
+function formatViews(count: number): string {
+    if (count >= 1000000) return (count / 1000000).toFixed(1) + 'M';
+    if (count >= 1000) return (count / 1000).toFixed(1) + 'K';
+    return count.toString();
+}
 </script>
 
 <template>
     <div class="content-card">
         <Link :href="ShowMovieController({movie: movie.id})">
             <img :src="movie.vertical_image_url" alt="Content" />
+            <div class="views-badge">
+                <i class="fa-solid fa-eye"></i>
+                <span>{{ formatViews(viewsCount ?? 0) }}</span>
+            </div>
         </Link>
         <button class="options-menu-btn" @click="toggleDropdown">
             <i class="fa-solid fa-ellipsis-vertical"></i>
@@ -122,5 +133,25 @@ function goToEditMovie() {
 
 .options-dropdown button:hover {
     background-color: var(--primary-color);
+}
+
+.views-badge {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.views-badge i {
+    font-size: 0.65rem;
 }
 </style>

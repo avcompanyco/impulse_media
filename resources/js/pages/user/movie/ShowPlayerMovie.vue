@@ -17,6 +17,7 @@ const props = defineProps<{
             <VideoPlayer
                 :video-src="movie.movie_video_url"
                 :title="movie.title || 'Video'"
+                :show-ads="$page.props.show_ads"
             >
                 <template #back-button>
                     <Link 

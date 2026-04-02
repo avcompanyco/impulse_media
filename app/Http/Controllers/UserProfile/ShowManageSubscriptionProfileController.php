@@ -18,7 +18,10 @@ class ShowManageSubscriptionProfileController extends Controller
 
         $_user = User::find(Auth::user()->id);  // Get the user
 
-        $plans = Plan::where('status', 'active')->get();
+        // Filter plans by user type so they only see relevant plans
+        $plans = Plan::where('status', 'active')
+            ->where('plan_type', $_user->user_type ?? 'creator')
+            ->get();
         $my_plan = $_user->getCurrentPlan();
         
         // Get subscription information
@@ -51,7 +54,7 @@ class ShowManageSubscriptionProfileController extends Controller
     public function canAccess()
     {
         $_user = User::find(Auth::user()->id);
-        if ($_user && $_user->hasRole('user')) {
+        if ($_user && $_user->hasAnyRole(['user', 'spectator', 'creator'])) {
             return true;
         }
         return false;

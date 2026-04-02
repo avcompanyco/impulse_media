@@ -58,6 +58,14 @@ class IndexAdminDashboardController extends Controller
                     $query->where('status', ContentStatus::PUBLISHED);
                 })->count(),
             ],
+            [
+                'title' => __('Spectators'),
+                'value' => User::where('user_type', 'spectator')->count(),
+            ],
+            [
+                'title' => __('Creators'),
+                'value' => User::where('user_type', 'creator')->count(),
+            ],
         ];
 
         return Inertia::render('admin/dashboard/IndexAdmin', [

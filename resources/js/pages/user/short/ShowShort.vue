@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import UserDashboardLayout from '@/layouts/UserDashboardLayout.vue';
 import GetShorts from './partials/GetShorts.vue';
+
+const props = defineProps<{
+    initialShort?: any;
+}>();
 </script>
 
 <template>
@@ -8,7 +12,7 @@ import GetShorts from './partials/GetShorts.vue';
         :headerTitle="`Shorts - ${$page.props.name || 'Impulsemedia'}`">
         <template #shorts-content>
             <Suspense>
-                <GetShorts />
+                <GetShorts :initialShort="initialShort" />
             </Suspense>
         </template>
     </UserDashboardLayout>

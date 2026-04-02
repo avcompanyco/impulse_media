@@ -8,6 +8,7 @@ import ShowEditShortController from '@/actions/App/Http/Controllers/Short/ShowEd
 
 const props = defineProps<{
     short: any;
+    viewsCount?: number;
 }>();
 
 const videoRef = ref<HTMLVideoElement | null>(null);
@@ -65,6 +66,13 @@ onUnmounted(() => {
         videoRef.value.pause();
     }
 });
+
+// Format view count
+function formatViews(count: number): string {
+    if (count >= 1000000) return (count / 1000000).toFixed(1) + 'M';
+    if (count >= 1000) return (count / 1000).toFixed(1) + 'K';
+    return count.toString();
+}
 </script>
 
 <template>
@@ -85,6 +93,10 @@ onUnmounted(() => {
                 <div class="video-caption" v-if="short.text_caption">
                     {{ short.text_caption }}
                 </div>
+            </div>
+            <div class="views-badge">
+                <i class="fa-solid fa-eye"></i>
+                <span>{{ formatViews(viewsCount ?? 0) }}</span>
             </div>
         </Link>
         <button class="options-menu-btn" @click="toggleDropdown">
@@ -182,5 +194,25 @@ onUnmounted(() => {
 
 .options-dropdown button:hover {
     background-color: var(--primary-color);
+}
+
+.views-badge {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.views-badge i {
+    font-size: 0.65rem;
 }
 </style>

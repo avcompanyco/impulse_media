@@ -55,7 +55,7 @@ function goToSerieChannel() {
             <div id="moviesContent" class="content-grid"></div>
             <div id="seriesContent" class="content-grid"></div>
             <div id="shortsContent" class="content-grid active">
-                <MyShortCard v-for="short in shorts" :key="`my_short_${short.id}`" :short="short.contentable" />
+                <MyShortCard v-for="short in shorts" :key="`my_short_${short.id}`" :short="short.contentable" :viewsCount="short.views_count ?? 0" />
             </div>
         </main>
         <br />

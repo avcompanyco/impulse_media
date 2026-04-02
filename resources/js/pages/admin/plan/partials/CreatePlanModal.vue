@@ -5,6 +5,7 @@ import StorePlanController from '@/actions/App/Http/Controllers/Plan/StorePlanCo
 
 const isOpen = ref(false);
 const isUnlimitedChecked = ref(false);
+const selectedPlanType = ref('creator');
 
 </script>
 
@@ -18,10 +19,17 @@ const isUnlimitedChecked = ref(false);
                     <h2 class="modal-title" id="planModalTitle">Add New Plan</h2>
                     <button class="close-modal-btn" id="closePlanModal" @click="isOpen = false">&times;</button>
                 </div>
-                <Form v-bind="StorePlanController.form()" :reset-on-success="['name','price','billing_period','free_days_trial','is_unlimited_content','movies_upload_count','series_upload_count','shorts_upload_count']"
+                <Form v-bind="StorePlanController.form()" :reset-on-success="['name','price','billing_period','free_days_trial','is_unlimited_content','movies_upload_count','series_upload_count','shorts_upload_count','plan_type','has_ads']"
                     v-slot="{ errors, processing }">
                     <input type="hidden" id="planEditId">
                     <div class="form-grid">
+                        <div class="form-group-custom">
+                            <label for="planType" class="form-label-custom">Plan Type</label>
+                            <select name="plan_type" id="planType" class="form-control-custom" v-model="selectedPlanType">
+                                <option value="creator">Creator</option>
+                                <option value="spectator">Spectator</option>
+                            </select>
+                        </div>
                         <div class="form-group-custom">
                             <label for="planName" class="form-label-custom">Plan Name</label>
                             <input type="text" name="name" id="planName" class="form-control-custom" required>
@@ -43,11 +51,17 @@ const isUnlimitedChecked = ref(false);
                             <label for="planTrialDays" class="form-label-custom">Free Trial (Days)</label>
                             <input type="number" name="free_days_trial" id="planTrialDays" class="form-control-custom" min="0" value="0">
                         </div>
+                        <div class="form-group-custom full-width" v-if="selectedPlanType === 'spectator'">
+                            <div class="form-checkbox-group">
+                                <input type="checkbox" name="has_ads" id="planHasAds" value="1">
+                                <label for="planHasAds">Show Ads (Standard Plan)</label>
+                            </div>
+                        </div>
                         <div class="form-group-custom full-width">
                             <label for="planDescription" class="form-label-custom">Description</label>
                             <textarea name="description" id="planDescription" class="form-control-custom" rows="2"></textarea>
                         </div>
-                        <div class="form-group-custom full-width">
+                        <div class="form-group-custom full-width" v-if="selectedPlanType === 'creator'">
                             <div class="form-checkbox-group">
                                 <input type="checkbox" name="is_unlimited_content" id="planUploadUnlimited" value="1" v-model="isUnlimitedChecked">
                                 <label for="planUploadUnlimited">Unlimited Content Uploads</label>

@@ -20,6 +20,7 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'username' => $this->username,
             'status' => $this->status,
+            'user_type' => $this->user_type?->value ?? 'creator',
             'image_url' => $this->image_url,
             'email_verified_at' => $this->email_verified_at?->format('Y-m-d H:i:s'),
             'roles' => $this->whenLoaded('roles', function () {
@@ -32,6 +33,7 @@ class UserResource extends JsonResource
             'plan_id' => $this->plan_id,
             'trial_days' => $this->getTrialDaysEnds(),
             'next_payment_date' => $this->getNextPaymentDate(),
+            'accepted_terms_at' => $this->accepted_terms_at?->format('Y-m-d H:i:s'),
             'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
             'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),
         ];

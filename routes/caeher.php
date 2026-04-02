@@ -69,6 +69,14 @@ Route::middleware('auth')->group(function () {
                 ->name('admin.plans.destroy');
         });
 
+        // Terms & Conditions Routes
+        Route::prefix('terms')->group(function () {
+            Route::get('/', \App\Http\Controllers\TermsCondition\IndexTermsConditionController::class)
+                ->name('admin.terms.index');
+            Route::put('/{termsCondition}', \App\Http\Controllers\TermsCondition\UpdateTermsConditionController::class)
+                ->name('admin.terms.update');
+        });
+
         // User Routes
         Route::prefix('users')->group(function () {
             Route::get('/', \App\Http\Controllers\User\IndexUserController::class)

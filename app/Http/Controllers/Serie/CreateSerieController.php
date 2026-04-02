@@ -19,6 +19,15 @@ class CreateSerieController extends Controller
     {
         $_user = User::find(Auth::user()->id);
 
+        // Spectators cannot upload content
+        if ($_user->isSpectator()) {
+            return redirect()->route('dashboard')->with([
+                'type' => 'error',
+                'title' => __('Access Denied'),
+                'message' => __('Spectator accounts cannot upload content. Switch to a Creator account to start uploading.'),
+            ]);
+        }
+
         // get content with movie morph,
         $serie = Serie::where('user_id', $_user->id)
             ->whereHas('content', function ($query) {

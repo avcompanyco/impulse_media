@@ -8,6 +8,11 @@ import RemoveToFollowController from '@/actions/App/Http/Controllers/Follow/Remo
 import RandomShortController from '@/actions/App/Http/Controllers/Short/RandomShortController';
 import ShowCreatorProfileController from '@/actions/App/Http/Controllers/CreatorProfile/ShowCreatorProfileController';
 
+// Props
+const props = defineProps<{
+    initialShort?: any;
+}>();
+
 // State
 const shorts = ref<ShortItem[]>([]);
 const isLoadingMoreShorts = ref(false);
@@ -30,7 +35,10 @@ async function getNextTenShorts() {
         }).then((r) => r.json());
 
         if (response.shorts && response.shorts.length > 0) {
-            shorts.value.push(...response.shorts);
+            // Deduplicate: don't add shorts that are already in the list
+            const existingIds = new Set(shorts.value.map(s => s.id));
+            const newShorts = response.shorts.filter((s: any) => !existingIds.has(s.id));
+            shorts.value.push(...newShorts);
             if (!hasInitialShorts.value) {
                 hasInitialShorts.value = true;
             }
@@ -42,7 +50,11 @@ async function getNextTenShorts() {
     }
 }
 
-// Initial load
+// Initial load: if initialShort is provided, seed it first
+if (props.initialShort) {
+    shorts.value.push(props.initialShort);
+    hasInitialShorts.value = true;
+}
 getNextTenShorts();
 
 // Follow / unfollow
@@ -90,6 +102,25 @@ function handleUserClick(event: Event, user: ShortUser) {
     event.stopPropagation();
     router.visit(ShowCreatorProfileController({ user: user.username }));
 }
+
+// Track view for the current short
+async function trackView(short: ShortItem, index: number) {
+    if (!short?.id) return;
+    try {
+        const contentId = (short as any).content?.id;
+        if (!contentId) return;
+        await fetch(`/content/${contentId}/view`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-XSRF-TOKEN': decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] || ''),
+            },
+            credentials: 'same-origin',
+        });
+    } catch (e) {
+        // Silent fail
+    }
+}
 </script>
 
 <template>
@@ -103,6 +134,7 @@ function handleUserClick(event: Event, user: ShortUser) {
         empty-text="No se pudieron cargar los shorts"
         @load-more="getNextTenShorts"
         @retry="getNextTenShorts"
+        @change="trackView"
     >
         <template #overlay="{ short }">
             <div class="user-info">

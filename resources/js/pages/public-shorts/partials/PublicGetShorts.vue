@@ -4,8 +4,11 @@ import { router } from '@inertiajs/vue3';
 import ShortsPlayer from '@/components/ShortsPlayer.vue';
 import type { ShortItem } from '@/components/ShortsPlayer.vue';
 
+const MAX_PUBLIC_SHORTS = 7;
+
 const emit = defineEmits<{
     requireLogin: [];
+    interaction: [];
 }>();
 
 // State
@@ -13,10 +16,12 @@ const shorts = ref<ShortItem[]>([]);
 const isLoadingMoreShorts = ref(false);
 const hasInitialShorts = ref(false);
 const playerRef = ref<InstanceType<typeof ShortsPlayer>>();
+const shortsWatchedCount = ref(0);
+const limitReached = ref(false);
 
 // Load shorts
 async function getNextTenShorts() {
-    if (isLoadingMoreShorts.value) return;
+    if (isLoadingMoreShorts.value || limitReached.value) return;
 
     isLoadingMoreShorts.value = true;
     try {
@@ -24,6 +29,12 @@ async function getNextTenShorts() {
             method: 'GET',
             headers: { 'Accept': 'application/json' },
         }).then((r) => r.json());
+
+        if (response.limit_reached) {
+            limitReached.value = true;
+            emit('requireLogin');
+            return;
+        }
 
         if (response.shorts && response.shorts.length > 0) {
             shorts.value.push(...response.shorts);
@@ -38,6 +49,49 @@ async function getNextTenShorts() {
     }
 }
 
+// Track view count when short changes — only count NEW shorts (scrolling down)
+const highestIndexSeen = ref(0);
+
+async function handleShortChange(short: ShortItem, index: number) {
+    // Only count towards the limit if this is a new short (scrolling down)
+    const isNewShort = index > highestIndexSeen.value;
+    if (isNewShort) {
+        highestIndexSeen.value = index;
+        shortsWatchedCount.value++;
+
+        // Update session count on backend
+        try {
+            await fetch('/public/shorts/watched', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                },
+                body: JSON.stringify({ count: shortsWatchedCount.value }),
+            });
+        } catch (e) { /* silent */ }
+
+        // Check limit on frontend side too
+        if (shortsWatchedCount.value >= MAX_PUBLIC_SHORTS) {
+            limitReached.value = true;
+            emit('requireLogin');
+        }
+    }
+
+    // Always track the view (for analytics) regardless of direction
+    if (short.content?.id) {
+        try {
+            await fetch(`/public/content/${short.content.id}/view`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                },
+            });
+        } catch (e) { /* silent */ }
+    }
+}
+
 // Initial load
 getNextTenShorts();
 
@@ -46,11 +100,11 @@ function goToUserChannel(username: string) {
     router.visit(`/public/channel/${username}/movie`);
 }
 
-// Intercept interactions to prompt login
+// Intercept interactions to prompt login — shows "Join to interact" (closeable)
 function handleInteraction(event: Event) {
     event.stopPropagation();
     event.preventDefault();
-    emit('requireLogin');
+    emit('interaction');
 }
 </script>
 
@@ -68,13 +122,14 @@ function handleInteraction(event: Event) {
             empty-text="No shorts available right now."
             @load-more="getNextTenShorts"
             @retry="getNextTenShorts"
+            @change="handleShortChange"
         >
             <template #overlay="{ short }">
                 <div class="user-info">
-                    <div class="user-avatar-container" @click.stop="goToUserChannel(short.user.username)">
+                    <div class="user-avatar-container" @click.stop="handleInteraction($event)">
                         <img :src="short.user.image_url" alt="User Avatar" class="user-avatar" loading="lazy">
                     </div>
-                    <span class="username" @click.stop="goToUserChannel(short.user.username)">
+                    <span class="username" @click.stop="handleInteraction($event)">
                         @{{ short.user.username }}
                     </span>
                     <button class="follow-btn" @click.stop="handleInteraction($event)">

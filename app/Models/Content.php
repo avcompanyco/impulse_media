@@ -19,6 +19,7 @@ class Content extends Model
         'status',
         'type',
         'user_id',
+        'views_count',
     ];
 
     protected $casts = [

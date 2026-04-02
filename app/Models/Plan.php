@@ -25,10 +25,13 @@ class Plan extends Model
         'stripe_product_id',
         'stripe_price_id',
         'status',
+        'plan_type',
+        'has_ads',
     ];
 
     protected $casts = [
         'is_unlimited_content' => 'boolean',
+        'has_ads' => 'boolean',
         'price' => 'decimal:2',
         'billing_period' => BillingPeriod::class,
     ];
@@ -73,6 +76,22 @@ class Plan extends Model
     }
 
     /**
+     * Scope for spectator plans
+     */
+    public function scopeForSpectators($query)
+    {
+        return $query->where('plan_type', 'spectator');
+    }
+
+    /**
+     * Scope for creator plans
+     */
+    public function scopeForCreators($query)
+    {
+        return $query->where('plan_type', 'creator');
+    }
+
+    /**
      * Get the plan's payments
      */
     public function payments()
@@ -80,3 +99,4 @@ class Plan extends Model
         return $this->hasMany(Payment::class);
     }
 }
+

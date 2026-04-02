@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { useVideoPlayer, type UseVideoPlayerOptions } from '@/composables/useVideoPlayer';
+import VideoAdOverlay from '@/components/VideoAdOverlay.vue';
+import { ref } from 'vue';
 
 export interface VideoPlayerProps {
     /** Video source URL */
@@ -14,6 +16,8 @@ export interface VideoPlayerProps {
     autoplay?: boolean;
     /** Enable keyboard shortcuts */
     keyboardControls?: boolean;
+    /** Show ads (based on user plan) */
+    showAds?: boolean;
 }
 
 const props = withDefaults(defineProps<VideoPlayerProps>(), {
@@ -21,6 +25,7 @@ const props = withDefaults(defineProps<VideoPlayerProps>(), {
     autoplay: true,
     keyboardControls: true,
     subtitle: '',
+    showAds: false,
 });
 
 const emit = defineEmits<{
@@ -29,12 +34,18 @@ const emit = defineEmits<{
     pause: [];
 }>();
 
+// When ads are enabled, defer autoplay until preroll is done
+const shouldAutoplay = props.showAds ? false : props.autoplay;
+const adOverlayRef = ref<InstanceType<typeof VideoAdOverlay>>();
+
 const {
     videoEl,
     containerEl,
     isPlaying,
     isMuted,
     volume,
+    currentTime,
+    duration,
     progress,
     isFullscreen,
     controlsVisible,
@@ -47,11 +58,28 @@ const {
     handleVolumeInput,
     toggleFullscreen,
     showControls,
+    play,
+    pause,
 } = useVideoPlayer({
-    autoplay: props.autoplay,
+    autoplay: shouldAutoplay,
     keyboardControls: props.keyboardControls,
     onEnded: () => emit('ended'),
 });
+
+// Ad event handlers
+function onAdStart() {
+    pause();
+}
+
+function onAdEnd() {
+    play();
+}
+
+function onPrerollComplete() {
+    if (props.autoplay) {
+        play();
+    }
+}
 </script>
 
 <template>
@@ -79,6 +107,18 @@ const {
             <source :src="videoSrc" />
             Tu navegador no soporta la etiqueta de video HTML5.
         </video>
+
+        <!-- Ad Overlay -->
+        <VideoAdOverlay
+            v-if="showAds"
+            ref="adOverlayRef"
+            :show-ads="showAds"
+            :video-duration="duration"
+            :current-time="currentTime"
+            @ad-start="onAdStart"
+            @ad-end="onAdEnd"
+            @preroll-complete="onPrerollComplete"
+        />
 
         <!-- Buffering Spinner -->
         <div v-if="isBuffering" class="vp-buffering">

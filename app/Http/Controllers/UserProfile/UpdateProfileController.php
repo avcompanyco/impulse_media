@@ -49,7 +49,7 @@ class UpdateProfileController extends Controller
     public function canAccess()
     {
         $_user = User::find(Auth::user()->id);
-        if ($_user && $_user->hasRole('user')) {
+        if ($_user && $_user->hasAnyRole(['user', 'spectator', 'creator'])) {
             return true;
         }
         return false;

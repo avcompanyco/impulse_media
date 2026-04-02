@@ -20,6 +20,8 @@ trait HasCreatePlan
             $data['movies_upload_count'] = $data['movies_upload_count'] ?? 0;
             $data['shorts_upload_count'] = $data['shorts_upload_count'] ?? 0;
             $data['series_upload_count'] = $data['series_upload_count'] ?? 0;
+            $data['plan_type'] = $data['plan_type'] ?? 'creator';
+            $data['has_ads'] = $data['has_ads'] ?? false;
 
             if (env('APP_ENV') == 'production') {
                 $stripe = new StripeClient(config('cashier.secret'));

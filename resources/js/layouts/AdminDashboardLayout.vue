@@ -100,6 +100,14 @@ watch(() => usePage().props, (newVal: any) => {
                                 Plans
                                 </Link>
                             </li>
+                            <li>
+                                <a href="/admin/terms" class="nav-link" :class="{ 'active': $page.url.includes('/terms') }">
+                                <svg class="nav-icon-svg" viewBox="0 0 24 24">
+                                    <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6zm2-6h8v2H8v-2zm0-4h8v2H8v-2z" />
+                                </svg>
+                                Terms & Conditions
+                                </a>
+                            </li>
                         </ul>
                     </nav>
                 </aside>

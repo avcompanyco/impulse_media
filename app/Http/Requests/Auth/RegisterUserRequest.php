@@ -8,19 +8,11 @@ use Illuminate\Validation\Rules;
 
 class RegisterUserRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
@@ -28,6 +20,18 @@ class RegisterUserRequest extends FormRequest
             'username' => 'required|string|max:255|unique:' . User::class,
             'email' => 'required|string|lowercase|email|max:255|unique:' . User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'user_type' => 'required|string|in:spectator,creator',
+            'accept_terms' => 'required|accepted',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'user_type.required' => 'Please select an account type.',
+            'user_type.in' => 'Invalid account type.',
+            'accept_terms.required' => 'You must accept the Terms & Conditions.',
+            'accept_terms.accepted' => 'You must accept the Terms & Conditions.',
         ];
     }
 }

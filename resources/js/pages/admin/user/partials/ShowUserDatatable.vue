@@ -182,6 +182,8 @@ function copyClipboard(email: string) {
                     <tr>
                         <th>Username</th>
                         <th>Full Name</th>
+                        <th>Type</th>
+                        <th>Plan</th>
                         <th>Email</th>
                         <th>Status</th>
                         <th>Next Payment Date</th>
@@ -191,7 +193,7 @@ function copyClipboard(email: string) {
                 </thead>
                 <tbody id="usersTableBody">
                     <tr v-if="users.length === 0 && !loading">
-                        <td colspan="6" class="no-data">
+                        <td colspan="9" class="no-data">
                             {{ query.search ? 'No users found matching your search.' : 'No users available.' }}
                         </td>
                     </tr>
@@ -200,6 +202,16 @@ function copyClipboard(email: string) {
                             <Link :href="ShowMovieChannelController.url({username: user.username})">{{ user.username }}</Link>
                         </td>
                         <td>{{ user.name }}</td>
+                        <td>
+                            <span class="type-badge" :class="`type-${user.user_type}`">
+                                <i :class="user.user_type === 'spectator' ? 'fas fa-tv' : 'fas fa-video'" style="margin-right:4px;"></i>
+                                {{ user.user_type === 'spectator' ? 'Spectator' : 'Creator' }}
+                            </span>
+                        </td>
+                        <td>
+                            <span v-if="user.plan" class="plan-badge">{{ user.plan.name }}</span>
+                            <span v-else class="plan-badge plan-none">No Plan</span>
+                        </td>
                         <td>
                             <div class="email-container">
                                 <span>{{ substringEmail(user.email) }}</span>
@@ -412,5 +424,61 @@ function copyClipboard(email: string) {
 
 .action-buttons .btn-delete:hover {
     background-color: var(--error-color-hover);
+}
+
+/* User Type Badges */
+.type-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.65rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.type-spectator {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+}
+
+.type-creator {
+    background: rgba(168, 85, 247, 0.15);
+    color: #c084fc;
+}
+
+/* Plan Badge */
+.plan-badge {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-light);
+}
+
+.plan-none {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* Status Badge */
+.status-badge {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 500;
+}
+
+.status-active {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+}
+
+.status-inactive, .status-suspended, .status-banned {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
 }
 </style>

@@ -17,6 +17,8 @@ interface Plan {
     movies_upload_count: number;
     series_upload_count: number;
     shorts_upload_count: number;
+    plan_type?: string;
+    has_ads?: boolean;
 }
 
 const props = defineProps<{
@@ -61,7 +63,21 @@ const closeDeleteModal = () => {
             <!-- Las tarjetas de planes se insertarán aquí -->
             <div v-for="plan in plans" :key="plan.id" class="plan-card">
                 <div class="plan-card-header">
-                    <h3 class="plan-card-title">{{ plan.name }}</h3>
+                    <div>
+                        <h3 class="plan-card-title">{{ plan.name }}</h3>
+                        <div class="plan-badges">
+                            <span class="plan-type-badge" :class="plan.plan_type === 'spectator' ? 'badge-spectator' : 'badge-creator'">
+                                <i :class="plan.plan_type === 'spectator' ? 'fas fa-tv' : 'fas fa-video'" style="margin-right:4px;"></i>
+                                {{ plan.plan_type === 'spectator' ? 'Spectator' : 'Creator' }}
+                            </span>
+                            <span v-if="plan.has_ads" class="plan-ads-badge">
+                                <i class="fas fa-ad" style="margin-right:3px;"></i> Ads
+                            </span>
+                            <span v-else class="plan-noad-badge">
+                                <i class="fas fa-ban" style="margin-right:3px;"></i> No Ads
+                            </span>
+                        </div>
+                    </div>
                     <div class="plan-card-actions">
                         <EditPlanModal :plan="plan"/>
                         <DeletePlanModal :plan="plan"/>
@@ -70,6 +86,9 @@ const closeDeleteModal = () => {
                 <ul class="plan-card-details">
                     <li><strong>Price:</strong> {{ plan.price_formatted }} / {{ plan.billing_period }}</li>
                     <li><strong>Uploads:</strong> {{ plan.is_unlimited_content ? 'Unlimited' : 'Limited' }}</li>
+                    <li v-if="!plan.is_unlimited_content && plan.plan_type === 'creator'">
+                        <strong>Limits:</strong> {{ plan.movies_upload_count }} movies, {{ plan.series_upload_count }} series, {{ plan.shorts_upload_count }} shorts
+                    </li>
                     <li><strong>Description:</strong> {{ plan.description }}</li>
                 </ul>
             </div>
@@ -181,6 +200,56 @@ const closeDeleteModal = () => {
     color: var(--text-light);
     font-weight: 500;
     margin-right: 6px;
+}
+
+/* Plan Badges */
+.plan-badges {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.plan-type-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-spectator {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+}
+
+.badge-creator {
+    background: rgba(168, 85, 247, 0.15);
+    color: #c084fc;
+}
+
+.plan-ads-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+}
+
+.plan-noad-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
 }
 
 </style>

@@ -18,6 +18,20 @@ class IndexShortController extends Controller
         // clear session previous_short_ids
         session()->forget('previous_short_ids');
 
-        return Inertia::render('user/short/ShowShort');
+        $initialShort = null;
+        if ($request->has('short')) {
+            $initialShort = Short::where('id', $request->input('short'))
+                ->whereHas('content', function ($query) {
+                    $query->where('status', ContentStatus::PUBLISHED->value);
+                })
+                ->with(['content', 'user' => function ($query) {
+                    $query->select('id', 'name', 'username', 'image');
+                }])
+                ->first();
+        }
+
+        return Inertia::render('user/short/ShowShort', [
+            'initialShort' => $initialShort,
+        ]);
     }
 }

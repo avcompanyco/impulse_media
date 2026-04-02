@@ -46,9 +46,14 @@ class HandleInertiaRequests extends Middleware
             ->get();
 
         $subscriptions = [];
+        $showAds = false;
         if (Auth::check()) {
             $_user = User::find(Auth::user()->id);
             $subscriptions = $_user->followings;
+            $currentPlan = $_user->getCurrentPlan();
+            if ($currentPlan && $currentPlan->has_ads) {
+                $showAds = true;
+            }
         }
 
         return [
@@ -68,6 +73,7 @@ class HandleInertiaRequests extends Middleware
             ],
             'web_categories' => $web_categories,
             'subscriptions' => $subscriptions,
+            'show_ads' => $showAds,
         ];
     }
 }

@@ -16,7 +16,7 @@ class UpdateProfileRequest extends FormRequest
     public function authorize(): bool
     {
         $_user = User::find(Auth::user()->id);
-        if ($_user && $_user->hasRole('user')) {
+        if ($_user && $_user->hasAnyRole(['user', 'spectator', 'creator'])) {
             return true;
         }
         return false;

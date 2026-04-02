@@ -14,6 +14,8 @@ interface Plan {
     movies_upload_count: number;
     series_upload_count: number;
     shorts_upload_count: number;
+    plan_type?: string;
+    has_ads?: boolean;
 }
 
 interface Props {
@@ -98,6 +100,27 @@ const closeModal = () => {
                                 class="form-control-custom" 
                                 rows="2">{{ plan?.description || '' }}</textarea>
                             <div v-if="errors.description" class="error-text">{{ errors.description }}</div>
+                        </div>
+                        <div class="form-group-custom">
+                            <label for="editPlanType" class="form-label-custom">Plan Type</label>
+                            <select
+                                name="plan_type"
+                                id="editPlanType"
+                                class="form-control-custom">
+                                <option value="creator" :selected="plan?.plan_type === 'creator'">Creator</option>
+                                <option value="spectator" :selected="plan?.plan_type === 'spectator'">Spectator</option>
+                            </select>
+                        </div>
+                        <div class="form-group-custom">
+                            <div class="form-checkbox-group">
+                                <input
+                                    type="checkbox"
+                                    name="has_ads"
+                                    id="editPlanHasAds"
+                                    :checked="plan?.has_ads"
+                                    value="1">
+                                <label for="editPlanHasAds">Show Ads to Users</label>
+                            </div>
                         </div>
                         <div class="form-group-custom full-width">
                             <div class="form-checkbox-group">

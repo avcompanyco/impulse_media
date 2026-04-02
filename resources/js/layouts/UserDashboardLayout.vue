@@ -69,7 +69,7 @@ watch(() => usePage().props, (newVal: any) => {
             <img src="/images/logo.png" alt="Logo" class="logo-icon">
         </div>
         <div class="side-menu-content">
-            <Link :href="MovieChannelController()" class="menu-item">
+            <Link v-if="$page.props.auth.user.is_creator" :href="MovieChannelController()" class="menu-item">
             <img :src="$page.props.auth.user.image_url" alt="My Channel" class="menu-profile-icon">
             <span>My Channel</span>
             </Link>
@@ -124,7 +124,7 @@ watch(() => usePage().props, (newVal: any) => {
             <img src="/images/clip.svg" alt="Shorts" class="nav-icon">
             <span>Shorts</span>
         </Link>
-        <Link :href="movieUpload()" class="nav-item" :class="{ active: $page.url === movieUpload.url() }">
+        <Link v-if="$page.props.auth.user.is_creator" :href="movieUpload()" class="nav-item" :class="{ active: $page.url === movieUpload.url() }">
             <img src="/images/upload.svg" alt="Upload" class="nav-icon">
             <span>Upload</span>
         </Link>

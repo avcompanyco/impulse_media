@@ -23,13 +23,17 @@ class UserHasSubscription
         }
         $user = User::find(Auth::user()->id);
         if (env('APP_ENV') !== 'production') {
-            if (!$user->subscribed('default')) {
-                return redirect()->route('subscription.cancel');
-            }
-        } else {
+            // In non-production, check if user has a plan assigned
             $plan = $user->getCurrentPlan();
             if (!$plan) {
                 return redirect()->route('subscription.cancel');
+            }
+        } else {
+            if (!$user->subscribed('default')) {
+                $plan = $user->getCurrentPlan();
+                if (!$plan) {
+                    return redirect()->route('subscription.cancel');
+                }
             }
         }
         return $next($request);

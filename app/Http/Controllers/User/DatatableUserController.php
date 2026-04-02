@@ -33,8 +33,8 @@ class DatatableUserController extends Controller
 
             }
             $users->whereHas('roles', function ($query){
-                // role name user spatie permissions
-                $query->where('name', 'user');
+                // Include user, spectator, and creator roles
+                $query->whereIn('name', ['user', 'spectator', 'creator']);
             });
 
             $users->with('roles');

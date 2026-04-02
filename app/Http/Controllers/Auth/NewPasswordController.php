@@ -61,7 +61,7 @@ class NewPasswordController extends Controller
         // redirect them back to where they came from with their error message.
         $user = User::where('email', $request->email)->first();
 
-        if ($status == Password::PasswordReset && $user->hasRole('user')) {
+        if ($status == Password::PasswordReset && $user->hasAnyRole(['user', 'spectator', 'creator'])) {
             return to_route('login.user')->with('status', __($status));
         } else if ($status == Password::PasswordReset && $user->hasRole('admin')) {
             return to_route('login.admin')->with('status', __($status));

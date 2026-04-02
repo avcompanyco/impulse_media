@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick, watch, type Ref } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick, watch, reactive, type Ref } from 'vue';
 
 // ─── Types ───────────────────────────────────────────────
 export interface ShortUser {
@@ -81,7 +81,6 @@ const isTransitioning = ref(false);
 // ─── Player state ────────────────────────────────────────
 const containerRef = ref<HTMLDivElement>();
 const playerRef = ref<HTMLDivElement>();
-const videoPlayer = ref<HTMLVideoElement>();
 const isPlaying = ref(false);
 const showControls = ref(true);
 const isMuted = ref(true); // Start muted so autoplay works on all browsers
@@ -96,6 +95,21 @@ const touchEndY = ref(0);
 const touchEndX = ref(0);
 const isDragging = ref(false);
 const MIN_SWIPE_DISTANCE = 50;
+
+// ─── 3-Video Pool System (YouTube-style) ─────────────────
+// Three persistent <video> elements that never get destroyed.
+// Each slot can hold a short URL. On navigation, we rotate
+// which slot is "active" (visible + playing). The adjacent slots
+// are hidden but pre-buffered with preload="auto".
+const NUM_SLOTS = 3;
+const videoSlotEls: (HTMLVideoElement | null)[] = reactive([null, null, null]);
+const videoSlotUrls = reactive(['', '', '']);
+const activeSlot = ref(0);
+
+// Helper: get the currently active video element
+function getActiveVideo(): HTMLVideoElement | null {
+    return videoSlotEls[activeSlot.value] || null;
+}
 
 let controlsTimeout: ReturnType<typeof setTimeout> | null = null;
 let rafId: number | null = null;
@@ -114,26 +128,83 @@ watch(
     (newShorts) => {
         if (newShorts.length > 0 && currentShortIndex.value === -1) {
             currentShortIndex.value = 0;
-            syncCurrentShort();
+            nextTick(() => initializePool());
         }
     },
     { deep: true },
 );
 
-// ─── Navigation ──────────────────────────────────────────
-function syncCurrentShort() {
+// ─── Pool Initialization ────────────────────────────────
+function initializePool() {
     const list = props.shorts;
-    const idx = currentShortIndex.value;
+    if (list.length === 0) return;
 
-    if (list.length > 0 && idx >= 0 && idx < list.length) {
-        currentShort.value = list[idx];
-        previousShort.value = idx > 0 ? list[idx - 1] : null;
-        nextShortPreview.value = idx < list.length - 1 ? list[idx + 1] : null;
-        resetVideo();
-        emit('change', list[idx], idx);
+    const idx = 0;
+    currentShort.value = list[idx];
+    previousShort.value = null;
+    nextShortPreview.value = list.length > 1 ? list[1] : null;
+
+    // Slot 0 = current, Slot 1 = next, Slot 2 = prev (empty initially)
+    activeSlot.value = 0;
+    videoSlotUrls[0] = list[idx].short_video_url;
+    videoSlotUrls[1] = list.length > 1 ? list[1].short_video_url : '';
+    videoSlotUrls[2] = ''; // No previous at start
+
+    // Reset state
+    currentTime.value = 0;
+    duration.value = 0;
+    isPlaying.value = false;
+    showControls.value = true;
+    showControlsTemporarily();
+
+    // Play the first video after DOM updates
+    nextTick(() => {
+        playActiveSlot();
+    });
+
+    emit('change', list[idx], idx);
+}
+
+// ─── Play the active slot ────────────────────────────────
+function playActiveSlot() {
+    const video = getActiveVideo();
+    if (!video) return;
+
+    video.muted = isMuted.value;
+    video.currentTime = 0;
+    currentTime.value = 0;
+
+    if (props.autoPlay) {
+        // If video has enough data, play instantly
+        if (video.readyState >= 3) {
+            video.play().then(() => {
+                isPlaying.value = true;
+                startProgressLoop();
+                showControlsTemporarily();
+            }).catch(() => { isPlaying.value = false; });
+        } else {
+            // Wait for enough data to play
+            const onCanPlay = () => {
+                video.removeEventListener('canplay', onCanPlay);
+                video.play().then(() => {
+                    isPlaying.value = true;
+                    startProgressLoop();
+                    showControlsTemporarily();
+                }).catch(() => { isPlaying.value = false; });
+            };
+            video.addEventListener('canplay', onCanPlay, { once: true });
+            // Also try playing directly (works if autoplay policy allows)
+            video.play().then(() => {
+                video.removeEventListener('canplay', onCanPlay);
+                isPlaying.value = true;
+                startProgressLoop();
+                showControlsTemporarily();
+            }).catch(() => { /* will be handled by canplay */ });
+        }
     }
 }
 
+// ─── Navigation ──────────────────────────────────────────
 function checkLoadMore() {
     const remaining = props.shorts.length - currentShortIndex.value - 1;
     if (remaining <= 3 && !props.isLoadingMore) {
@@ -152,11 +223,59 @@ const nextShort = () => {
     const isLast = currentShortIndex.value === props.shorts.length - 1;
 
     if (!isLast) {
-        performTransition('up', () => {
-            currentShortIndex.value++;
-            syncCurrentShort();
-            checkLoadMore();
+        isTransitioning.value = true;
+        transitionDirection.value = 'up';
+
+        // Pause current video
+        const oldVideo = getActiveVideo();
+        if (oldVideo) {
+            oldVideo.pause();
+        }
+        cancelRaf();
+        isPlaying.value = false;
+
+        // Advance index
+        currentShortIndex.value++;
+        const idx = currentShortIndex.value;
+        const list = props.shorts;
+
+        // Update short refs
+        currentShort.value = list[idx];
+        previousShort.value = idx > 0 ? list[idx - 1] : null;
+        nextShortPreview.value = idx < list.length - 1 ? list[idx + 1] : null;
+
+        // Rotate pool: next slot becomes active
+        const newActiveSlot = (activeSlot.value + 1) % NUM_SLOTS;
+        const freedSlot = (newActiveSlot + 1) % NUM_SLOTS; // Was "prev", now free for new "next"
+
+        // Assign new next URL to the freed slot
+        if (idx + 1 < list.length) {
+            videoSlotUrls[freedSlot] = list[idx + 1].short_video_url;
+            // Trigger the load on the freed slot
+            nextTick(() => {
+                const video = videoSlotEls[freedSlot];
+                if (video && video.src !== list[idx + 1]?.short_video_url) {
+                    video.load();
+                }
+            });
+        } else {
+            videoSlotUrls[freedSlot] = '';
+        }
+
+        activeSlot.value = newActiveSlot;
+
+        // Play the new active video (it's been preloading!)
+        nextTick(() => {
+            playActiveSlot();
         });
+
+        emit('change', list[idx], idx);
+        checkLoadMore();
+
+        setTimeout(() => {
+            transitionDirection.value = null;
+            isTransitioning.value = false;
+        }, 350);
     } else {
         emit('loadMore');
     }
@@ -166,71 +285,73 @@ const prevShort = () => {
     if (isTransitioning.value || props.shorts.length === 0) return;
 
     if (currentShortIndex.value > 0) {
-        performTransition('down', () => {
-            currentShortIndex.value--;
-            syncCurrentShort();
+        isTransitioning.value = true;
+        transitionDirection.value = 'down';
+
+        // Pause current video
+        const oldVideo = getActiveVideo();
+        if (oldVideo) {
+            oldVideo.pause();
+        }
+        cancelRaf();
+        isPlaying.value = false;
+
+        // Decrement index
+        currentShortIndex.value--;
+        const idx = currentShortIndex.value;
+        const list = props.shorts;
+
+        // Update short refs
+        currentShort.value = list[idx];
+        previousShort.value = idx > 0 ? list[idx - 1] : null;
+        nextShortPreview.value = idx < list.length - 1 ? list[idx + 1] : null;
+
+        // Rotate pool: prev slot becomes active
+        const newActiveSlot = (activeSlot.value + 2) % NUM_SLOTS; // -1 mod 3
+        const freedSlot = (newActiveSlot + 2) % NUM_SLOTS; // Was "next", now free for new "prev"
+
+        // Assign new prev URL to the freed slot
+        if (idx - 1 >= 0) {
+            videoSlotUrls[freedSlot] = list[idx - 1].short_video_url;
+            nextTick(() => {
+                const video = videoSlotEls[freedSlot];
+                if (video) video.load();
+            });
+        } else {
+            videoSlotUrls[freedSlot] = '';
+        }
+
+        activeSlot.value = newActiveSlot;
+
+        // Play the new active video
+        nextTick(() => {
+            playActiveSlot();
         });
-    }
-};
 
-function performTransition(direction: 'up' | 'down', onMid: () => void) {
-    transitionDirection.value = direction;
-    isTransitioning.value = true;
+        emit('change', list[idx], idx);
 
-    setTimeout(() => {
-        onMid();
         setTimeout(() => {
             transitionDirection.value = null;
             isTransitioning.value = false;
-        }, 400);
-    }, 100);
-}
+        }, 350);
+    }
+};
 
 // ─── Video controls ──────────────────────────────────────
-function resetVideo() {
-    cancelRaf();
-
-    if (videoPlayer.value) {
-        videoPlayer.value.currentTime = 0;
-        currentTime.value = 0;
-        isPlaying.value = false;
-    }
-
-    showControls.value = true;
-    showControlsTemporarily();
-
-    if (props.autoPlay) {
-        nextTick(() => {
-            setTimeout(() => {
-                if (videoPlayer.value && currentShort.value) {
-                    videoPlayer.value
-                        .play()
-                        .then(() => {
-                            isPlaying.value = true;
-                            startProgressLoop();
-                        })
-                        .catch(() => {
-                            isPlaying.value = false;
-                        });
-                }
-            }, 300);
-        });
-    }
-}
-
 const togglePlayPause = (event?: Event) => {
     if (event) {
         event.stopPropagation();
         event.preventDefault();
     }
-    if (!videoPlayer.value) return;
+    const video = getActiveVideo();
+    if (!video) return;
 
-    if (videoPlayer.value.paused) {
-        videoPlayer.value.play();
+    if (video.paused) {
+        video.play();
         isPlaying.value = true;
         startProgressLoop();
     } else {
-        videoPlayer.value.pause();
+        video.pause();
         isPlaying.value = false;
         cancelRaf();
     }
@@ -242,10 +363,11 @@ const toggleMute = (event?: Event) => {
         event.stopPropagation();
         event.preventDefault();
     }
-    if (!videoPlayer.value) return;
+    const video = getActiveVideo();
+    if (!video) return;
 
-    videoPlayer.value.muted = !videoPlayer.value.muted;
-    isMuted.value = videoPlayer.value.muted;
+    video.muted = !video.muted;
+    isMuted.value = video.muted;
     showControlsTemporarily();
 };
 
@@ -261,8 +383,9 @@ const showControlsTemporarily = () => {
 function startProgressLoop() {
     cancelRaf();
     const tick = () => {
-        if (videoPlayer.value) {
-            currentTime.value = videoPlayer.value.currentTime;
+        const video = getActiveVideo();
+        if (video) {
+            currentTime.value = video.currentTime;
         }
         rafId = requestAnimationFrame(tick);
     };
@@ -276,49 +399,54 @@ function cancelRaf() {
     }
 }
 
-// ─── Video event handlers ────────────────────────────────
-const handleVideoLoaded = () => {
-    if (videoPlayer.value && currentShort.value) {
-        duration.value = videoPlayer.value.duration;
-        if (videoPlayer.value.paused && props.autoPlay) {
-            videoPlayer.value
-                .play()
-                .then(() => {
-                    isPlaying.value = true;
-                    startProgressLoop();
-                    showControlsTemporarily();
-                })
-                .catch(() => {
-                    isPlaying.value = false;
-                });
-        }
+// ─── Slot event handlers ─────────────────────────────────
+function handleSlotLoadedData(slotIndex: number) {
+    if (slotIndex !== activeSlot.value) return;
+    const video = videoSlotEls[slotIndex];
+    if (video) {
+        duration.value = video.duration;
     }
-};
+}
 
-const handleVideoEnded = () => {
+function handleSlotCanPlay(slotIndex: number) {
+    if (slotIndex !== activeSlot.value) return;
+    const video = videoSlotEls[slotIndex];
+    if (!video) return;
+    duration.value = video.duration || 0;
+    // Safety net: if video is paused and should autoplay, start it
+    if (props.autoPlay && video.paused && !isPlaying.value) {
+        video.play().then(() => {
+            isPlaying.value = true;
+            startProgressLoop();
+            showControlsTemporarily();
+        }).catch(() => {});
+    }
+}
+
+function handleSlotEnded(slotIndex: number) {
+    if (slotIndex !== activeSlot.value) return;
     isPlaying.value = false;
     cancelRaf();
     setTimeout(() => nextShort(), props.autoAdvanceDelay);
-};
+}
 
-const handleVideoPlay = () => {
+function handleSlotPlay(slotIndex: number) {
+    if (slotIndex !== activeSlot.value) return;
     isPlaying.value = true;
     startProgressLoop();
-};
+}
 
-const handleVideoPause = () => {
+function handleSlotPause(slotIndex: number) {
+    if (slotIndex !== activeSlot.value) return;
     isPlaying.value = false;
     cancelRaf();
-};
+}
 
-const handleVideoClick = (event: MouseEvent) => {
+function handleVideoClick(event: MouseEvent) {
     event.stopPropagation();
     event.preventDefault();
-    const target = event.target as HTMLElement;
-    if (target === videoPlayer.value || target.classList.contains('main-video')) {
-        togglePlayPause();
-    }
-};
+    togglePlayPause();
+}
 
 const handleContainerClick = (event: MouseEvent) => {
     const target = event.target as HTMLElement;
@@ -335,17 +463,19 @@ const handleContainerClick = (event: MouseEvent) => {
 const handleProgressClick = (event: MouseEvent) => {
     event.stopPropagation();
     event.preventDefault();
-    if (!videoPlayer.value) return;
+    const video = getActiveVideo();
+    if (!video) return;
 
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
     const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
-    videoPlayer.value.currentTime = ratio * videoPlayer.value.duration;
-    currentTime.value = videoPlayer.value.currentTime;
+    video.currentTime = ratio * video.duration;
+    currentTime.value = video.currentTime;
     showControlsTemporarily();
 };
 
 // ─── Keyboard ────────────────────────────────────────────
 const handleKeyPress = (event: KeyboardEvent) => {
+    const video = getActiveVideo();
     switch (event.code) {
         case 'Space':
             event.preventDefault();
@@ -361,16 +491,16 @@ const handleKeyPress = (event: KeyboardEvent) => {
             break;
         case 'ArrowLeft':
             event.preventDefault();
-            if (videoPlayer.value) {
-                videoPlayer.value.currentTime = Math.max(0, videoPlayer.value.currentTime - props.seekStep);
+            if (video) {
+                video.currentTime = Math.max(0, video.currentTime - props.seekStep);
             }
             break;
         case 'ArrowRight':
             event.preventDefault();
-            if (videoPlayer.value) {
-                videoPlayer.value.currentTime = Math.min(
-                    videoPlayer.value.duration,
-                    videoPlayer.value.currentTime + props.seekStep,
+            if (video) {
+                video.currentTime = Math.min(
+                    video.duration,
+                    video.currentTime + props.seekStep,
                 );
             }
             break;
@@ -458,6 +588,11 @@ function formatTime(seconds: number): string {
     return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
+// Template ref setter for video slots
+function setSlotRef(index: number, el: any) {
+    videoSlotEls[index] = el as HTMLVideoElement;
+}
+
 // ─── Public API (expose for parent access) ───────────────
 defineExpose({
     nextShort,
@@ -524,43 +659,34 @@ onUnmounted(() => {
 
             <!-- ── Main content ── -->
             <div v-else-if="currentShort" class="shorts-viewport">
-                <!-- Previous short preview -->
-                <div
-                    v-if="previousShort && transitionDirection === 'down'"
-                    class="short-player preview-previous"
-                >
-                    <video
-                        class="main-video"
-                        :src="previousShort.short_video_url"
-                        preload="metadata"
-                        
-                    />
-                </div>
-
                 <!-- Current short -->
                 <div
                     ref="playerRef"
                     class="short-player current-short"
                     :class="{
-                        'slide-out-up': transitionDirection === 'up',
-                        'slide-out-down': transitionDirection === 'down',
+                        'slide-in-from-bottom': transitionDirection === 'up',
+                        'slide-in-from-top': transitionDirection === 'down',
                         'is-fullscreen': isFullscreen,
                     }"
                 >
+                    <!-- 3-Video Pool: persistent elements that never get destroyed -->
                     <video
-                        ref="videoPlayer"
+                        v-for="slotIdx in [0, 1, 2]"
+                        :key="'pool-' + slotIdx"
+                        :ref="(el) => setSlotRef(slotIdx, el)"
                         class="main-video"
-                        :src="currentShort.short_video_url"
-                        preload="metadata"
+                        :class="{ 'slot-active': slotIdx === activeSlot }"
+                        :src="videoSlotUrls[slotIdx]"
+                        preload="auto"
                         loop
-                        :muted="isMuted"
-                        autoplay
+                        :muted="slotIdx === activeSlot ? isMuted : true"
                         playsinline
                         @click="handleVideoClick"
-                        @loadeddata="handleVideoLoaded"
-                        @ended="handleVideoEnded"
-                        @play="handleVideoPlay"
-                        @pause="handleVideoPause"
+                        @loadeddata="handleSlotLoadedData(slotIdx)"
+                        @canplay="handleSlotCanPlay(slotIdx)"
+                        @ended="handleSlotEnded(slotIdx)"
+                        @play="handleSlotPlay(slotIdx)"
+                        @pause="handleSlotPause(slotIdx)"
                     />
 
                     <!-- Video controls -->
@@ -588,14 +714,13 @@ onUnmounted(() => {
                         </button>
                     </div>
 
-                    <!-- Overlay slot — parent provides user info / follow / description etc. -->
+                    <!-- Overlay slot -->
                     <div class="video-overlay" @click.stop>
                         <slot
                             name="overlay"
                             :short="currentShort"
                             :isPlaying="isPlaying"
                         >
-                            <!-- Default overlay if no slot is provided -->
                             <div class="user-info">
                                 <div class="user-avatar-container">
                                     <img
@@ -617,18 +742,6 @@ onUnmounted(() => {
                     <div v-if="isLoadingMore && hasInitialShorts" class="loading-more-indicator">
                         <i class="fa-solid fa-circle-notch fa-spin"></i>
                     </div>
-                </div>
-
-                <!-- Next short preview -->
-                <div
-                    v-if="nextShortPreview && transitionDirection === 'up'"
-                    class="short-player preview-next"
-                >
-                    <video
-                        class="main-video"
-                        :src="nextShortPreview.short_video_url"
-                        preload="metadata"
-                    />
                 </div>
             </div>
 
@@ -741,41 +854,36 @@ onUnmounted(() => {
     aspect-ratio: auto;
 }
 
-.short-player video {
+/* ──────────────────────────────────────
+   Video pool slots
+────────────────────────────────────── */
+.short-player .main-video {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    /* Inactive slots: invisible but still loading */
+    opacity: 0;
+    z-index: 0;
+    pointer-events: none;
+    transition: opacity 0.05s ease;
+}
+
+.short-player .main-video.slot-active {
+    opacity: 1;
+    z-index: 1;
+    pointer-events: auto;
 }
 
 /* ──────────────────────────────────────
    Transition animations
 ────────────────────────────────────── */
-@keyframes slideOutUp {
+@keyframes slideInUp {
     from {
-        transform: translateY(0);
-        opacity: 1;
-    }
-    to {
-        transform: translateY(-100%);
-        opacity: 0.5;
-    }
-}
-
-@keyframes slideOutDown {
-    from {
-        transform: translateY(0);
-        opacity: 1;
-    }
-    to {
-        transform: translateY(100%);
-        opacity: 0.5;
-    }
-}
-
-@keyframes slideInFromBottom {
-    from {
-        transform: translateY(100%);
-        opacity: 0.5;
+        transform: translateY(30%);
+        opacity: 0;
     }
     to {
         transform: translateY(0);
@@ -783,10 +891,10 @@ onUnmounted(() => {
     }
 }
 
-@keyframes slideInFromTop {
+@keyframes slideInDown {
     from {
-        transform: translateY(-100%);
-        opacity: 0.5;
+        transform: translateY(-30%);
+        opacity: 0;
     }
     to {
         transform: translateY(0);
@@ -799,36 +907,12 @@ onUnmounted(() => {
     will-change: transform, opacity;
 }
 
-.slide-out-up {
-    animation: slideOutUp 0.4s ease-out forwards;
+.slide-in-from-bottom {
+    animation: slideInUp 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
-.slide-out-down {
-    animation: slideOutDown 0.4s ease-out forwards;
-}
-
-.preview-next {
-    z-index: 5;
-    position: absolute;
-    top: 50%;
-    width: 100%;
-    animation: slideInFromBottom 0.4s ease-out forwards;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    will-change: transform, opacity;
-}
-
-.preview-previous {
-    z-index: 5;
-    position: absolute;
-    top: 50%;
-    width: 100%;
-    animation: slideInFromTop 0.4s ease-out forwards;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    will-change: transform, opacity;
+.slide-in-from-top {
+    animation: slideInDown 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
 /* ──────────────────────────────────────

@@ -45,8 +45,8 @@ class LoginUserRequest extends FormRequest
             ->orWhere('username', $this->input('email'))
             ->first();
 
-        // role user
-        if (!$user || !$user->hasRole('user')) {
+        // Allow users with any of these roles to log in
+        if (!$user || !$user->hasAnyRole(['user', 'spectator', 'creator'])) {
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
             ]);

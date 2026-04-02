@@ -27,10 +27,8 @@ class AppServiceProvider extends ServiceProvider
         // Cashier::calculateTaxes();
 
         // Https force
-        if (env('APP_ENV') === 'production') {
+        if (app()->environment('production')) {
             URL::forceScheme('https');
-        } else {
-            URL::forceScheme('http');
         }
     }
 }

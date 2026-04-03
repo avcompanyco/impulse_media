@@ -46,7 +46,7 @@ class LoginUserRequest extends FormRequest
             ->first();
 
         // Allow users with any of these roles to log in
-        if (!$user || !$user->hasAnyRole(['user', 'spectator', 'creator'])) {
+        if (!$user || !$user->hasAnyRole(['admin', 'user', 'spectator', 'creator'])) {
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
             ]);

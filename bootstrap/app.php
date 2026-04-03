@@ -30,7 +30,9 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->validateCsrfTokens([
-            'subscription/webhook'
+            'subscription/webhook',
+            'public/content/*/view',
+            'public/shorts/watched',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

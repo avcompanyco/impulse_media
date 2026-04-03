@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import ShowRegisterUserController from '@/actions/App/Http/Controllers/Auth/User/ShowRegisterUserController';
 import { Head, Link } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
 
 const props = defineProps<{
     plans: any[];
 }>();
+
+const activeTab = ref<'creator' | 'spectator'>('creator');
+
+const creatorPlans = computed(() => props.plans.filter(p => p.plan_type === 'creator'));
+const spectatorPlans = computed(() => props.plans.filter(p => p.plan_type === 'spectator'));
 </script>
 
 <template>
@@ -19,8 +25,27 @@ const props = defineProps<{
         <h1 class="welcome-title">Choose Your Plan</h1>
         <h2 class="welcome-subtitle">Select the perfect plan for you</h2>
 
-        <div class="plan-cards-container">
-            <div v-for="plan in plans" :key="plan.id" class="plan-card" :class="{ 'featured': plan.name === 'Gold' }">
+        <!-- Plan type tabs -->
+        <div class="plan-tabs">
+            <button 
+                class="plan-tab" 
+                :class="{ active: activeTab === 'creator' }" 
+                @click="activeTab = 'creator'"
+            >
+                🎬 Creator
+            </button>
+            <button 
+                class="plan-tab" 
+                :class="{ active: activeTab === 'spectator' }" 
+                @click="activeTab = 'spectator'"
+            >
+                👁️ Spectator
+            </button>
+        </div>
+
+        <!-- Creator Plans -->
+        <div v-show="activeTab === 'creator'" class="plan-cards-container">
+            <div v-for="plan in creatorPlans" :key="plan.id" class="plan-card" :class="{ 'featured': plan.name === 'Golden' }">
                 <div class="plan-header">
                     <h3 class="plan-name">{{ plan.name }}</h3>
                     <p class="plan-description">{{ plan.description }}</p>
@@ -62,6 +87,44 @@ const props = defineProps<{
             </div>
         </div>
 
+        <!-- Spectator Plans -->
+        <div v-show="activeTab === 'spectator'" class="plan-cards-container">
+            <div v-for="plan in spectatorPlans" :key="plan.id" class="plan-card" :class="{ 'featured': plan.name === 'Premium' }">
+                <div class="plan-header">
+                    <h3 class="plan-name">{{ plan.name }}</h3>
+                    <p class="plan-description">{{ plan.description }}</p>
+                </div>
+                
+                <div class="plan-price">
+                    <span class="price-amount">{{ plan.price_formatted }}</span>
+                    <span class="price-period">/ {{ plan.billing_period }}</span>
+                </div>
+
+                <div class="plan-features">
+                    <div class="feature-item">
+                        <span class="feature-icon">✓</span>
+                        <span>Unlimited streaming</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">✓</span>
+                        <span>Watch movies, series & shorts</span>
+                    </div>
+                    <div v-if="!plan.has_ads" class="feature-item">
+                        <span class="feature-icon">✓</span>
+                        <span>Ad-free experience</span>
+                    </div>
+                    <div v-if="plan.free_days_trial > 0" class="feature-item">
+                        <span class="feature-icon">✓</span>
+                        <span>{{ plan.free_days_trial }} days free trial</span>
+                    </div>
+                </div>
+
+                <Link :href="ShowRegisterUserController()" class="btn select-plan-button" role="button">
+                    Select Plan
+                </Link>
+            </div>
+        </div>
+
     </div>
 </template>
 
@@ -76,6 +139,38 @@ const props = defineProps<{
     align-items: center;
     justify-content: center;
     padding: 2rem 1rem;
+}
+
+.plan-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 2.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0.35rem;
+    border-radius: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.plan-tab {
+    padding: 0.65rem 2rem;
+    border: none;
+    border-radius: 25px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.plan-tab.active {
+    background: #DC3545;
+    color: white;
+}
+
+.plan-tab:hover:not(.active) {
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .home-login-button {

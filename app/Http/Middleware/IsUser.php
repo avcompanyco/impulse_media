@@ -17,7 +17,7 @@ class IsUser
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->user() && $request->user()->hasAnyRole(['user', 'spectator', 'creator'])) {
+        if ($request->user() && $request->user()->hasAnyRole(['admin', 'user', 'spectator', 'creator'])) {
             Inertia::share('user', $request->user());
             return $next($request);
         }

@@ -37,6 +37,7 @@ const countdown = ref(0);
 const adType = ref<'preroll' | 'midroll'>('preroll');
 const prerollComplete = ref(false);
 const adContainerRef = ref<HTMLElement | null>(null);
+const adLoaded = ref(false);
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
 
 // ─── Mid-roll schedule ───
@@ -53,6 +54,7 @@ function showAd(type: 'preroll' | 'midroll') {
     countdown.value = props.adDuration;
 
     emit('ad-start');
+    adLoaded.value = false;
 
     // Try to load AdSense ad
     nextTick(() => {
@@ -63,6 +65,14 @@ function showAd(type: 'preroll' | 'midroll') {
         } catch (e) {
             console.warn('AdSense push failed:', e);
         }
+
+        // Check if AdSense actually filled the ad slot
+        setTimeout(() => {
+            const insEl = adContainerRef.value?.querySelector('ins.adsbygoogle') as HTMLElement | null;
+            if (insEl && insEl.offsetHeight > 0 && insEl.children.length > 0) {
+                adLoaded.value = true;
+            }
+        }, 2000);
     });
 
     // Start countdown
@@ -123,7 +133,7 @@ onUnmounted(() => {
 });
 
 // Expose for parent to check state
-defineExpose({ prerollComplete, isAdVisible, showAd });
+defineExpose({ prerollComplete, isAdVisible, showAd, adLoaded });
 </script>
 
 <template>
@@ -150,11 +160,11 @@ defineExpose({ prerollComplete, isAdVisible, showAd });
                             data-full-width-responsive="true">
                         </ins>
                         
-                        <!-- Fallback for dev/testing (AdSense won't render on localhost) -->
-                        <div class="ad-fallback">
+                        <!-- Fallback only shown when AdSense doesn't load -->
+                        <div v-if="!adLoaded" class="ad-fallback">
                             <div class="ad-fallback-icon"><i class="fas fa-bullhorn"></i></div>
                             <p class="ad-fallback-text">Advertisement</p>
-                            <p class="ad-fallback-subtext">Google Ads will appear here in production</p>
+                            <p class="ad-fallback-subtext">Loading ad...</p>
                         </div>
                     </div>
 

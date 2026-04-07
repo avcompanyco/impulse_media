@@ -1,0 +1,1 @@
+import{_ as o,c as e,o as n,K as s,q as r}from"./app-BXOxW8Z3.js";const c={};function a(t,l){return n(),e("button",r({type:"button",class:"btn action-button"},t.$attrs),[s(t.$slots,"default")],16)}const _=o(c,[["render",a]]);export{_ as A};

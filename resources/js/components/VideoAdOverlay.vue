@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import { ref, onMounted, onUnmounted, watch, nextTick, computed } from 'vue';
+import { usePage } from '@inertiajs/vue3';
+
+const page = usePage();
+const adCampaigns = computed(() => (page.props as any).ad_campaigns || []);
 
 const props = withDefaults(defineProps<{
     /** Show ads? (based on user's plan) */
@@ -8,7 +12,7 @@ const props = withDefaults(defineProps<{
     adClient?: string;
     /** Google AdSense slot ID */
     adSlot?: string;
-    /** Duration in seconds the ad overlay is shown */
+    /** Duration in seconds the ad overlay is shown (for images) */
     adDuration?: number;
     /** Video duration in seconds (to calculate mid-roll schedule) */
     videoDuration?: number;
@@ -37,13 +41,27 @@ const countdown = ref(0);
 const adType = ref<'preroll' | 'midroll'>('preroll');
 const prerollComplete = ref(false);
 const adContainerRef = ref<HTMLElement | null>(null);
-const adLoaded = ref(false);
+const canSkip = ref(false);
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
 
+// ─── Custom Campaign State ───
+const currentCampaign = ref<any>(null);
+const isCustomAd = ref(false);
+const customVideoRef = ref<HTMLVideoElement | null>(null);
+const customVideoEnded = ref(false);
+
 // ─── Mid-roll schedule ───
-// For videos >= 30 minutes, show ads every 30 minutes
 const MID_ROLL_INTERVAL = 30 * 60; // 30 minutes in seconds
 const triggeredMidrolls = new Set<number>();
+
+// ─── Get Random Campaign ───
+function getRandomCampaign() {
+    const campaigns = adCampaigns.value;
+    if (!campaigns || campaigns.length === 0) return null;
+    // Pick a random campaign (equitable rotation via random)
+    const idx = Math.floor(Math.random() * campaigns.length);
+    return campaigns[idx];
+}
 
 // ─── Show Ad ───
 function showAd(type: 'preroll' | 'midroll') {
@@ -51,37 +69,73 @@ function showAd(type: 'preroll' | 'midroll') {
 
     adType.value = type;
     isAdVisible.value = true;
-    countdown.value = props.adDuration;
+    canSkip.value = false;
+    customVideoEnded.value = false;
+
+    // Try custom campaign first
+    const campaign = getRandomCampaign();
+
+    if (campaign) {
+        // Custom campaign ad
+        currentCampaign.value = campaign;
+        isCustomAd.value = true;
+
+        if (campaign.media_type === 'image') {
+            // Image: show for adDuration seconds
+            countdown.value = props.adDuration;
+            startCountdown();
+        } else {
+            // Video: wait until video ends, then allow skip
+            countdown.value = 0;
+            // Video countdown will be managed by the video player events
+        }
+    } else {
+        // Fallback to AdSense
+        currentCampaign.value = null;
+        isCustomAd.value = false;
+        countdown.value = props.adDuration;
+
+        nextTick(() => {
+            try {
+                if (typeof window !== 'undefined' && (window as any).adsbygoogle) {
+                    (window as any).adsbygoogle.push({});
+                }
+            } catch (e) {
+                console.warn('AdSense push failed:', e);
+            }
+        });
+
+        startCountdown();
+    }
 
     emit('ad-start');
-    adLoaded.value = false;
+}
 
-    // Try to load AdSense ad
-    nextTick(() => {
-        try {
-            if (typeof window !== 'undefined' && (window as any).adsbygoogle) {
-                (window as any).adsbygoogle.push({});
-            }
-        } catch (e) {
-            console.warn('AdSense push failed:', e);
-        }
-
-        // Check if AdSense actually filled the ad slot
-        setTimeout(() => {
-            const insEl = adContainerRef.value?.querySelector('ins.adsbygoogle') as HTMLElement | null;
-            if (insEl && insEl.offsetHeight > 0 && insEl.children.length > 0) {
-                adLoaded.value = true;
-            }
-        }, 2000);
-    });
-
-    // Start countdown
+function startCountdown() {
     countdownTimer = setInterval(() => {
         countdown.value--;
         if (countdown.value <= 0) {
             hideAd();
         }
     }, 1000);
+}
+
+function onCustomVideoEnded() {
+    customVideoEnded.value = true;
+    canSkip.value = true;
+}
+
+function onCustomVideoTimeUpdate() {
+    // Allow skip after 5 seconds of video
+    if (customVideoRef.value && customVideoRef.value.currentTime >= 5) {
+        canSkip.value = true;
+    }
+}
+
+function skipAd() {
+    if (canSkip.value || customVideoEnded.value) {
+        hideAd();
+    }
 }
 
 function hideAd() {
@@ -102,7 +156,6 @@ function hideAd() {
 // ─── Pre-roll: show ad on mount ───
 onMounted(() => {
     if (props.showAds) {
-        // Small delay to let the player initialize
         setTimeout(() => {
             showAd('preroll');
         }, 500);
@@ -115,10 +168,9 @@ onMounted(() => {
 // ─── Mid-roll: watch currentTime for trigger points ───
 watch(() => props.currentTime, (time) => {
     if (!props.showAds || !prerollComplete.value) return;
-    if (props.videoDuration < MID_ROLL_INTERVAL) return; // Only for videos >= 30 min
-    if (isAdVisible.value) return; // Don't trigger if ad is already showing
+    if (props.videoDuration < MID_ROLL_INTERVAL) return;
+    if (isAdVisible.value) return;
 
-    // Check if we've passed a mid-roll point
     const midrollPoint = Math.floor(time / MID_ROLL_INTERVAL) * MID_ROLL_INTERVAL;
     if (midrollPoint > 0 && !triggeredMidrolls.has(midrollPoint) && time >= midrollPoint && time < midrollPoint + 2) {
         triggeredMidrolls.add(midrollPoint);
@@ -133,7 +185,7 @@ onUnmounted(() => {
 });
 
 // Expose for parent to check state
-defineExpose({ prerollComplete, isAdVisible, showAd, adLoaded });
+defineExpose({ prerollComplete, isAdVisible, showAd });
 </script>
 
 <template>
@@ -145,13 +197,41 @@ defineExpose({ prerollComplete, isAdVisible, showAd, adLoaded });
                     <div class="ad-header">
                         <span class="ad-badge">AD</span>
                         <span class="ad-type">{{ adType === 'preroll' ? 'Pre-roll' : 'Ad Break' }}</span>
-                        <span class="ad-countdown">
+                        <span v-if="currentCampaign?.company_name" class="ad-sponsor">
+                            Sponsored by {{ currentCampaign.company_name }}
+                        </span>
+                        <span class="ad-countdown" v-if="countdown > 0">
                             Resuming in {{ countdown }}s
                         </span>
+                        <button
+                            v-if="isCustomAd && currentCampaign?.media_type === 'video' && canSkip"
+                            class="skip-btn"
+                            @click="skipAd"
+                        >
+                            Skip Ad →
+                        </button>
                     </div>
 
-                    <!-- Google AdSense Ad Unit -->
-                    <div class="ad-content">
+                    <!-- Custom Campaign: Image -->
+                    <div v-if="isCustomAd && currentCampaign?.media_type === 'image'" class="ad-content custom-ad">
+                        <img :src="currentCampaign.media_url" alt="Advertisement" class="campaign-image" />
+                    </div>
+
+                    <!-- Custom Campaign: Video -->
+                    <div v-else-if="isCustomAd && currentCampaign?.media_type === 'video'" class="ad-content custom-ad">
+                        <video
+                            ref="customVideoRef"
+                            :src="currentCampaign.media_url"
+                            class="campaign-video"
+                            autoplay
+                            playsinline
+                            @ended="onCustomVideoEnded"
+                            @timeupdate="onCustomVideoTimeUpdate"
+                        ></video>
+                    </div>
+
+                    <!-- Google AdSense Fallback -->
+                    <div v-else class="ad-content">
                         <ins class="adsbygoogle"
                             style="display:block; width:100%; min-height:250px;"
                             :data-ad-client="adClient"
@@ -160,8 +240,7 @@ defineExpose({ prerollComplete, isAdVisible, showAd, adLoaded });
                             data-full-width-responsive="true">
                         </ins>
                         
-                        <!-- Fallback only shown when AdSense doesn't load -->
-                        <div v-if="!adLoaded" class="ad-fallback">
+                        <div class="ad-fallback">
                             <div class="ad-fallback-icon"><i class="fas fa-bullhorn"></i></div>
                             <p class="ad-fallback-text">Advertisement</p>
                             <p class="ad-fallback-subtext">Loading ad...</p>
@@ -169,7 +248,7 @@ defineExpose({ prerollComplete, isAdVisible, showAd, adLoaded });
                     </div>
 
                     <!-- Progress bar -->
-                    <div class="ad-progress-container">
+                    <div class="ad-progress-container" v-if="countdown > 0">
                         <div class="ad-progress-bar" :style="{ width: `${((props.adDuration - countdown) / props.adDuration) * 100}%` }"></div>
                     </div>
                 </div>
@@ -221,11 +300,33 @@ defineExpose({ prerollComplete, isAdVisible, showAd, adLoaded });
     font-weight: 500;
 }
 
+.ad-sponsor {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.8rem;
+    font-style: italic;
+}
+
 .ad-countdown {
     margin-left: auto;
     color: rgba(255, 255, 255, 0.6);
     font-size: 0.85rem;
     font-family: monospace;
+}
+
+.skip-btn {
+    margin-left: auto;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 0.4rem 1rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.skip-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
 }
 
 .ad-content {
@@ -238,6 +339,24 @@ defineExpose({ prerollComplete, isAdVisible, showAd, adLoaded });
     justify-content: center;
     position: relative;
     overflow: hidden;
+}
+
+.ad-content.custom-ad {
+    min-height: auto;
+}
+
+.campaign-image {
+    max-width: 100%;
+    max-height: 400px;
+    object-fit: contain;
+    border-radius: 12px;
+}
+
+.campaign-video {
+    width: 100%;
+    max-height: 400px;
+    border-radius: 12px;
+    object-fit: contain;
 }
 
 .ad-content .adsbygoogle {
@@ -306,6 +425,10 @@ defineExpose({ prerollComplete, isAdVisible, showAd, adLoaded });
     }
     .ad-content {
         min-height: 200px;
+    }
+    .campaign-image,
+    .campaign-video {
+        max-height: 300px;
     }
 }
 </style>

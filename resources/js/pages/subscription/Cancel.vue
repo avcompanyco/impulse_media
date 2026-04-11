@@ -31,11 +31,23 @@ function logout() {
 
         <div class="plan-cards-container" style="margin-bottom: 2rem;">
             <div v-for="plan in plans" :key="`plan_${plan.id}`" class="plan-card">
+                <div v-if="plan.free_days_trial > 0" class="trial-badge">
+                    🎁 {{ plan.free_days_trial }} Days Free Trial
+                </div>
                 <h2 class="plan-name">{{ plan.name }}</h2>
                 <p class="plan-description">{{ plan.description }}</p>
                 <div class="plan-price" style="text-transform: uppercase;">{{ plan.price_formatted }}</div>
+                <div v-if="plan.billing_period" class="plan-billing">/ {{ plan.billing_period }}</div>
+                <ul class="plan-features">
+                    <li v-if="plan.has_ads === false">✓ Ad-free experience</li>
+                    <li v-if="plan.has_ads === true">• Includes advertisements</li>
+                    <li v-if="plan.is_unlimited_content">✓ Unlimited content uploads</li>
+                    <li v-if="!plan.is_unlimited_content && plan.movies_upload_count">✓ {{ plan.movies_upload_count }} movies</li>
+                    <li v-if="!plan.is_unlimited_content && plan.series_upload_count">✓ {{ plan.series_upload_count }} series</li>
+                    <li v-if="!plan.is_unlimited_content && plan.shorts_upload_count">✓ {{ plan.shorts_upload_count }} shorts</li>
+                </ul>
                 <a :href="checkoutAction.url({ plan: plan.id })" class="btn start-button" role="button">
-                START NOW
+                    {{ plan.free_days_trial > 0 ? 'START FREE TRIAL' : 'START NOW' }}
                 </a>
             </div>
         </div>
@@ -109,7 +121,41 @@ function logout() {
     font-size: 2rem;
     font-weight: 700;
     color: white;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.plan-billing {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 1rem;
+    text-transform: capitalize;
+}
+
+.trial-badge {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    margin-bottom: 1rem;
+    display: inline-block;
+    backdrop-filter: blur(4px);
+}
+
+.plan-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.5rem 0;
+    text-align: left;
+    width: 100%;
+}
+
+.plan-features li {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.9rem;
+    padding: 0.3rem 1rem;
+    line-height: 1.5;
 }
 
 .start-button {

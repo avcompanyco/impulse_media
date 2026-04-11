@@ -51,9 +51,7 @@ trait HasHorizontalImageSerie
         $user_id_hash = hash('sha256', $this->user_id);
         $storagePath .= '/' . $user_id_hash . '/horizontal_images';
         // check if storage path is valid
-        if (!Storage::disk(getDisk())->exists($storagePath)) {
-            Storage::disk(getDisk())->makeDirectory($storagePath);
-        }
+        ensureStorageDirectory($storagePath);
 
         if ($photo->getSize() > 200000) {
             $photo = ImageOptimizerService::optimizeUploadedFile($photo); // ya devuelve como webp

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Inertia\Middleware;
 use App\Models\Category;
 use App\Models\User;
+use App\Models\AdCampaign;
 use Illuminate\Support\Facades\Auth;
 
 class HandleInertiaRequests extends Middleware
@@ -47,12 +48,15 @@ class HandleInertiaRequests extends Middleware
 
         $subscriptions = [];
         $showAds = false;
+        $adCampaigns = [];
         if (Auth::check()) {
             $_user = User::find(Auth::user()->id);
             $subscriptions = $_user->followings;
             $currentPlan = $_user->getCurrentPlan();
             if ($currentPlan && $currentPlan->has_ads) {
                 $showAds = true;
+                // Load active custom ad campaigns for users who see ads
+                $adCampaigns = AdCampaign::active()->inRandomOrder()->get();
             }
         }
 
@@ -74,6 +78,7 @@ class HandleInertiaRequests extends Middleware
             'web_categories' => $web_categories,
             'subscriptions' => $subscriptions,
             'show_ads' => $showAds,
+            'ad_campaigns' => $adCampaigns,
         ];
     }
 }

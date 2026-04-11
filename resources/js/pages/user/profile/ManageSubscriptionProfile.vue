@@ -84,29 +84,58 @@ function updatePlan() {
                     </p>
                 </div>
 
-                <div class="plan-selector-container">
-                    <button 
+                <!-- Plan Cards -->
+                <div class="plan-cards-grid">
+                    <div 
                         v-for="plan in plans" :key="`plans_to_select_${plan.id}`" 
-                        class="plan-btn" 
-                        data-plan="golden" 
-                        id="btnPlanGolden"
-                        :class="{ 'active': planSelected.id === plan.id }"
-                        @click="selectPlan(plan)">
-                        {{ plan.name }}
-                    </button>
-                </div>
-                <p id="planDescriptionDisplay" class="info-text-sm"></p>
-                <button 
-                    type="button" 
-                    id="updatePlanButton" 
-                    class="action-btn save-btn-custom"
-                    :class="{ 'disabled': planSelected.id === my_plan?.id || updateForm.processing }"
-                    :disabled="planSelected.id === my_plan?.id || updateForm.processing"
-                    @click="updatePlan"
+                        class="plan-detail-card"
+                        :class="{ 'selected': planSelected?.id === plan.id, 'current': my_plan?.id === plan.id }"
+                        @click="selectPlan(plan)"
                     >
-                    <span v-if="updateForm.processing">Updating...</span>
-                    <span v-else>Update Plan</span>
-                </button>
+                        <div v-if="my_plan?.id === plan.id" class="current-badge">Current</div>
+                        <h3 class="plan-card-name">{{ plan.name }}</h3>
+                        <div class="plan-card-price">{{ plan.price_formatted }}</div>
+                        <div v-if="plan.billing_period" class="plan-card-period">/ {{ plan.billing_period }}</div>
+                        <p v-if="plan.description" class="plan-card-desc">{{ plan.description }}</p>
+                        <div v-if="plan.free_days_trial > 0" class="plan-trial-info">
+                            🎁 {{ plan.free_days_trial }} days free trial
+                        </div>
+                        <ul class="plan-card-features">
+                            <li v-if="plan.has_ads === false">✓ No ads</li>
+                            <li v-if="plan.has_ads === true">• With advertisements</li>
+                            <li v-if="plan.is_unlimited_content">✓ Unlimited uploads</li>
+                            <li v-if="!plan.is_unlimited_content && plan.movies_upload_count">✓ {{ plan.movies_upload_count }} movies</li>
+                            <li v-if="!plan.is_unlimited_content && plan.series_upload_count">✓ {{ plan.series_upload_count }} series</li>
+                            <li v-if="!plan.is_unlimited_content && plan.shorts_upload_count">✓ {{ plan.shorts_upload_count }} shorts</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div v-if="planSelected && planSelected.id !== my_plan?.id">
+                    <!-- If user has active subscription: swap plan -->
+                    <button 
+                        v-if="subscription && subscription.active"
+                        type="button" 
+                        id="updatePlanButton" 
+                        class="action-btn save-btn-custom"
+                        :disabled="updateForm.processing"
+                        @click="updatePlan"
+                    >
+                        <span v-if="updateForm.processing">Updating...</span>
+                        <span v-else>Switch to {{ planSelected.name }}</span>
+                    </button>
+
+                    <!-- If user has NO subscription: redirect to Stripe checkout -->
+                    <a 
+                        v-else
+                        :href="`/subscription/checkout/${planSelected.id}`"
+                        class="action-btn save-btn-custom"
+                        style="text-decoration: none;"
+                    >
+                        Subscribe to {{ planSelected.name }}
+                    </a>
+                </div>
             </section>
 
             <!-- <section class="subscription-page-section">
@@ -209,35 +238,98 @@ function updatePlan() {
     color: var(--text-light);
 }
 
-.plan-selector-container {
-    display: flex;
+.plan-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 1rem;
+    margin-bottom: 1.5rem;
 }
 
-.plan-btn {
-    flex-grow: 1;
-    background: var(--input-bg);
-    border: 2px solid var(--input-bg);
-    color: var(--text-dark);
-    padding: 0.85rem 1rem;
-    border-radius: 15px;
-    font-size: 1.1rem;
-    font-weight: 600;
+.plan-detail-card {
+    background: var(--input-bg, rgba(255,255,255,0.08));
+    border: 2px solid transparent;
+    border-radius: 16px;
+    padding: 1.25rem;
     cursor: pointer;
-    text-align: center;
     transition: all 0.3s ease;
+    position: relative;
+    text-align: center;
 }
 
-.plan-btn.active {
-    background: var(--primary-color);
+.plan-detail-card:hover {
+    border-color: rgba(240, 98, 146, 0.3);
+    transform: translateY(-2px);
+}
+
+.plan-detail-card.selected {
     border-color: var(--primary-color);
-    color: white;
-    box-shadow: 0 0 10px rgba(240, 98, 146, 0.3);
+    background: rgba(240, 98, 146, 0.08);
+    box-shadow: 0 0 15px rgba(240, 98, 146, 0.2);
 }
 
-.plan-btn:not(.active):hover {
-    background-color: #d8d8d8;
-    border-color: #d8d8d8;
+.plan-detail-card.current {
+    border-color: rgba(40, 167, 69, 0.3);
+}
+
+.current-badge {
+    position: absolute;
+    top: -10px;
+    right: 12px;
+    background: #28a745;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.2rem 0.6rem;
+    border-radius: 10px;
+    text-transform: uppercase;
+}
+
+.plan-card-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-light);
+    margin-bottom: 0.5rem;
+}
+
+.plan-card-price {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--primary-color);
+    margin-bottom: 0.1rem;
+}
+
+.plan-card-period {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+    text-transform: capitalize;
+}
+
+.plan-card-desc {
+    font-size: 0.85rem;
+    color: #b0b0b0;
+    margin-bottom: 0.75rem;
+    line-height: 1.4;
+}
+
+.plan-trial-info {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #f5c518;
+    margin-bottom: 0.75rem;
+}
+
+.plan-card-features {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    text-align: left;
+}
+
+.plan-card-features li {
+    font-size: 0.8rem;
+    color: #ccc;
+    padding: 0.15rem 0;
 }
 
 #planDescriptionDisplay {

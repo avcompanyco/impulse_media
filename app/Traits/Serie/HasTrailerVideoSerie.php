@@ -62,9 +62,7 @@ trait HasTrailerVideoSerie
         $user_id_hash = hash('sha256', $this->user_id);
         $storagePath .= '/' . $user_id_hash . '/trailer_videos';
         // check if storage path is valid
-        if (!Storage::disk(getDisk())->exists($storagePath)) {
-            Storage::disk(getDisk())->makeDirectory($storagePath);
-        }
+        ensureStorageDirectory($storagePath);
 
         $compressor = new VideoCompressorService();
 

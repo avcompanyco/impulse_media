@@ -4,8 +4,8 @@ import AuthUserLayout from '@/layouts/auth/AuthUserLayout.vue';
 import TextLink from '@/components/TextLink.vue';
 import InputField from '@/components/form/InputField.vue';
 import { user as loginUser } from '@/routes/login';
-import { Form, Head, usePage } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
+import { Head, usePage, useForm } from '@inertiajs/vue3';
+import { ref, computed, watch } from 'vue';
 
 const page = usePage();
 const spectatorTerms = computed(() => (page.props as any).spectatorTerms);
@@ -16,6 +16,27 @@ const currentStep = ref(1); // 1: Choose type, 2: Form, 3: Terms
 const selectedType = ref<'spectator' | 'creator' | ''>('');
 const acceptedTerms = ref(false);
 const termsScrolledToBottom = ref(false);
+
+// ─── Reactive form using useForm to persist data across steps ───
+const form = useForm({
+    name: '',
+    username: '',
+    email: '',
+    password: '',
+    password_confirmation: '',
+    user_type: '' as string,
+    accept_terms: '0' as string,
+});
+
+// Keep form.user_type in sync with selectedType
+watch(selectedType, (val) => {
+    form.user_type = val;
+});
+
+// Keep form.accept_terms in sync with acceptedTerms
+watch(acceptedTerms, (val) => {
+    form.accept_terms = val ? '1' : '0';
+});
 
 // ─── Step Navigation ───
 function selectType(type: 'spectator' | 'creator') {
@@ -36,6 +57,17 @@ function goBackToForm() {
 function goBackToTypeSelection() {
     currentStep.value = 1;
     selectedType.value = '';
+}
+
+// ─── Form Submission ───
+function submitForm() {
+    form.post(RegisterUserController.url(), {
+        preserveScroll: true,
+        onError: () => {
+            // Stay on step 2 so user doesn't have to re-fill
+            currentStep.value = 2;
+        },
+    });
 }
 
 // ─── Terms Scroll Check ───
@@ -132,9 +164,7 @@ const stepTitle = computed(() => {
                     <button class="badge-change" @click="goBackToTypeSelection">Change</button>
                 </div>
 
-                <Form v-bind="RegisterUserController.form()" v-slot="{ errors, processing }" class="register-form">
-                    <input type="hidden" name="user_type" :value="selectedType">
-                    <input type="hidden" name="accept_terms" :value="acceptedTerms ? '1' : '0'">
+                <form @submit.prevent="submitForm" class="register-form">
 
                     <div class="grid gap-5">
                         <InputField
@@ -144,38 +174,43 @@ const stepTitle = computed(() => {
                             type="text"
                             autocomplete="name"
                             autofocus
-                            :error="errors.name" />
+                            v-model="form.name"
+                            :error="form.errors.name" />
                         <InputField
                             name="username"
                             label="Username"
                             placeholder="Username"
                             type="text"
                             autocomplete="username"
-                            :error="errors.username" />
+                            v-model="form.username"
+                            :error="form.errors.username" />
                         <InputField
                             name="email"
                             label="Email address"
                             placeholder="Email"
                             type="email"
                             autocomplete="email"
-                            :error="errors.email" />
+                            v-model="form.email"
+                            :error="form.errors.email" />
                         <InputField
                             name="password"
                             label="Password"
                             placeholder="******************"
                             type="password"
                             autocomplete="new-password"
-                            :error="errors.password" />
+                            v-model="form.password"
+                            :error="form.errors.password" />
                         <InputField
                             name="password_confirmation"
                             label="Confirm password"
                             placeholder="Confirm password"
                             type="password"
                             autocomplete="new-password"
-                            :error="errors.password_confirmation" />
+                            v-model="form.password_confirmation"
+                            :error="form.errors.password_confirmation" />
 
-                        <div v-if="errors.accept_terms" class="field-error">{{ errors.accept_terms }}</div>
-                        <div v-if="errors.user_type" class="field-error">{{ errors.user_type }}</div>
+                        <div v-if="form.errors.accept_terms" class="field-error">{{ form.errors.accept_terms }}</div>
+                        <div v-if="form.errors.user_type" class="field-error">{{ form.errors.user_type }}</div>
                     </div>
 
                     <!-- "Continue to Terms" button if not yet accepted -->
@@ -184,8 +219,8 @@ const stepTitle = computed(() => {
                     </button>
 
                     <!-- Submit button (only after terms accepted) -->
-                    <button v-else type="submit" class="btn signup-button" :disabled="processing">
-                        <i class="fa-solid fa-circle-notch fa-spin" v-if="processing"></i>
+                    <button v-else type="submit" class="btn signup-button" :disabled="form.processing">
+                        <i class="fa-solid fa-circle-notch fa-spin" v-if="form.processing"></i>
                         Create Account
                     </button>
 
@@ -193,7 +228,7 @@ const stepTitle = computed(() => {
                         Already have an account?
                         <TextLink :href="loginUser()" class="underline underline-offset-4">Log in</TextLink>
                     </div>
-                </Form>
+                </form>
             </div>
 
             <!-- ═══════════════════════════════════════════

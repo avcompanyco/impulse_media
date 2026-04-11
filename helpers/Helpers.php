@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\Facades\Storage;
+
 
 function getLocale()
 {
@@ -114,4 +116,26 @@ function getDisk()
 function getVideoDisk()
 {
     return 'local';
+}
+
+/**
+ * Safely ensure a directory exists on the storage disk.
+ * S3 doesn't have real directories, so this silently skips errors.
+ */
+function ensureStorageDirectory(string $path, ?string $disk = null): void
+{
+    $disk = $disk ?? getDisk();
+    
+    // S3 doesn't need explicit directory creation
+    if ($disk === 's3') {
+        return;
+    }
+
+    try {
+        if (!Storage::disk($disk)->exists($path)) {
+            Storage::disk($disk)->makeDirectory($path);
+        }
+    } catch (\Throwable $e) {
+        // Silently handle - putFile will create the path on most drivers
+    }
 }

@@ -111,6 +111,18 @@ Route::middleware('auth')->group(function () {
             Route::get('/datatable', \App\Http\Controllers\Binacle\DatatableBinacleController::class)
                 ->name('admin.binacles.datatable');
         });
+
+        // Ad Campaign Routes
+        Route::prefix('ads')->group(function () {
+            Route::get('/', \App\Http\Controllers\AdCampaign\IndexAdCampaignController::class)
+                ->name('admin.ads.index');
+            Route::post('/', \App\Http\Controllers\AdCampaign\StoreAdCampaignController::class)
+                ->name('admin.ads.store');
+            Route::put('/{campaign}/toggle', \App\Http\Controllers\AdCampaign\ToggleAdCampaignController::class)
+                ->name('admin.ads.toggle');
+            Route::delete('/{campaign}', \App\Http\Controllers\AdCampaign\DestroyAdCampaignController::class)
+                ->name('admin.ads.destroy');
+        });
     });
 
     Route::prefix('subscription')->group(function () {

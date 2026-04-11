@@ -52,9 +52,7 @@ trait HasVerticalImageSerie
         $storagePath .= '/' . $user_id_hash . '/vertical_images';
 
         // check if storage path is valid
-        if (!Storage::disk(getDisk())->exists($storagePath)) {
-            Storage::disk(getDisk())->makeDirectory($storagePath);
-        }
+        ensureStorageDirectory($storagePath);
 
         if ($photo->getSize() > 200000) {
             $photo = ImageOptimizerService::optimizeUploadedFile($photo); // ya devuelve como webp

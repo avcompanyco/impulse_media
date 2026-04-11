@@ -64,9 +64,7 @@ trait HasMovie
         $storagePath .= '/' . $user_id_hash . '/movie_videos';
 
         // check if storage path is valid
-        if (!Storage::disk(getDisk())->exists($storagePath)) {
-            Storage::disk(getDisk())->makeDirectory($storagePath);
-        }
+        ensureStorageDirectory($storagePath);
 
         $compressor = new VideoCompressorService();
 

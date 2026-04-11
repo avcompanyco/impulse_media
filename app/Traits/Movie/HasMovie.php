@@ -3,9 +3,9 @@
 namespace App\Traits\Movie;
 
 use Illuminate\Http\UploadedFile;
+use Illuminate\Http\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Casts\Attribute;
-use Illuminate\Support\Facades\File;
 use App\Services\VideoCompressorService;
 
 

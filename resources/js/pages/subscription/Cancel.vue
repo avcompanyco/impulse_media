@@ -89,90 +89,118 @@ function logout() {
 }
 
 .plan-card {
-    background-color: #F06292;
+    background: linear-gradient(145deg, rgba(35,35,50,0.95), rgba(25,25,35,0.98));
+    border: 2px solid rgba(255,255,255,0.08);
     border-radius: 24px;
-    padding: 2rem;
+    padding: 2.25rem 1.75rem;
     text-align: center;
     margin-bottom: 1.5rem;
     width: 100%;
-    transition: transform 0.3s ease;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.plan-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #e8445a, #f5c518, #e8445a);
+    opacity: 0.7;
 }
 
 .plan-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-6px);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+    border-color: rgba(232, 68, 90, 0.3);
 }
 
 .plan-name {
-    font-size: 1.75rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
+    font-size: 1.6rem;
+    font-weight: 800;
+    margin-bottom: 0.75rem;
     color: white;
+    letter-spacing: -0.02em;
 }
 
 .plan-description {
-    font-size: 1.1rem;
-    color: white;
-    margin-bottom: 1.5rem;
-    line-height: 1.4;
-    padding: 0 1rem;
+    font-size: 0.95rem;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 1.25rem;
+    line-height: 1.5;
+    padding: 0 0.5rem;
 }
 
 .plan-price {
-    font-size: 2rem;
-    font-weight: 700;
-    color: white;
-    margin-bottom: 0.25rem;
+    font-size: 2.2rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #e8445a, #ff6b81);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.15rem;
+    line-height: 1.2;
 }
 
 .plan-billing {
-    font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.45);
     margin-bottom: 1rem;
     text-transform: capitalize;
+    font-weight: 500;
 }
 
 .trial-badge {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
+    background: rgba(245, 197, 24, 0.12);
+    color: #f5c518;
     font-size: 0.85rem;
     font-weight: 700;
-    padding: 0.4rem 0.8rem;
+    padding: 0.45rem 1rem;
     border-radius: 20px;
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
     display: inline-block;
-    backdrop-filter: blur(4px);
+    border: 1px solid rgba(245, 197, 24, 0.2);
 }
 
 .plan-features {
     list-style: none;
     padding: 0;
-    margin: 0 0 1.5rem 0;
+    margin: 0 0 1.75rem 0;
     text-align: left;
     width: 100%;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding-top: 1rem;
 }
 
 .plan-features li {
-    color: rgba(255, 255, 255, 0.9);
+    color: rgba(255, 255, 255, 0.75);
     font-size: 0.9rem;
-    padding: 0.3rem 1rem;
+    padding: 0.35rem 0.5rem;
     line-height: 1.5;
 }
 
 .start-button {
-    background-color: #DC3545;
+    background: linear-gradient(135deg, #e8445a, #d63851);
     color: white;
     border: none;
-    border-radius: 30px;
-    padding: 0.875rem 2.5rem;
-    font-size: 1.1rem;
-    font-weight: 500;
+    border-radius: 14px;
+    padding: 0.95rem 2.5rem;
+    font-size: 1.05rem;
+    font-weight: 700;
     transition: all 0.3s ease;
+    letter-spacing: 0.3px;
+    width: 100%;
+    box-shadow: 0 4px 15px rgba(232, 68, 90, 0.3);
 }
 
 .start-button:hover {
-    transform: scale(1.05);
-    background-color: #bb2d3b;
+    transform: scale(1.02);
+    background: linear-gradient(135deg, #d63851, #c22d45);
     color: white;
+    box-shadow: 0 6px 20px rgba(232, 68, 90, 0.4);
 }
 
 /* Tablet */

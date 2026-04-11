@@ -240,96 +240,137 @@ function updatePlan() {
 
 .plan-cards-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.25rem;
     margin-bottom: 1.5rem;
 }
 
 .plan-detail-card {
-    background: var(--input-bg, rgba(255,255,255,0.08));
-    border: 2px solid transparent;
-    border-radius: 16px;
-    padding: 1.25rem;
+    background: linear-gradient(145deg, rgba(30,30,40,0.9), rgba(20,20,30,0.95));
+    border: 2px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 1.75rem 1.5rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     text-align: center;
+    overflow: hidden;
+}
+
+.plan-detail-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    transition: all 0.3s;
 }
 
 .plan-detail-card:hover {
-    border-color: rgba(240, 98, 146, 0.3);
-    transform: translateY(-2px);
+    border-color: rgba(232, 68, 90, 0.4);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+}
+
+.plan-detail-card:hover::before {
+    background: linear-gradient(90deg, transparent, rgba(232, 68, 90, 0.5), transparent);
 }
 
 .plan-detail-card.selected {
-    border-color: var(--primary-color);
-    background: rgba(240, 98, 146, 0.08);
-    box-shadow: 0 0 15px rgba(240, 98, 146, 0.2);
+    border-color: #e8445a;
+    background: linear-gradient(145deg, rgba(232,68,90,0.12), rgba(20,20,30,0.95));
+    box-shadow: 0 0 30px rgba(232, 68, 90, 0.15), 0 12px 40px rgba(0,0,0,0.3);
+}
+
+.plan-detail-card.selected::before {
+    background: linear-gradient(90deg, #e8445a, #f5c518, #e8445a);
+    height: 3px;
 }
 
 .plan-detail-card.current {
-    border-color: rgba(40, 167, 69, 0.3);
+    border-color: rgba(34, 197, 94, 0.4);
+}
+
+.plan-detail-card.current::before {
+    background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.5), transparent);
 }
 
 .current-badge {
     position: absolute;
-    top: -10px;
+    top: 12px;
     right: 12px;
-    background: #28a745;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
     color: white;
-    font-size: 0.7rem;
-    font-weight: 700;
-    padding: 0.2rem 0.6rem;
-    border-radius: 10px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 0.25rem 0.65rem;
+    border-radius: 20px;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
 }
 
 .plan-card-name {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: var(--text-light);
-    margin-bottom: 0.5rem;
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 0.75rem;
+    letter-spacing: -0.01em;
 }
 
 .plan-card-price {
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: var(--primary-color);
-    margin-bottom: 0.1rem;
+    font-size: 1.8rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #e8445a, #ff6b81);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.15rem;
+    line-height: 1.2;
 }
 
 .plan-card-period {
     font-size: 0.8rem;
-    color: var(--text-muted);
+    color: rgba(255,255,255,0.45);
     margin-bottom: 0.75rem;
     text-transform: capitalize;
+    font-weight: 500;
 }
 
 .plan-card-desc {
     font-size: 0.85rem;
-    color: #b0b0b0;
+    color: rgba(255,255,255,0.55);
     margin-bottom: 0.75rem;
-    line-height: 1.4;
+    line-height: 1.5;
 }
 
 .plan-trial-info {
     font-size: 0.8rem;
-    font-weight: 600;
+    font-weight: 700;
     color: #f5c518;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.85rem;
+    padding: 0.35rem 0.7rem;
+    background: rgba(245, 197, 24, 0.1);
+    border-radius: 8px;
+    display: inline-block;
 }
 
 .plan-card-features {
     list-style: none;
     padding: 0;
-    margin: 0;
+    margin: 0.5rem 0 0 0;
     text-align: left;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding-top: 0.75rem;
 }
 
 .plan-card-features li {
-    font-size: 0.8rem;
-    color: #ccc;
-    padding: 0.15rem 0;
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.7);
+    padding: 0.25rem 0;
+    padding-left: 0.3rem;
 }
 
 #planDescriptionDisplay {

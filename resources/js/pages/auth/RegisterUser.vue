@@ -213,15 +213,9 @@ const stepTitle = computed(() => {
                         <div v-if="form.errors.user_type" class="field-error">{{ form.errors.user_type }}</div>
                     </div>
 
-                    <!-- "Continue to Terms" button if not yet accepted -->
-                    <button v-if="!acceptedTerms" type="button" class="btn continue-btn" @click="goToTermsStep">
+                    <!-- Continue to Terms button -->
+                    <button type="button" class="btn continue-btn" @click="goToTermsStep">
                         Continue → Accept Terms
-                    </button>
-
-                    <!-- Submit button (only after terms accepted) -->
-                    <button v-else type="submit" class="btn signup-button" :disabled="form.processing">
-                        <i class="fa-solid fa-circle-notch fa-spin" v-if="form.processing"></i>
-                        Create Account
                     </button>
 
                     <div class="text-center text-sm text-muted-foreground my-3" style="color: rgba(255,255,255,0.6);">
@@ -261,10 +255,11 @@ const stepTitle = computed(() => {
                         <button
                             type="button"
                             class="btn accept-btn"
-                            :disabled="!acceptedTerms"
-                            @click="goBackToForm"
+                            :disabled="!acceptedTerms || form.processing"
+                            @click="submitForm"
                         >
-                            Accept & Continue
+                            <i class="fa-solid fa-circle-notch fa-spin" v-if="form.processing"></i>
+                            {{ form.processing ? 'Creating Account...' : 'Accept & Create Account' }}
                         </button>
                     </div>
                 </div>

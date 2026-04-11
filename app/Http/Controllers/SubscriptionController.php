@@ -20,18 +20,32 @@ class SubscriptionController extends Controller
     {
         $user = Auth::user();
 
+        // If plan is free (price = 0), assign directly without Stripe
+        if ($plan->price <= 0) {
+            $user->plan_id = $plan->id;
+            $user->save();
+            return redirect()->route('dashboard');
+        }
+
         // Asegurar que el usuario tenga un customer ID en Stripe
         if (! $user->hasStripeId()) {
             $user->createAsStripeCustomer();
         }
 
-        return $request->user()
-            ->newSubscription('default', $plan->stripe_price_id)
-            ->trialUntil(now()->addDays($plan->free_days_trial)->endOfDay())
+        $subscription = $request->user()
+            ->newSubscription('default', $plan->stripe_price_id);
+
+        // Add trial days if the plan has them
+        if ($plan->free_days_trial > 0) {
+            $subscription->trialDays($plan->free_days_trial);
+        }
+
+        return $subscription
             ->allowPromotionCodes()
             ->checkout([
                 'success_url' => route('subscription.success').'?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url' => route('subscription.cancel'),
+                'payment_method_types' => ['card'],
             ]);
     }
 

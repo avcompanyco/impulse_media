@@ -5,7 +5,7 @@ namespace App\Traits\Serie;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Casts\Attribute;
-use Illuminate\Support\Facades\File;
+use Illuminate\Http\File;
 use App\Services\VideoCompressorService;
 
 trait HasVideoChapter

@@ -97,7 +97,7 @@ function onPrerollComplete() {
             ref="videoEl"
             class="vp-video"
             :poster="posterUrl"
-            preload="auto"
+            preload="metadata"
             playsinline
             webkit-playsinline
             x5-playsinline
@@ -171,7 +171,7 @@ function onPrerollComplete() {
                         :title="isPlaying ? 'Pausar' : 'Reproducir'"
                         @click.stop="togglePlayPause"
                     >
-                        {{ isPlaying ? '❚❚' : '►' }}
+                        <i :class="isPlaying ? 'fa-solid fa-pause' : 'fa-solid fa-play'"></i>
                     </button>
 
                     <!-- Volume -->
@@ -181,7 +181,7 @@ function onPrerollComplete() {
                             title="Silenciar/Sonido"
                             @click.stop="toggleMute"
                         >
-                            {{ isMuted ? '🔇' : '🔊' }}
+                            <i :class="isMuted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high'"></i>
                         </button>
                         <input
                             type="range"
@@ -208,7 +208,7 @@ function onPrerollComplete() {
                         title="Pantalla Completa"
                         @click.stop="toggleFullscreen"
                     >
-                        {{ isFullscreen ? '↙↗' : '⛶' }}
+                        <i :class="isFullscreen ? 'fa-solid fa-compress' : 'fa-solid fa-expand'"></i>
                     </button>
                 </div>
             </div>
@@ -219,14 +219,15 @@ function onPrerollComplete() {
 <style scoped>
 /* === CSS Custom Properties === */
 .vp-container {
-    --vp-primary: #F06292;
-    --vp-controls-bg: rgba(10, 10, 35, 0.75);
+    --vp-primary: #e8445a;
+    --vp-primary-glow: rgba(232, 68, 90, 0.4);
+    --vp-controls-bg: rgba(0, 0, 0, 0.7);
     --vp-text-light: #FFFFFF;
-    --vp-icon-color: #FFFFFF;
-    --vp-icon-hover: #F06292;
-    --vp-slider-track: rgba(255, 255, 255, 0.3);
-    --vp-slider-thumb: #F06292;
-    --vp-title-overlay-bg: rgba(10, 10, 35, 0.85);
+    --vp-icon-color: rgba(255, 255, 255, 0.9);
+    --vp-icon-hover: #e8445a;
+    --vp-slider-track: rgba(255, 255, 255, 0.2);
+    --vp-slider-thumb: #e8445a;
+    --vp-title-overlay-bg: rgba(0, 0, 0, 0.75);
 }
 
 /* === Container === */
@@ -365,8 +366,8 @@ function onPrerollComplete() {
     bottom: 0;
     left: 0;
     right: 0;
-    background-color: var(--vp-controls-bg);
-    padding: 10px 15px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.85));
+    padding: 40px 16px 12px 16px;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s ease-in-out;
@@ -403,16 +404,24 @@ function onPrerollComplete() {
     background: none;
     border: none;
     color: var(--vp-icon-color);
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     cursor: pointer;
-    padding: 5px;
+    padding: 8px;
     line-height: 1;
-    transition: color 0.2s ease;
+    transition: color 0.2s ease, transform 0.15s ease;
     -webkit-tap-highlight-color: transparent;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .vp-btn:hover {
     color: var(--vp-icon-hover);
+    transform: scale(1.1);
+    background: rgba(255,255,255,0.08);
 }
 
 .vp-btn:focus-visible {
@@ -442,10 +451,11 @@ function onPrerollComplete() {
 .vp-progress-bar {
     height: 100%;
     width: 0%;
-    background-color: var(--vp-primary);
+    background: linear-gradient(90deg, var(--vp-primary), #ff6b81);
     border-radius: 4px;
     pointer-events: none;
     transition: width 0.1s linear;
+    box-shadow: 0 0 6px var(--vp-primary-glow);
 }
 
 .vp-progress-thumb {
@@ -466,12 +476,14 @@ function onPrerollComplete() {
 
 /* === Time Display === */
 .vp-time-display {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     min-width: 90px;
     text-align: center;
-    color: var(--vp-text-light);
-    font-family: monospace;
+    color: rgba(255,255,255,0.75);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-variant-numeric: tabular-nums;
     white-space: nowrap;
+    letter-spacing: 0.3px;
 }
 
 /* === Volume === */

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, reactive } from 'vue';
 import UserDashboardLayout from '@/layouts/UserDashboardLayout.vue';
 import { router, Link } from '@inertiajs/vue3';
 import type { User } from '@/types';
@@ -18,6 +18,9 @@ const props = defineProps<{
     shorts: any[];
 }>();
 
+// Make creator reactive so is_followed updates in the UI
+const creatorData = reactive({ ...props.creator });
+
 const activeTab = ref<'movies' | 'series' | 'shorts'>('movies');
 const followButtonLoading = ref(false);
 const unfollowButtonLoading = ref(false);
@@ -26,6 +29,10 @@ function addToFollow(userId: number) {
     followButtonLoading.value = true;
     router.post(AddToFollowController({ user: userId }), {}, {
         preserveScroll: true,
+        onSuccess: () => {
+            creatorData.is_followed = true;
+            creatorData.followers_count = (creatorData.followers_count || 0) + 1;
+        },
         onFinish: () => {
             followButtonLoading.value = false;
         },
@@ -36,6 +43,10 @@ function removeFromFollow(userId: number) {
     unfollowButtonLoading.value = true;
     router.post(RemoveToFollowController({ user: userId }), {}, {
         preserveScroll: true,
+        onSuccess: () => {
+            creatorData.is_followed = false;
+            creatorData.followers_count = Math.max(0, (creatorData.followers_count || 1) - 1);
+        },
         onFinish: () => {
             unfollowButtonLoading.value = false;
         },
@@ -62,47 +73,48 @@ function displayExternalLink(link: string): string {
         <!-- Creator Profile Header -->
         <section class="creator-header">
             <div class="creator-info-card">
-                <img :src="creator.image_url" alt="Creator Avatar" class="creator-avatar">
+                <img :src="creatorData.image_url" alt="Creator Avatar" class="creator-avatar">
                 <div class="creator-details">
-                    <h1 class="creator-name">{{ creator.name }}</h1>
-                    <p class="creator-username">@{{ creator.username }}</p>
+                    <h1 class="creator-name">{{ creatorData.name }}</h1>
+                    <p class="creator-username">@{{ creatorData.username }}</p>
                     <div class="creator-stats">
-                        {{ creator.followers_count }} Followers &bull; 
-                        {{ creator.followings_count }} Following &bull; 
-                        {{ creator.content_count }} Videos
+                        {{ creatorData.followers_count }} Followers &bull; 
+                        {{ creatorData.followings_count }} Following &bull; 
+                        {{ creatorData.content_count }} Videos
                     </div>
                 </div>
-                <template v-if="creator.id !== $page.props.auth.user.id">
+                <template v-if="creatorData.id !== $page.props.auth.user.id">
                     <button 
-                        v-if="!creator.is_followed" 
+                        v-if="!creatorData.is_followed" 
                         class="creator-action-btn" 
-                        @click="addToFollow(creator.id)"
+                        @click="addToFollow(creatorData.id)"
                         :disabled="followButtonLoading">
                         <i class="fa-solid fa-circle-notch fa-spin" v-if="followButtonLoading"></i>
                         Follow
                     </button>
                     <button 
                         v-else 
-                        class="creator-action-btn unfollow" 
-                        @click="removeFromFollow(creator.id)"
+                        class="creator-action-btn following" 
+                        @click="removeFromFollow(creatorData.id)"
                         :disabled="unfollowButtonLoading">
                         <i class="fa-solid fa-circle-notch fa-spin" v-if="unfollowButtonLoading"></i>
-                        Unfollow
+                        <span class="following-text">Following</span>
+                        <span class="unfollow-text">Unfollow</span>
                     </button>
                 </template>
             </div>
 
             <!-- Bio & External Link -->
-            <div class="creator-bio-section" v-if="creator.bio || creator.external_link">
-                <p class="creator-bio" v-if="creator.bio">{{ creator.bio }}</p>
+            <div class="creator-bio-section" v-if="creatorData.bio || creatorData.external_link">
+                <p class="creator-bio" v-if="creatorData.bio">{{ creatorData.bio }}</p>
                 <a 
-                    v-if="creator.external_link" 
-                    :href="formatExternalLink(creator.external_link)" 
+                    v-if="creatorData.external_link" 
+                    :href="formatExternalLink(creatorData.external_link)" 
                     target="_blank" 
                     rel="noopener noreferrer" 
                     class="creator-external-link">
                     <i class="fa-solid fa-link"></i>
-                    {{ displayExternalLink(creator.external_link) }}
+                    {{ displayExternalLink(creatorData.external_link) }}
                 </a>
             </div>
         </section>
@@ -211,8 +223,28 @@ function displayExternalLink(link: string): string {
     transition: background-color 0.2s ease;
 }
 
-.creator-action-btn.unfollow {
-    background-color: var(--destructive-action-bg);
+.creator-action-btn.following {
+    background-color: transparent;
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+}
+
+.creator-action-btn.following .unfollow-text {
+    display: none;
+}
+
+.creator-action-btn.following:hover {
+    background-color: rgba(220, 53, 69, 0.15);
+    border-color: #dc3545;
+    color: #dc3545;
+}
+
+.creator-action-btn.following:hover .following-text {
+    display: none;
+}
+
+.creator-action-btn.following:hover .unfollow-text {
+    display: inline;
 }
 
 .creator-action-btn:disabled {

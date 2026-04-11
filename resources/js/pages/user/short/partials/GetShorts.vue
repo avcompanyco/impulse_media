@@ -219,6 +219,19 @@ async function trackView(short: ShortItem, index: number) {
     background-color: #d84373;
 }
 
+.follow-btn.unfollow {
+    background-color: transparent;
+    border: 2px solid rgba(255,255,255,0.5);
+    color: #fff;
+    font-size: 0.75rem;
+}
+
+.follow-btn.unfollow:hover {
+    background-color: rgba(220, 53, 69, 0.4);
+    border-color: #dc3545;
+    color: #fff;
+}
+
 .video-description {
     font-size: 0.9rem;
     margin: 0;

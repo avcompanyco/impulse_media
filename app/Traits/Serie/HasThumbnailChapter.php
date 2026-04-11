@@ -34,9 +34,17 @@ trait HasThumbnailChapter
     public function ThumbnailUrl(): Attribute
     {
         return Attribute::get(function (): string {
-            return $this->thumbnail
-                ? Storage::disk(getDisk())->url($this->thumbnail)
-                : $this->defaultThumbnail();
+            if (!$this->thumbnail) {
+                return $this->defaultThumbnail();
+            }
+
+            $disk = Storage::disk(getDisk());
+
+            try {
+                return $disk->temporaryUrl($this->thumbnail, now()->addDay());
+            } catch (\Throwable $e) {
+                return $disk->url($this->thumbnail);
+            }
         });
     }
 

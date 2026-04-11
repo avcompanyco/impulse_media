@@ -32,9 +32,17 @@
      */
     public function horizontalImageUrl (): Attribute {
         return Attribute::get(function (): string {
-            return $this->horizontal_image
-                    ? Storage::disk(getDisk())->url($this->horizontal_image)
-                    : $this->defaultHorizontalImage();
+            if (!$this->horizontal_image) {
+                return $this->defaultHorizontalImage();
+            }
+
+            $disk = Storage::disk(getDisk());
+
+            try {
+                return $disk->temporaryUrl($this->horizontal_image, now()->addDay());
+            } catch (\Throwable $e) {
+                return $disk->url($this->horizontal_image);
+            }
         });
     }
 

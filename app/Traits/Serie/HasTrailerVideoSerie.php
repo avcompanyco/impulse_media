@@ -143,7 +143,7 @@ trait HasTrailerVideoSerie
                             Storage::disk(getDisk())->delete($previous);
                         }
                     } finally {
-                        if (isset($sourceHandle) && $sourceHandle) {
+                        if (isset($sourceHandle) && is_resource($sourceHandle)) {
                             fclose($sourceHandle);
                         }
                         if (file_exists($sourcePath)) {
@@ -177,7 +177,7 @@ trait HasTrailerVideoSerie
                             Storage::disk(getDisk())->delete($previous);
                         }
                     } finally {
-                        if (isset($convertedHandle) && $convertedHandle) {
+                        if (isset($convertedHandle) && is_resource($convertedHandle)) {
                             fclose($convertedHandle);
                         }
                         if (file_exists($convertedPath)) {

@@ -71,19 +71,26 @@ trait HasVideoShort
             tap($this->short_video, function ($previous) use ($video, $storagePath, $compressor) {
                 
                 $sourcePath = $video->getRealPath();
-                // $originalExtension = $video->guessExtension() ?: 'mp4'; 
-                $originalExtension = 'mp4';
+                $originalExtension = strtolower($video instanceof UploadedFile 
+                    ? $video->getClientOriginalExtension() 
+                    : pathinfo($video->getPathname(), PATHINFO_EXTENSION)) ?: 'mp4';
 
-                $compressedPath = tempnam(sys_get_temp_dir(), 'comp_short_') . '.' . $originalExtension;
+                // Always output as mp4
+                $compressedPath = tempnam(sys_get_temp_dir(), 'comp_short_') . '.mp4';
 
                 try {
-                    // Comprimir
-                    $compressor->compressVideo($sourcePath, $compressedPath);
+                    if ($originalExtension === 'mp4') {
+                        // Already mp4, just compress
+                        $compressor->compressVideo($sourcePath, $compressedPath);
+                    } else {
+                        // Convert to mp4 first (handles .mov, .avi, .webm, etc.)
+                        $compressor->justConvertToMp4($sourcePath, $compressedPath);
+                    }
                     
                     // Guardar el video *comprimido*
                     $storedPath = Storage::disk(getDisk())->putFile(
                         $storagePath,
-                        new File($compressedPath), // Usamos new File() para el archivo comprimido
+                        new File($compressedPath),
                     );
 
                     // Actualizar DB
@@ -110,19 +117,22 @@ trait HasVideoShort
             tap($this->short_video, function ($previous) use ($video, $storagePath, $compressor) {
                 
                 $sourcePath = $video; // $video es el path al archivo unido
-                // $originalExtension = pathinfo($sourcePath, PATHINFO_EXTENSION);
-                $originalExtension = 'mp4';
+                $originalExtension = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION)) ?: 'mp4';
                 
-                $filename = uniqid('short_') . '.' . $originalExtension;
+                $filename = uniqid('short_') . '.mp4';
                 $destinationPath = $storagePath . '/' . $filename;
-                $compressedPath = tempnam(sys_get_temp_dir(), 'comp_short_') . '.' . $originalExtension;
+                $compressedPath = tempnam(sys_get_temp_dir(), 'comp_short_') . '.mp4';
 
                 $disk = Storage::disk(getDisk());
                 $compressedHandle = null;
 
                 try {
-                    // 1. Comprimir
-                    $compressor->compressVideo($sourcePath, $compressedPath);
+                    // 1. Comprimir o convertir
+                    if ($originalExtension === 'mp4') {
+                        $compressor->compressVideo($sourcePath, $compressedPath);
+                    } else {
+                        $compressor->justConvertToMp4($sourcePath, $compressedPath);
+                    }
 
                     // 2. Abrir stream del *comprimido*
                     $compressedHandle = fopen($compressedPath, 'rb');
@@ -144,7 +154,7 @@ trait HasVideoShort
                     }
                 } finally {
                     // 6. Limpieza de TODOS los temporales
-                    if (isset($compressedHandle) && $compressedHandle) {
+                    if (isset($compressedHandle) && is_resource($compressedHandle)) {
                         fclose($compressedHandle);
                     }
                     if (file_exists($compressedPath)) {

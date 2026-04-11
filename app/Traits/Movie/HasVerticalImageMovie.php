@@ -34,9 +34,17 @@ trait HasVerticalImageMovie
     public function verticalImageUrl(): Attribute
     {
         return Attribute::get(function (): string {
-            return $this->vertical_image
-                ? Storage::disk(getDisk())->url($this->vertical_image)
-                : $this->defaultVerticalImage();
+            if (!$this->vertical_image) {
+                return $this->defaultVerticalImage();
+            }
+
+            $disk = Storage::disk(getDisk());
+
+            try {
+                return $disk->temporaryUrl($this->vertical_image, now()->addDay());
+            } catch (\Throwable $e) {
+                return $disk->url($this->vertical_image);
+            }
         });
     }
 

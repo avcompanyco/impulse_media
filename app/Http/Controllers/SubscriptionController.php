@@ -36,8 +36,12 @@ class SubscriptionController extends Controller
             ->newSubscription('default', $plan->stripe_price_id);
 
         // Add trial days if the plan has them
+        // Use trialUntil with endOfDay() so Stripe shows the exact number of trial days
+        // trialDays() counts from the exact timestamp, which loses partial days
         if ($plan->free_days_trial > 0) {
-            $subscription->trialDays($plan->free_days_trial);
+            $subscription->trialUntil(
+                now()->addDays($plan->free_days_trial)->endOfDay()
+            );
         }
 
         return $subscription

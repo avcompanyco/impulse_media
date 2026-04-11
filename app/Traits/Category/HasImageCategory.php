@@ -32,9 +32,17 @@
      */
     public function imageUrl (): Attribute {
         return Attribute::get(function (): string {
-            return $this->image
-                    ? Storage::disk(getDisk())->url($this->image)
-                    : $this->defaultCollectionImage();
+            if (!$this->image) {
+                return $this->defaultCollectionImage();
+            }
+
+            $disk = Storage::disk(getDisk());
+
+            try {
+                return $disk->temporaryUrl($this->image, now()->addDay());
+            } catch (\Throwable $e) {
+                return $disk->url($this->image);
+            }
         });
     }
 

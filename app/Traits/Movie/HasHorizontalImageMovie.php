@@ -36,13 +36,8 @@
                 return $this->defaultHorizontalImage();
             }
 
-            $disk = Storage::disk(getDisk());
-
-            try {
-                return $disk->temporaryUrl($this->horizontal_image, now()->addDay());
-            } catch (\Throwable $e) {
-                return $disk->url($this->horizontal_image);
-            }
+            return \App\Services\S3UrlService::temporaryUrl($this->horizontal_image) 
+                ?? $this->defaultHorizontalImage();
         });
     }
 

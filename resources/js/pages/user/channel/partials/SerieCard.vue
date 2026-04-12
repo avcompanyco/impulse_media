@@ -9,7 +9,7 @@ const props = defineProps<{
 <template>
     <div class="content-card">
         <Link :href="ShowSerieController({serie: serie.id})">
-            <img :src="serie.vertical_image_url" alt="Content" />
+            <img :src="serie.vertical_image_url" alt="Content" loading="lazy" />
         </Link>
         <!-- <button class="options-menu-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
         <div class="options-dropdown">

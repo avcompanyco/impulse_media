@@ -39,15 +39,8 @@ trait HasTrailerMovie
                 return $this->defaultTrailerVideo();
             }
     
-            $disk = Storage::disk(getDisk());
-    
-            try {
-                // URL temporal válida por 1 hora
-                return $disk->temporaryUrl($this->trailer_video, now()->addDay());
-            } catch (\Throwable $e) {
-                // fallback a URL normal si el disco no soporta temporaryUrl
-                return $disk->url($this->trailer_video);
-            }
+            return \App\Services\S3UrlService::temporaryUrl($this->trailer_video) 
+                ?? $this->defaultTrailerVideo();
         });
     }
 

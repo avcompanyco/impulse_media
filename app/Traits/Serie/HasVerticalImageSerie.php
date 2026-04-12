@@ -38,13 +38,8 @@ trait HasVerticalImageSerie
                 return $this->defaultVerticalImage();
             }
 
-            $disk = Storage::disk(getDisk());
-
-            try {
-                return $disk->temporaryUrl($this->vertical_image, now()->addDay());
-            } catch (\Throwable $e) {
-                return $disk->url($this->vertical_image);
-            }
+            return \App\Services\S3UrlService::temporaryUrl($this->vertical_image) 
+                ?? $this->defaultVerticalImage();
         });
     }
 

@@ -38,13 +38,8 @@ trait HasThumbnailChapter
                 return $this->defaultThumbnail();
             }
 
-            $disk = Storage::disk(getDisk());
-
-            try {
-                return $disk->temporaryUrl($this->thumbnail, now()->addDay());
-            } catch (\Throwable $e) {
-                return $disk->url($this->thumbnail);
-            }
+            return \App\Services\S3UrlService::temporaryUrl($this->thumbnail) 
+                ?? $this->defaultThumbnail();
         });
     }
 

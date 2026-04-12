@@ -40,15 +40,8 @@ trait HasMovie
                 return $this->defaultMovieVideo();
             }
     
-            $disk = Storage::disk(getDisk());
-    
-            try {
-                // URL temporal válida por 1 hora
-                return $disk->temporaryUrl($this->movie_video, now()->addDay());
-            } catch (\Throwable $e) {
-                // fallback a URL normal si el disco no soporta temporaryUrl
-                return $disk->url($this->movie_video);
-            }
+            return \App\Services\S3UrlService::temporaryUrl($this->movie_video) 
+                ?? $this->defaultMovieVideo();
         });
     }
 

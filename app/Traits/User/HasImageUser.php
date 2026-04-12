@@ -36,13 +36,8 @@
                 return $this->defaultCollectionImage();
             }
 
-            $disk = Storage::disk(getDisk());
-
-            try {
-                return $disk->temporaryUrl($this->image, now()->addDay());
-            } catch (\Throwable $e) {
-                return $disk->url($this->image);
-            }
+            return \App\Services\S3UrlService::temporaryUrl($this->image) 
+                ?? $this->defaultCollectionImage();
         });
     }
 

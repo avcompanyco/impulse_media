@@ -39,15 +39,8 @@ trait HasVideoChapter
                 return $this->defaultChapterVideo();
             }
     
-            $disk = Storage::disk(getDisk());
-    
-            try {
-                // URL temporal válida por 1 hora
-                return $disk->temporaryUrl($this->chapter_video, now()->addDay());
-            } catch (\Throwable $e) {
-                // fallback a URL normal si el disco no soporta temporaryUrl
-                return $disk->url($this->chapter_video);
-            }
+            return \App\Services\S3UrlService::temporaryUrl($this->chapter_video) 
+                ?? $this->defaultChapterVideo();
         });
     }
 

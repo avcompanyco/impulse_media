@@ -29,10 +29,10 @@ function hasMoviesOrSeries(category: any) {
                 <div v-for="(movie, index) in mergeInRandomOrderMoviesAndSeries(category)"
                     :key="`movie_${movie.id}_card_${index + 1}`" class="movie-card">
                     <Link v-if="movie.movie_video" :href="ShowMovieController.url(movie)">
-                        <img :src="movie.vertical_image_url" alt="Movie Poster">
+                        <img :src="movie.vertical_image_url" alt="Movie Poster" loading="lazy">
                     </Link>
                     <Link v-else :href="ShowSerieController.url(movie)">
-                        <img :src="movie.vertical_image_url" alt="Movie Poster">
+                        <img :src="movie.vertical_image_url" alt="Movie Poster" loading="lazy">
                     </Link>
                 </div>
             </div>

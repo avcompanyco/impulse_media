@@ -39,13 +39,8 @@ trait HasVideoShort
                 return $this->defaultShortVideo();
             }
 
-            $disk = Storage::disk(getDisk());
-
-            try {
-                return $disk->temporaryUrl($this->short_video, now()->addHour());
-            } catch (\Throwable $e) {
-                return $disk->url($this->short_video);
-            }
+            return \App\Services\S3UrlService::temporaryUrl($this->short_video) 
+                ?? $this->defaultShortVideo();
         });
     }
 

@@ -30,14 +30,15 @@ class VideoCompressorService
 
         $ffmpegPath = env('FFMPEG_PATH', 'ffmpeg');
 
-        // Construir comando FFmpeg
+        // Construir comando FFmpeg con preset ultrafast para velocidad
         $command = "{$ffmpegPath} -hide_banner -loglevel error "
             . "-i {$safeInputPath} "
             // Usar el filtro escapado
             . "-vf {$safeVideoFilter} " 
             . "-c:v libx264 "
             . "-crf {$config['crf']} "
-            . "-preset fast "
+            . "-preset ultrafast "
+            . "-tune fastdecode "
             . "-c:a aac "
             . "-b:a 128k "
             . "-movflags +faststart "
@@ -46,8 +47,8 @@ class VideoCompressorService
         // Ejecutar FFmpeg
         exec($command, $output, $returnCode);
 
-        // Depuración opcional:
-        // file_put_contents(storage_path('logs/ffmpeg.log'), "Comando:\n{$command}\n\nSalida:\n" . implode("\n", $output));
+        // Log para depuración
+        $this->logCommand($command, $output, $returnCode);
 
         if ($returnCode === 0) {
             return $outputPath;
@@ -84,7 +85,8 @@ class VideoCompressorService
     }
 
     /**
-     * Convierte un video a formato MP4 sin compresión adicional.
+     * Convierte un video a formato MP4 de la manera más rápida posible.
+     * Primero intenta stream-copy (instantáneo), si falla, re-codifica con ultrafast.
      *
      * @param string $inputPath Ruta del video de entrada
      * @param string $outputPath Ruta de salida del video en MP4
@@ -104,24 +106,52 @@ class VideoCompressorService
         $safeInputPath = escapeshellarg($inputPath);
         $safeOutputPath = escapeshellarg($outputPath);
 
-        // Construir comando FFmpeg para conversión simple a MP4
+        // INTENTO 1: Stream copy (instantáneo, sin re-codificación)
+        // Esto funciona para .mov con codec H.264/AAC — sin pérdida de calidad y es ~100x más rápido
+        $commandCopy = "{$ffmpegPath} -hide_banner -loglevel error "
+            . "-i {$safeInputPath} "
+            . "-c:v copy "
+            . "-c:a copy "
+            . "-movflags +faststart "
+            . "-y {$safeOutputPath} 2>&1";
+
+        exec($commandCopy, $outputCopy, $returnCodeCopy);
+        $this->logCommand($commandCopy, $outputCopy, $returnCodeCopy);
+
+        if ($returnCodeCopy === 0 && file_exists($outputPath) && filesize($outputPath) > 1000) {
+            return $outputPath;
+        }
+
+        // INTENTO 2: Re-codificar con ultrafast preset si stream copy falló
         $command = "{$ffmpegPath} -hide_banner -loglevel error "
             . "-i {$safeInputPath} "
             . "-c:v libx264 "
-            . "-preset fast "
+            . "-preset ultrafast "
+            . "-crf 23 "
             . "-c:a aac "
             . "-b:a 128k "
             . "-movflags +faststart "
             . "-y {$safeOutputPath} 2>&1";
 
-        // Ejecutar FFmpeg
         exec($command, $output, $returnCode);
+        $this->logCommand($command, $output, $returnCode);
 
-        if ($returnCode === 0) {
+        if ($returnCode === 0 && file_exists($outputPath) && filesize($outputPath) > 1000) {
             return $outputPath;
         }
 
         // Si hay error, lanzar excepción con mensaje detallado
         throw new \Exception("FFmpeg error (Code {$returnCode}):\nComando: {$command}\nSalida: " . implode("\n", $output));
+    }
+
+    /**
+     * Log FFmpeg commands for debugging.
+     */
+    private function logCommand($command, $output, $returnCode)
+    {
+        $logPath = storage_path('logs/ffmpeg.log');
+        $timestamp = date('Y-m-d H:i:s');
+        $logEntry = "[{$timestamp}] Code: {$returnCode}\nCommand: {$command}\nOutput: " . implode("\n", $output) . "\n---\n";
+        file_put_contents($logPath, $logEntry, FILE_APPEND | LOCK_EX);
     }
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AdCampaign;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class StoreAdCampaignController extends Controller
 {
@@ -23,6 +24,11 @@ class StoreAdCampaignController extends Controller
 
         // Upload to S3
         $path = $file->store('ad_campaigns', getDisk());
+
+        if (!$path) {
+            Log::error('Ad campaign media upload failed', ['name' => $request->input('name')]);
+            return redirect()->back()->withErrors(['media' => 'Failed to upload media file. Please try again.']);
+        }
 
         $campaign = AdCampaign::create([
             'name' => $request->input('name'),

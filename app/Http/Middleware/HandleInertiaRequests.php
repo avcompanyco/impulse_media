@@ -60,6 +60,10 @@ class HandleInertiaRequests extends Middleware
                 foreach ($campaigns as $campaign) {
                     // Add each media item as a separate ad entry for equal rotation
                     foreach ($campaign->mediaItems as $media) {
+                        // Skip media items with no valid path
+                        if (!$media->media_path || $media->media_path === '0' || $media->media_path === 0) {
+                            continue;
+                        }
                         $adCampaigns[] = [
                             'campaign_id' => $campaign->id,
                             'campaign_name' => $campaign->name,
@@ -69,7 +73,7 @@ class HandleInertiaRequests extends Middleware
                         ];
                     }
                     // Also include the legacy single media_path if no media items exist
-                    if ($campaign->mediaItems->isEmpty() && $campaign->media_path) {
+                    if ($campaign->mediaItems->isEmpty() && $campaign->media_path && $campaign->media_path !== '0') {
                         $adCampaigns[] = [
                             'campaign_id' => $campaign->id,
                             'campaign_name' => $campaign->name,

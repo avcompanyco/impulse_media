@@ -36,7 +36,6 @@ class PublishSerieController extends Controller
             //     __("Serie published successfully")
             // );
         } catch (\Throwable $th) {
-            dd($th);
             return inertiaErrorHandler(
                 __("Error"),
                 $th->getMessage()

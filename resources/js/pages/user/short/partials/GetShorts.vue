@@ -76,6 +76,7 @@ async function addToFollow(userId: number) {
     addFollowLoading.value[userId] = true;
 
     // Optimistic: update UI immediately
+    const targetUser = shorts.value.find(s => s.user.id === userId)?.user;
     shorts.value = shorts.value.map(s => {
         if (s.user.id === userId) {
             return { ...s, user: { ...s.user, is_followed: true } };
@@ -84,7 +85,7 @@ async function addToFollow(userId: number) {
     });
 
     try {
-        await fetch(AddToFollowController({ user: userId }), {
+        const response = await fetch(AddToFollowController({ user: userId }), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -93,6 +94,19 @@ async function addToFollow(userId: number) {
             },
             credentials: 'same-origin',
         });
+
+        // Update subscriptions sidebar (Inertia shared props)
+        if (targetUser && response.ok) {
+            const subs = (page.props as any).subscriptions || [];
+            if (!subs.find((s: any) => s.id === userId)) {
+                subs.push({
+                    id: targetUser.id,
+                    username: targetUser.username,
+                    image_url: targetUser.image_url,
+                });
+                (page.props as any).subscriptions = [...subs];
+            }
+        }
     } catch (error) {
         // Revert on error
         shorts.value = shorts.value.map(s => {
@@ -119,7 +133,7 @@ async function removeFromFollow(userId: number) {
     });
 
     try {
-        await fetch(RemoveToFollowController({ user: userId }), {
+        const response = await fetch(RemoveToFollowController({ user: userId }), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -128,6 +142,12 @@ async function removeFromFollow(userId: number) {
             },
             credentials: 'same-origin',
         });
+
+        // Update subscriptions sidebar (remove from Inertia shared props)
+        if (response.ok) {
+            const subs = (page.props as any).subscriptions || [];
+            (page.props as any).subscriptions = subs.filter((s: any) => s.id !== userId);
+        }
     } catch (error) {
         // Revert on error
         shorts.value = shorts.value.map(s => {

@@ -3,10 +3,10 @@
 namespace App\Traits\Short;
 
 use Illuminate\Http\UploadedFile;
-use Illuminate\Http\File; // <-- Importamos Illuminate\Http\File
+use Illuminate\Http\File;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Casts\Attribute;
-use App\Services\VideoCompressorService;
 
 trait HasVideoShort
 {
@@ -60,11 +60,19 @@ trait HasVideoShort
         $disk = Storage::disk(getDisk());
         $previousVideo = $this->short_video;
 
+        Log::info('updateVideoShort called', [
+            'type' => is_string($video) ? 'string' : get_class($video),
+            'short_id' => $this->id,
+            'storagePath' => $storagePath,
+        ]);
+
         // CASO 1: UploadedFile or File (direct upload, non-chunked)
         if ($video instanceof UploadedFile || $video instanceof File) {
             
-            // Upload directly to S3 — no FFmpeg processing for reliability
+            // Upload directly to S3 — putFile auto-detects MIME type
             $storedPath = $disk->putFile($storagePath, $video);
+
+            Log::info('Short direct upload', ['storedPath' => $storedPath]);
 
             if ($storedPath) {
                 $this->forceFill(['short_video' => $storedPath])->save();
@@ -78,28 +86,43 @@ trait HasVideoShort
         } else if (is_string($video)) {
             
             $sourcePath = $video;
-            $extension = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION)) ?: 'mp4';
-            $filename = uniqid('short_') . '.' . $extension;
-            $destinationPath = $storagePath . '/' . $filename;
+            
+            Log::info('Short chunk upload', [
+                'sourcePath' => $sourcePath,
+                'exists' => file_exists($sourcePath),
+                'size' => file_exists($sourcePath) ? filesize($sourcePath) : 0,
+            ]);
+
+            if (!file_exists($sourcePath) || filesize($sourcePath) < 100) {
+                Log::error('Short chunk file missing or too small', ['path' => $sourcePath]);
+                return;
+            }
 
             $uploaded = false;
 
             try {
-                // Upload the raw merged file directly to S3
-                $handle = fopen($sourcePath, 'rb');
-                if ($handle) {
-                    $disk->put($destinationPath, $handle);
-                    if (is_resource($handle)) {
-                        fclose($handle);
-                    }
+                // Use putFileAs with File object — this auto-detects MIME type
+                // which is CRITICAL for browsers to play the video
+                $fileObj = new File($sourcePath);
+                $filename = uniqid('short_') . '.mp4';
+                
+                $storedPath = $disk->putFileAs($storagePath, $fileObj, $filename, [
+                    'ContentType' => 'video/mp4',
+                ]);
+
+                Log::info('Short chunk stored to S3', ['storedPath' => $storedPath]);
+
+                if ($storedPath) {
                     $uploaded = true;
                 }
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::error('Short upload failed: ' . $e->getMessage());
+                Log::error('Short chunk upload failed: ' . $e->getMessage(), [
+                    'trace' => $e->getTraceAsString(),
+                ]);
             }
 
             if ($uploaded) {
-                $this->forceFill(['short_video' => $destinationPath])->save();
+                $this->forceFill(['short_video' => $storedPath])->save();
 
                 if ($previousVideo) {
                     $disk->delete($previousVideo);
@@ -108,7 +131,7 @@ trait HasVideoShort
 
             // Clean up the temp chunk file
             if (file_exists($sourcePath)) {
-                unlink($sourcePath);
+                @unlink($sourcePath);
             }
 
         } else {

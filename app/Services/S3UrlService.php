@@ -22,16 +22,13 @@ class S3UrlService
             return null;
         }
 
-        // NOTE: CloudFront CDN is disabled because the distribution returns 403.
-        // Using S3 signed URLs directly which always work with IAM credentials.
-        // To re-enable CDN, fix the CloudFront OAI and S3 bucket policy first,
-        // then uncomment the block below:
-        //
-        // $cdnUrl = config('filesystems.disks.s3.cdn_url') ?: env('AWS_CDN_URL');
-        // if ($cdnUrl) {
-        //     return rtrim($cdnUrl, '/') . '/' . ltrim($path, '/');
-        // }
+        // Use CloudFront CDN URL for fast delivery (S3 bucket has public-read policy)
+        $cdnUrl = config('filesystems.disks.s3.cdn_url') ?: env('AWS_CDN_URL');
+        if ($cdnUrl) {
+            return rtrim($cdnUrl, '/') . '/' . ltrim($path, '/');
+        }
 
+        // Fallback to S3 signed URLs if no CDN configured
         $disk = $disk ?: getDisk();
         $cacheKey = 's3_url_' . md5($path . $disk);
 

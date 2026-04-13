@@ -23,6 +23,11 @@ class AddMediaAdCampaignController extends Controller
         // Upload to S3
         $path = $file->store('ad_campaigns', getDisk());
 
+        if (!$path) {
+            \Illuminate\Support\Facades\Log::error('Ad campaign media item upload failed');
+            return redirect()->back()->withErrors(['media' => 'Failed to upload media file. Please try again.']);
+        }
+
         $adCampaign->mediaItems()->create([
             'media_path' => $path,
             'media_type' => $mediaType,

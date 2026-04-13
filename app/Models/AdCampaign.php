@@ -57,9 +57,21 @@ class AdCampaign extends Model
      */
     public function deleteMedia(): void
     {
-        if ($this->media_path) {
+        // Delete legacy single media
+        if ($this->media_path && $this->media_path !== '0') {
             Storage::disk(getDisk())->delete($this->media_path);
             S3UrlService::forgetUrl($this->media_path);
         }
+
+        // Delete all media items from S3
+        foreach ($this->mediaItems as $media) {
+            if ($media->media_path && $media->media_path !== '0') {
+                Storage::disk(getDisk())->delete($media->media_path);
+                S3UrlService::forgetUrl($media->media_path);
+            }
+        }
+
+        // Delete all media item records
+        $this->mediaItems()->delete();
     }
 }

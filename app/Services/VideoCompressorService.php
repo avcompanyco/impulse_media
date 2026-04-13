@@ -28,7 +28,7 @@ class VideoCompressorService
 
         $safeVideoFilter = escapeshellarg($config['vf']);
 
-        $ffmpegPath = env('FFMPEG_PATH', 'ffmpeg');
+        $ffmpegPath = config('app.ffmpeg_path', '/usr/bin/ffmpeg');
 
         // Construir comando FFmpeg con preset ultrafast para velocidad
         $command = "{$ffmpegPath} -hide_banner -loglevel error "
@@ -100,7 +100,7 @@ class VideoCompressorService
             throw new \Exception("El archivo de entrada no existe: {$inputPath}");
         }
 
-        $ffmpegPath = env('FFMPEG_PATH', 'ffmpeg');
+        $ffmpegPath = config('app.ffmpeg_path', '/usr/bin/ffmpeg');
 
         // Escapar rutas (protección contra inyección de comandos)
         $safeInputPath = escapeshellarg($inputPath);

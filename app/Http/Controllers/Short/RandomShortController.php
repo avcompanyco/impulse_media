@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Short;
 use App\Http\Controllers\Controller;
 
 use Illuminate\Support\Facades\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Enums\Content\ContentStatus;
 use App\Models\Short;
 
@@ -25,6 +26,17 @@ class RandomShortController extends Controller
             })->with(['content', 'user' => function ($query) {
                 $query->select('id', 'name', 'username', 'image');
             }])->limit(10)->get();
+
+            // Add is_followed flag for the authenticated user
+            $authUser = Auth::user();
+            if ($authUser) {
+                $followedIds = $authUser->followings()->pluck('users.id')->toArray();
+                $shorts->each(function ($short) use ($followedIds) {
+                    if ($short->user) {
+                        $short->user->is_followed = in_array($short->user->id, $followedIds);
+                    }
+                });
+            }
 
             $previous_short_ids = array_merge($previouds_short_ids, $shorts->pluck('id')->toArray());
             session(['previous_short_ids' => $previous_short_ids]);

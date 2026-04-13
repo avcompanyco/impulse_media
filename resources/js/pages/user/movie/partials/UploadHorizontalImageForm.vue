@@ -115,7 +115,7 @@ function successForm() {
     if (form.value) {
         // @ts-ignore
         form.value.reset();
-        previewImage.value = null;
+        // Keep previewImage as visual fallback until server URL loads
     }
     isUploading.value = false;
 }

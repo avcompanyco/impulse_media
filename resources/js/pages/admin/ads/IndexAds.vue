@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { ref, reactive, nextTick } from 'vue';
 import { useForm, router } from '@inertiajs/vue3';
 import AdminDashboardLayout from '@/layouts/AdminDashboardLayout.vue';
 
@@ -78,6 +78,8 @@ const addMediaForm = useForm({
 });
 const addMediaPreview = ref('');
 const addMediaType = ref('image');
+const addMediaInputRefs = ref<Record<number, HTMLInputElement | null>>({});
+const createFileInputRef = ref<HTMLInputElement | null>(null);
 const addMediaCampaignId = ref<number | null>(null);
 
 function openAddMedia(campaignId: number) {
@@ -166,7 +168,7 @@ function deleteCampaign(id: number) {
 
                 <div class="form-group">
                     <label class="form-label">Media File (Image 1:1 or Video) *</label>
-                    <div class="file-upload-area" @click="($refs.fileInput as HTMLInputElement).click()">
+                    <div class="file-upload-area" @click="createFileInputRef?.click()">
                         <div v-if="!previewUrl" class="upload-placeholder">
                             <i class="fas fa-cloud-upload-alt"></i>
                             <p>Click to upload image or video</p>
@@ -179,7 +181,7 @@ function deleteCampaign(id: number) {
                         </div>
                     </div>
                     <input
-                        ref="fileInput"
+                        ref="createFileInputRef"
                         type="file"
                         accept="image/*,video/*"
                         @change="handleFileChange"
@@ -295,7 +297,7 @@ function deleteCampaign(id: number) {
 
                         <!-- Inline Add Media Form -->
                         <div v-if="addMediaCampaignId === campaign.id" class="add-media-form">
-                            <div class="file-upload-area small" @click="($refs[`addMediaInput_${campaign.id}`] as HTMLInputElement)?.click()">
+                            <div class="file-upload-area small" @click="addMediaInputRefs[campaign.id]?.click()">
                                 <div v-if="!addMediaPreview" class="upload-placeholder">
                                     <i class="fas fa-cloud-upload-alt"></i>
                                     <p>Click to select file</p>
@@ -306,7 +308,7 @@ function deleteCampaign(id: number) {
                                 </div>
                             </div>
                             <input
-                                :ref="`addMediaInput_${campaign.id}`"
+                                :ref="(el) => { if (el) addMediaInputRefs[campaign.id] = el as HTMLInputElement; }"
                                 type="file"
                                 accept="image/*,video/*"
                                 @change="handleAddMediaFile"

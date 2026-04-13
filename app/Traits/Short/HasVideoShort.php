@@ -120,6 +120,7 @@ trait HasVideoShort
 
                 $disk = Storage::disk(getDisk());
                 $compressedHandle = null;
+                $uploadedSuccessfully = false;
 
                 try {
                     // 1. Comprimir o convertir
@@ -130,14 +131,39 @@ trait HasVideoShort
                     }
 
                     // 2. Abrir stream del *comprimido*
-                    $compressedHandle = fopen($compressedPath, 'rb');
-                    if (!$compressedHandle) {
-                        throw new \Exception('No se pudo abrir el archivo comprimido: ' . $compressedPath);
+                    if (file_exists($compressedPath) && filesize($compressedPath) > 1000) {
+                        $compressedHandle = fopen($compressedPath, 'rb');
+                        if ($compressedHandle) {
+                            // 3. Guardar stream en disco
+                            $disk->put($destinationPath, $compressedHandle);
+                            $uploadedSuccessfully = true;
+                        }
                     }
+                } catch (\Throwable $e) {
+                    // FFmpeg failed - log but continue to fallback
+                    \Illuminate\Support\Facades\Log::warning('FFmpeg failed for short, uploading raw: ' . $e->getMessage());
+                }
 
-                    // 3. Guardar stream en disco
-                    $disk->put($destinationPath, $compressedHandle); 
+                // Fallback: if FFmpeg failed, upload the raw file directly
+                if (!$uploadedSuccessfully && file_exists($sourcePath)) {
+                    try {
+                        $rawHandle = fopen($sourcePath, 'rb');
+                        if ($rawHandle) {
+                            // Use original extension if not mp4
+                            $rawFilename = uniqid('short_raw_') . '.' . ($originalExtension ?: 'mp4');
+                            $destinationPath = $storagePath . '/' . $rawFilename;
+                            $disk->put($destinationPath, $rawHandle);
+                            if (is_resource($rawHandle)) {
+                                fclose($rawHandle);
+                            }
+                            $uploadedSuccessfully = true;
+                        }
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::error('Raw upload also failed for short: ' . $e->getMessage());
+                    }
+                }
 
+                if ($uploadedSuccessfully) {
                     // 4. Actualizar DB
                     $this->forceFill([
                         'short_video' => $destinationPath,
@@ -147,17 +173,17 @@ trait HasVideoShort
                     if ($previous) {
                         Storage::disk(getDisk())->delete($previous);
                     }
-                } finally {
-                    // 6. Limpieza de TODOS los temporales
-                    if (isset($compressedHandle) && is_resource($compressedHandle)) {
-                        fclose($compressedHandle);
-                    }
-                    if (file_exists($compressedPath)) {
-                        unlink($compressedPath); // Borra el comprimido
-                    }
-                    if (file_exists($sourcePath)) {
-                        unlink($sourcePath); // Borra el original (unido de chunks)
-                    }
+                }
+
+                // 6. Limpieza de TODOS los temporales
+                if (isset($compressedHandle) && is_resource($compressedHandle)) {
+                    fclose($compressedHandle);
+                }
+                if (file_exists($compressedPath)) {
+                    unlink($compressedPath);
+                }
+                if (file_exists($sourcePath)) {
+                    unlink($sourcePath);
                 }
             });
         

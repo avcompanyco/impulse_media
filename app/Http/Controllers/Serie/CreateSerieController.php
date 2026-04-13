@@ -65,7 +65,10 @@ class CreateSerieController extends Controller
         }
 
         $canPublish = true;
-        $seriesCount = $_user->series()->where('status', ContentStatus::PUBLISHED->value)->count();
+        $seriesCount = $_user->series()
+            ->where('status', ContentStatus::PUBLISHED->value)
+            ->where('created_at', '>=', now()->startOfMonth())
+            ->count();
         if (!$plan->is_unlimited_content)
         {
             $canPublish = $plan->series_upload_count > $seriesCount;

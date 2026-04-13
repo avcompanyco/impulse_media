@@ -62,7 +62,10 @@ class CreateShortController extends Controller
         }
 
         $canPublish = true;
-        $shortsCount = $_user->shorts()->where('status', ContentStatus::PUBLISHED->value)->count();
+        $shortsCount = $_user->shorts()
+            ->where('status', ContentStatus::PUBLISHED->value)
+            ->where('created_at', '>=', now()->startOfMonth())
+            ->count();
         if (!$plan->is_unlimited_content)
         {
             $canPublish = $plan->shorts_upload_count > $shortsCount;

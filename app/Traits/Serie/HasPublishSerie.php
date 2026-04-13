@@ -12,8 +12,8 @@ trait HasPublishSerie
     public function publish(Serie $serie, array $data)
     {
         $serie->fill($data)->save();
-        // verify all fields are filled
-        if (! $serie->title || ! $serie->description || ! $serie->trailer_video || ! $serie->horizontal_image || ! $serie->vertical_image) {
+        // verify required fields are filled (trailer is optional)
+        if (! $serie->title || ! $serie->description || ! $serie->horizontal_image || ! $serie->vertical_image) {
             throw new \Exception(__('Cannot publish this serie'));
         }
 

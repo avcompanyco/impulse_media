@@ -68,7 +68,10 @@ class CreateMovieController extends Controller
         }
 
         $canPublish = true;
-        $moviesCount = $_user->movies()->where('status', ContentStatus::PUBLISHED->value)->count();
+        $moviesCount = $_user->movies()
+            ->where('status', ContentStatus::PUBLISHED->value)
+            ->where('created_at', '>=', now()->startOfMonth())
+            ->count();
         if (!$plan->is_unlimited_content)
         {
             $canPublish = $plan->movies_upload_count > $moviesCount;

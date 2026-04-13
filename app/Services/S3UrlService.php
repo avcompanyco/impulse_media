@@ -8,8 +8,9 @@ use Illuminate\Support\Facades\Storage;
 class S3UrlService
 {
     /**
-     * Get a cached temporary URL for an S3 object.
-     * Caches the signed URL for 12 hours (URL expires in 24 hours).
+     * Get a URL for an S3 object.
+     * If a CloudFront CDN URL is configured, returns a fast CDN URL.
+     * Otherwise, falls back to cached S3 signed URLs.
      *
      * @param string $path The S3 file path
      * @param string $disk The disk name
@@ -19,6 +20,12 @@ class S3UrlService
     {
         if (!$path) {
             return null;
+        }
+
+        // If CloudFront CDN URL is configured, use it directly (much faster)
+        $cdnUrl = config('filesystems.disks.s3.cdn_url') ?: env('AWS_CDN_URL');
+        if ($cdnUrl) {
+            return rtrim($cdnUrl, '/') . '/' . ltrim($path, '/');
         }
 
         $disk = $disk ?: getDisk();

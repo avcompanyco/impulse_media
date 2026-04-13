@@ -4,18 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Casts\Attribute;
-use Illuminate\Support\Facades\Storage;
 use App\Services\S3UrlService;
 
-class AdCampaign extends Model
+class AdCampaignMedia extends Model
 {
+    protected $table = 'ad_campaign_media';
+
     protected $fillable = [
-        'name',
-        'company_name',
+        'ad_campaign_id',
         'media_path',
         'media_type',
-        'status',
-        'impressions_count',
     ];
 
     protected $appends = [
@@ -23,15 +21,15 @@ class AdCampaign extends Model
     ];
 
     /**
-     * Get the media items for this campaign.
+     * Get the campaign this media belongs to.
      */
-    public function mediaItems()
+    public function campaign()
     {
-        return $this->hasMany(AdCampaignMedia::class, 'ad_campaign_id');
+        return $this->belongsTo(AdCampaign::class, 'ad_campaign_id');
     }
 
     /**
-     * Get the public URL for the legacy media file.
+     * Get the public URL for the media file.
      */
     public function mediaUrl(): Attribute
     {
@@ -45,20 +43,12 @@ class AdCampaign extends Model
     }
 
     /**
-     * Scope for active campaigns.
-     */
-    public function scopeActive($query)
-    {
-        return $query->where('status', 'active');
-    }
-
-    /**
-     * Delete the media file from storage when campaign is deleted.
+     * Delete the media file from storage.
      */
     public function deleteMedia(): void
     {
         if ($this->media_path) {
-            Storage::disk(getDisk())->delete($this->media_path);
+            \Illuminate\Support\Facades\Storage::disk(getDisk())->delete($this->media_path);
             S3UrlService::forgetUrl($this->media_path);
         }
     }

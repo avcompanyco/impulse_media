@@ -10,7 +10,9 @@ class IndexAdCampaignController extends Controller
 {
     public function __invoke()
     {
-        $campaigns = AdCampaign::orderBy('created_at', 'desc')->get();
+        $campaigns = AdCampaign::with('mediaItems')
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         return Inertia::render('admin/ads/IndexAds', [
             'campaigns' => $campaigns,

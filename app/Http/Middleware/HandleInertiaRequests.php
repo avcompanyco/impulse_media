@@ -55,8 +55,30 @@ class HandleInertiaRequests extends Middleware
             $currentPlan = $_user->getCurrentPlan();
             if ($currentPlan && $currentPlan->has_ads) {
                 $showAds = true;
-                // Load active custom ad campaigns for users who see ads
-                $adCampaigns = AdCampaign::active()->inRandomOrder()->get();
+                // Build flat list of ad items from all active campaigns for equal rotation
+                $campaigns = AdCampaign::active()->with('mediaItems')->inRandomOrder()->get();
+                foreach ($campaigns as $campaign) {
+                    // Add each media item as a separate ad entry for equal rotation
+                    foreach ($campaign->mediaItems as $media) {
+                        $adCampaigns[] = [
+                            'campaign_id' => $campaign->id,
+                            'campaign_name' => $campaign->name,
+                            'company_name' => $campaign->company_name,
+                            'media_url' => $media->media_url,
+                            'media_type' => $media->media_type,
+                        ];
+                    }
+                    // Also include the legacy single media_path if no media items exist
+                    if ($campaign->mediaItems->isEmpty() && $campaign->media_path) {
+                        $adCampaigns[] = [
+                            'campaign_id' => $campaign->id,
+                            'campaign_name' => $campaign->name,
+                            'company_name' => $campaign->company_name,
+                            'media_url' => $campaign->media_url,
+                            'media_type' => $campaign->media_type,
+                        ];
+                    }
+                }
             }
         }
 

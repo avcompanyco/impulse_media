@@ -97,14 +97,14 @@ function onPrerollComplete() {
             ref="videoEl"
             class="vp-video"
             :poster="posterUrl"
-            preload="metadata"
+            preload="auto"
             playsinline
             webkit-playsinline
             x5-playsinline
             @play="emit('play')"
             @pause="emit('pause')"
         >
-            <source :src="videoSrc" />
+            <source :src="videoSrc" type="video/mp4" />
             Tu navegador no soporta la etiqueta de video HTML5.
         </video>
 
@@ -233,7 +233,8 @@ function onPrerollComplete() {
 /* === Container === */
 .vp-container {
     width: 100%;
-    height: calc(100vh - 70px);
+    height: calc(100vh - 120px);
+    max-height: calc(100dvh - 120px);
     position: relative;
     display: flex;
     justify-content: center;

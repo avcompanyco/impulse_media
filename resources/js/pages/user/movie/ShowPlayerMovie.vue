@@ -13,7 +13,7 @@ const props = defineProps<{
     <UserDashboardLayout 
         :title="`${movie.title} - ${$page.props.name || 'Impulsemedia'}`" 
         :headerTitle="`${movie.title} - ${$page.props.name || 'Impulsemedia'}`">
-        <div style="margin-bottom: 80px;">
+        <div>
             <VideoPlayer
                 :video-src="movie.movie_video_url"
                 :title="movie.title || 'Video'"
@@ -30,6 +30,5 @@ const props = defineProps<{
                 </template>
             </VideoPlayer>
         </div>
-        <br />
     </UserDashboardLayout>
 </template>

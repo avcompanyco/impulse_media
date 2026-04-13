@@ -19,8 +19,8 @@ const isLoadingMoreShorts = ref(false);
 const hasInitialShorts = ref(false);
 const playerRef = ref<InstanceType<typeof ShortsPlayer>>();
 
-const addFollowLoading = ref(false);
-const removeFollowLoading = ref(false);
+const addFollowLoading = ref<Record<number, boolean>>({});
+const removeFollowLoading = ref<Record<number, boolean>>({});
 
 const page = usePage();
 
@@ -68,31 +68,41 @@ function handleFollowClick(event: Event, user: ShortUser) {
 }
 
 function addToFollow(userId: number) {
-    addFollowLoading.value = true;
+    addFollowLoading.value[userId] = true;
     router.post(AddToFollowController({ user: userId }), {}, {
         preserveState: true,
-        preserveScroll: false,
+        preserveScroll: true,
         onFinish: () => {
-            addFollowLoading.value = false;
-            const idx = shorts.value.findIndex((s) => s.user.id === userId);
-            if (idx !== -1) {
-                shorts.value[idx].user.is_followed = true;
-            }
+            addFollowLoading.value[userId] = false;
+            // Update ALL shorts from this user
+            shorts.value.forEach((s, idx) => {
+                if (s.user.id === userId) {
+                    shorts.value[idx] = {
+                        ...s,
+                        user: { ...s.user, is_followed: true }
+                    };
+                }
+            });
         },
     });
 }
 
 function removeFromFollow(userId: number) {
-    removeFollowLoading.value = true;
+    removeFollowLoading.value[userId] = true;
     router.post(RemoveToFollowController({ user: userId }), {}, {
         preserveState: true,
-        preserveScroll: false,
+        preserveScroll: true,
         onFinish: () => {
-            removeFollowLoading.value = false;
-            const idx = shorts.value.findIndex((s) => s.user.id === userId);
-            if (idx !== -1) {
-                shorts.value[idx].user.is_followed = false;
-            }
+            removeFollowLoading.value[userId] = false;
+            // Update ALL shorts from this user
+            shorts.value.forEach((s, idx) => {
+                if (s.user.id === userId) {
+                    shorts.value[idx] = {
+                        ...s,
+                        user: { ...s.user, is_followed: false }
+                    };
+                }
+            });
         },
     });
 }
@@ -150,18 +160,18 @@ async function trackView(short: ShortItem, index: number) {
                         v-if="!short.user.is_followed"
                         class="follow-btn"
                         @click.stop="handleFollowClick($event, short.user)"
-                        :disabled="addFollowLoading"
+                        :disabled="addFollowLoading[short.user.id]"
                     >
-                        <i class="fa-solid fa-circle-notch fa-spin" v-if="addFollowLoading"></i>
+                        <i class="fa-solid fa-circle-notch fa-spin" v-if="addFollowLoading[short.user.id]"></i>
                         <span v-else>Follow</span>
                     </button>
                     <button
                         v-else
                         class="follow-btn unfollow"
                         @click.stop="handleFollowClick($event, short.user)"
-                        :disabled="removeFollowLoading"
+                        :disabled="removeFollowLoading[short.user.id]"
                     >
-                        <i class="fa-solid fa-circle-notch fa-spin" v-if="removeFollowLoading"></i>
+                        <i class="fa-solid fa-circle-notch fa-spin" v-if="removeFollowLoading[short.user.id]"></i>
                         <span v-else>Unfollow</span>
                     </button>
                 </template>

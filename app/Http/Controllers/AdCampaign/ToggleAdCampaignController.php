@@ -8,12 +8,12 @@ use Illuminate\Http\Request;
 
 class ToggleAdCampaignController extends Controller
 {
-    public function __invoke(AdCampaign $campaign)
+    public function __invoke(AdCampaign $adCampaign)
     {
-        $campaign->status = $campaign->status === 'active' ? 'inactive' : 'active';
-        $campaign->save();
+        $adCampaign->status = $adCampaign->status === 'active' ? 'inactive' : 'active';
+        $adCampaign->save();
 
-        $statusText = $campaign->status === 'active' ? 'activated' : 'deactivated';
+        $statusText = $adCampaign->status === 'active' ? 'activated' : 'deactivated';
 
         return redirect()->back()->with([
             'type' => 'success',

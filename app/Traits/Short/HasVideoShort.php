@@ -101,14 +101,10 @@ trait HasVideoShort
             $uploaded = false;
 
             try {
-                // Use putFileAs with File object — this auto-detects MIME type
-                // which is CRITICAL for browsers to play the video
+                // Use putFile with File object — auto-detects MIME type from file
                 $fileObj = new File($sourcePath);
-                $filename = uniqid('short_') . '.mp4';
                 
-                $storedPath = $disk->putFileAs($storagePath, $fileObj, $filename, [
-                    'ContentType' => 'video/mp4',
-                ]);
+                $storedPath = $disk->putFile($storagePath, $fileObj);
 
                 Log::info('Short chunk stored to S3', ['storedPath' => $storedPath]);
 

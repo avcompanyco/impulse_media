@@ -13,8 +13,13 @@ trait HasPublishSerie
     {
         $serie->fill($data)->save();
         // verify required fields are filled (trailer is optional)
-        if (! $serie->title || ! $serie->description || ! $serie->horizontal_image || ! $serie->vertical_image) {
-            throw new \Exception(__('Cannot publish this serie'));
+        $missing = [];
+        if (!$serie->title) $missing[] = 'Title';
+        if (!$serie->description) $missing[] = 'Description';
+        if (!$serie->horizontal_image) $missing[] = 'Horizontal Image';
+        if (!$serie->vertical_image) $missing[] = 'Vertical Image';
+        if (!empty($missing)) {
+            throw new \Exception(__('Cannot publish this serie. Missing: ') . implode(', ', $missing));
         }
 
         $content = $serie->content;

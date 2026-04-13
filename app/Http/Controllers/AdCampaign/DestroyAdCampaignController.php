@@ -7,13 +7,13 @@ use App\Models\AdCampaign;
 
 class DestroyAdCampaignController extends Controller
 {
-    public function __invoke(AdCampaign $campaign)
+    public function __invoke(AdCampaign $adCampaign)
     {
         // Delete media file from storage
-        $campaign->deleteMedia();
+        $adCampaign->deleteMedia();
 
         // Delete the campaign record
-        $campaign->delete();
+        $adCampaign->delete();
 
         return redirect()->back()->with([
             'type' => 'success',

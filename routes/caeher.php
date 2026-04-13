@@ -120,9 +120,9 @@ Route::middleware('auth')->group(function () {
                 ->name('admin.ads.store');
             Route::put('/{adCampaign}', \App\Http\Controllers\AdCampaign\UpdateAdCampaignController::class)
                 ->name('admin.ads.update');
-            Route::put('/{campaign}/toggle', \App\Http\Controllers\AdCampaign\ToggleAdCampaignController::class)
+            Route::put('/{adCampaign}/toggle', \App\Http\Controllers\AdCampaign\ToggleAdCampaignController::class)
                 ->name('admin.ads.toggle');
-            Route::delete('/{campaign}', \App\Http\Controllers\AdCampaign\DestroyAdCampaignController::class)
+            Route::delete('/{adCampaign}', \App\Http\Controllers\AdCampaign\DestroyAdCampaignController::class)
                 ->name('admin.ads.destroy');
             Route::post('/{adCampaign}/media', \App\Http\Controllers\AdCampaign\AddMediaAdCampaignController::class)
                 ->name('admin.ads.media.add');

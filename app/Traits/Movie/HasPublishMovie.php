@@ -13,8 +13,15 @@ trait HasPublishMovie
     {
         $movie->fill($data)->save();
         // verify all fields are filled
-        if (! $movie->title || ! $movie->description || ! $movie->movie_video || ! $movie->trailer_video || ! $movie->horizontal_image || ! $movie->vertical_image) {
-            throw new \Exception(__('Cannot publish this movie'));
+        $missing = [];
+        if (!$movie->title) $missing[] = 'Title';
+        if (!$movie->description) $missing[] = 'Description';
+        if (!$movie->movie_video) $missing[] = 'Movie Video';
+        if (!$movie->trailer_video) $missing[] = 'Trailer Video';
+        if (!$movie->horizontal_image) $missing[] = 'Horizontal Image';
+        if (!$movie->vertical_image) $missing[] = 'Vertical Image';
+        if (!empty($missing)) {
+            throw new \Exception(__('Cannot publish this movie. Missing: ') . implode(', ', $missing));
         }
 
         $content = $movie->content;

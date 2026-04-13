@@ -130,6 +130,10 @@ watch(
             currentShortIndex.value = 0;
             nextTick(() => initializePool());
         }
+        // Sync currentShort with updated data from parent (e.g. follow/unfollow state)
+        if (currentShortIndex.value >= 0 && currentShortIndex.value < newShorts.length) {
+            currentShort.value = newShorts[currentShortIndex.value];
+        }
     },
     { deep: true },
 );
@@ -826,7 +830,7 @@ onUnmounted(() => {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding-bottom: 80px;
+    padding-bottom: 0;
 }
 
 /* ──────────────────────────────────────
@@ -837,7 +841,7 @@ onUnmounted(() => {
     width: 100%;
     max-width: 400px;
     height: 100%;
-    max-height: calc(100vh - 160px);
+    max-height: calc(100vh - 200px);
     aspect-ratio: 9 / 16;
     background-color: #000;
     border-radius: 16px;

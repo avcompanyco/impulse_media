@@ -67,44 +67,79 @@ function handleFollowClick(event: Event, user: ShortUser) {
     }
 }
 
-function addToFollow(userId: number) {
-    addFollowLoading.value[userId] = true;
-    router.post(AddToFollowController({ user: userId }), {}, {
-        preserveState: true,
-        preserveScroll: true,
-        onFinish: () => {
-            addFollowLoading.value[userId] = false;
-            // Update ALL shorts from this user
-            shorts.value.forEach((s, idx) => {
-                if (s.user.id === userId) {
-                    shorts.value[idx] = {
-                        ...s,
-                        user: { ...s.user, is_followed: true }
-                    };
-                }
-            });
-        },
-    });
+function getCSRFToken(): string {
+    const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : '';
 }
 
-function removeFromFollow(userId: number) {
-    removeFollowLoading.value[userId] = true;
-    router.post(RemoveToFollowController({ user: userId }), {}, {
-        preserveState: true,
-        preserveScroll: true,
-        onFinish: () => {
-            removeFollowLoading.value[userId] = false;
-            // Update ALL shorts from this user
-            shorts.value.forEach((s, idx) => {
-                if (s.user.id === userId) {
-                    shorts.value[idx] = {
-                        ...s,
-                        user: { ...s.user, is_followed: false }
-                    };
-                }
-            });
-        },
+async function addToFollow(userId: number) {
+    addFollowLoading.value[userId] = true;
+
+    // Optimistic: update UI immediately
+    shorts.value = shorts.value.map(s => {
+        if (s.user.id === userId) {
+            return { ...s, user: { ...s.user, is_followed: true } };
+        }
+        return s;
     });
+
+    try {
+        await fetch(AddToFollowController({ user: userId }), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-XSRF-TOKEN': getCSRFToken(),
+                'Accept': 'application/json',
+            },
+            credentials: 'same-origin',
+        });
+    } catch (error) {
+        // Revert on error
+        shorts.value = shorts.value.map(s => {
+            if (s.user.id === userId) {
+                return { ...s, user: { ...s.user, is_followed: false } };
+            }
+            return s;
+        });
+        console.error('Follow error:', error);
+    } finally {
+        addFollowLoading.value[userId] = false;
+    }
+}
+
+async function removeFromFollow(userId: number) {
+    removeFollowLoading.value[userId] = true;
+
+    // Optimistic: update UI immediately
+    shorts.value = shorts.value.map(s => {
+        if (s.user.id === userId) {
+            return { ...s, user: { ...s.user, is_followed: false } };
+        }
+        return s;
+    });
+
+    try {
+        await fetch(RemoveToFollowController({ user: userId }), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-XSRF-TOKEN': getCSRFToken(),
+                'Accept': 'application/json',
+            },
+            credentials: 'same-origin',
+        });
+    } catch (error) {
+        // Revert on error
+        shorts.value = shorts.value.map(s => {
+            if (s.user.id === userId) {
+                return { ...s, user: { ...s.user, is_followed: true } };
+            }
+            return s;
+        });
+        console.error('Unfollow error:', error);
+    } finally {
+        removeFollowLoading.value[userId] = false;
+    }
 }
 
 // Navigate to creator profile

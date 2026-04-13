@@ -233,8 +233,8 @@ function onPrerollComplete() {
 /* === Container === */
 .vp-container {
     width: 100%;
-    height: calc(100vh - 120px);
-    max-height: calc(100dvh - 120px);
+    height: calc(100vh - 160px);
+    max-height: calc(100dvh - 160px);
     position: relative;
     display: flex;
     justify-content: center;

@@ -57,136 +57,60 @@ trait HasVideoShort
 
         ensureStorageDirectory($storagePath);
 
-        $compressor = new VideoCompressorService();
+        $disk = Storage::disk(getDisk());
+        $previousVideo = $this->short_video;
 
-        // CASO 1 Y 2: $video es UploadedFile O File
-        // (Maneja subidas directas, no-chunked)
+        // CASO 1: UploadedFile or File (direct upload, non-chunked)
         if ($video instanceof UploadedFile || $video instanceof File) {
             
-            tap($this->short_video, function ($previous) use ($video, $storagePath, $compressor) {
-                
-                $sourcePath = $video->getRealPath();
-                $originalExtension = strtolower($video instanceof UploadedFile 
-                    ? $video->getClientOriginalExtension() 
-                    : pathinfo($video->getPathname(), PATHINFO_EXTENSION)) ?: 'mp4';
+            // Upload directly to S3 — no FFmpeg processing for reliability
+            $storedPath = $disk->putFile($storagePath, $video);
 
-                // Always output as mp4
-                $compressedPath = tempnam(sys_get_temp_dir(), 'comp_short_') . '.mp4';
+            if ($storedPath) {
+                $this->forceFill(['short_video' => $storedPath])->save();
 
-                try {
-                    if ($originalExtension === 'mp4') {
-                        // Already mp4, just compress
-                        $compressor->compressVideo($sourcePath, $compressedPath);
-                    } else {
-                        // Convert to mp4 first (handles .mov, .avi, .webm, etc.)
-                        $compressor->justConvertToMp4($sourcePath, $compressedPath);
-                    }
-                    
-                    // Guardar el video *comprimido*
-                    $storedPath = Storage::disk(getDisk())->putFile(
-                        $storagePath,
-                        new File($compressedPath),
-                    );
-
-                    // Actualizar DB
-                    $this->forceFill([
-                        'short_video' => $storedPath,
-                    ])->save();
-
-                    // Eliminar video anterior
-                    if ($previous) {
-                        Storage::disk(getDisk())->delete($previous);
-                    }
-                } finally {
-                    // Limpiar el temporal comprimido
-                    if (file_exists($compressedPath)) {
-                        unlink($compressedPath);
-                    }
+                if ($previousVideo) {
+                    $disk->delete($previousVideo);
                 }
-            });
-        
-        // CASO 3: $video es un string (path)
-        // (Maneja la subida por chunks, después de que se unen)
+            }
+
+        // CASO 2: String path (chunked upload merged file)
         } else if (is_string($video)) {
             
-            tap($this->short_video, function ($previous) use ($video, $storagePath, $compressor) {
-                
-                $sourcePath = $video; // $video es el path al archivo unido
-                $originalExtension = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION)) ?: 'mp4';
-                
-                $filename = uniqid('short_') . '.mp4';
-                $destinationPath = $storagePath . '/' . $filename;
-                $compressedPath = tempnam(sys_get_temp_dir(), 'comp_short_') . '.mp4';
+            $sourcePath = $video;
+            $extension = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION)) ?: 'mp4';
+            $filename = uniqid('short_') . '.' . $extension;
+            $destinationPath = $storagePath . '/' . $filename;
 
-                $disk = Storage::disk(getDisk());
-                $compressedHandle = null;
-                $uploadedSuccessfully = false;
+            $uploaded = false;
 
-                try {
-                    // 1. Comprimir o convertir
-                    if ($originalExtension === 'mp4') {
-                        $compressor->compressVideo($sourcePath, $compressedPath);
-                    } else {
-                        $compressor->justConvertToMp4($sourcePath, $compressedPath);
+            try {
+                // Upload the raw merged file directly to S3
+                $handle = fopen($sourcePath, 'rb');
+                if ($handle) {
+                    $disk->put($destinationPath, $handle);
+                    if (is_resource($handle)) {
+                        fclose($handle);
                     }
+                    $uploaded = true;
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('Short upload failed: ' . $e->getMessage());
+            }
 
-                    // 2. Abrir stream del *comprimido*
-                    if (file_exists($compressedPath) && filesize($compressedPath) > 1000) {
-                        $compressedHandle = fopen($compressedPath, 'rb');
-                        if ($compressedHandle) {
-                            // 3. Guardar stream en disco
-                            $disk->put($destinationPath, $compressedHandle);
-                            $uploadedSuccessfully = true;
-                        }
-                    }
-                } catch (\Throwable $e) {
-                    // FFmpeg failed - log but continue to fallback
-                    \Illuminate\Support\Facades\Log::warning('FFmpeg failed for short, uploading raw: ' . $e->getMessage());
-                }
+            if ($uploaded) {
+                $this->forceFill(['short_video' => $destinationPath])->save();
 
-                // Fallback: if FFmpeg failed, upload the raw file directly
-                if (!$uploadedSuccessfully && file_exists($sourcePath)) {
-                    try {
-                        $rawHandle = fopen($sourcePath, 'rb');
-                        if ($rawHandle) {
-                            // Use original extension if not mp4
-                            $rawFilename = uniqid('short_raw_') . '.' . ($originalExtension ?: 'mp4');
-                            $destinationPath = $storagePath . '/' . $rawFilename;
-                            $disk->put($destinationPath, $rawHandle);
-                            if (is_resource($rawHandle)) {
-                                fclose($rawHandle);
-                            }
-                            $uploadedSuccessfully = true;
-                        }
-                    } catch (\Throwable $e) {
-                        \Illuminate\Support\Facades\Log::error('Raw upload also failed for short: ' . $e->getMessage());
-                    }
+                if ($previousVideo) {
+                    $disk->delete($previousVideo);
                 }
+            }
 
-                if ($uploadedSuccessfully) {
-                    // 4. Actualizar DB
-                    $this->forceFill([
-                        'short_video' => $destinationPath,
-                    ])->save();
+            // Clean up the temp chunk file
+            if (file_exists($sourcePath)) {
+                unlink($sourcePath);
+            }
 
-                    // 5. Eliminar video anterior
-                    if ($previous) {
-                        Storage::disk(getDisk())->delete($previous);
-                    }
-                }
-
-                // 6. Limpieza de TODOS los temporales
-                if (isset($compressedHandle) && is_resource($compressedHandle)) {
-                    fclose($compressedHandle);
-                }
-                if (file_exists($compressedPath)) {
-                    unlink($compressedPath);
-                }
-                if (file_exists($sourcePath)) {
-                    unlink($sourcePath);
-                }
-            });
-        
         } else {
              throw new \InvalidArgumentException('El tipo de video proporcionado no es soportado. Debe ser UploadedFile, File o string (path).');
         }

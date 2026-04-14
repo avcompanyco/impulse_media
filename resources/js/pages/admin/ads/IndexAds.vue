@@ -109,30 +109,39 @@ async function submitCampaign() {
     isUploadingQueue.value = true;
     queueUploadProgress.value = 0;
 
+    // Save total count before Inertia clears things
+    const totalFiles = createMediaQueue.value.length;
+    const extraFiles = createMediaQueue.value.slice(1); // copy refs
+
     form.post('/admin/ads', {
         forceFormData: true,
         preserveScroll: true,
         onSuccess: async () => {
             queueUploadProgress.value = 1;
 
-            // If there are additional files, upload them to the newly created campaign
-            if (createMediaQueue.value.length > 1) {
-                // Find the newly created campaign (it's the latest one)
-                const latestCampaign = props.campaigns[0]; // Inertia refreshed props
+            // Upload additional files using fetch (faster, no Inertia overhead)
+            if (extraFiles.length > 0) {
+                // Get the latest campaign ID from refreshed props
+                const latestCampaign = props.campaigns[0];
                 if (latestCampaign) {
-                    for (let i = 1; i < createMediaQueue.value.length; i++) {
-                        const item = createMediaQueue.value[i];
-                        const extraForm = useForm({ media: item.file as File | null });
-                        await new Promise<void>((resolve) => {
-                            extraForm.post(`/admin/ads/${latestCampaign.id}/media`, {
-                                forceFormData: true,
-                                preserveScroll: true,
-                                onFinish: () => {
-                                    queueUploadProgress.value = i + 1;
-                                    resolve();
-                                },
+                    // Get CSRF token
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+                    for (let i = 0; i < extraFiles.length; i++) {
+                        const item = extraFiles[i];
+                        const fd = new FormData();
+                        fd.append('media', item.file);
+
+                        try {
+                            await fetch(`/admin/ads/${latestCampaign.id}/media`, {
+                                method: 'POST',
+                                headers: { 'X-CSRF-TOKEN': csrfToken },
+                                body: fd,
                             });
-                        });
+                        } catch (e) {
+                            console.error('Failed to upload extra media:', e);
+                        }
+                        queueUploadProgress.value = i + 2; // +2 because first file = 1
                     }
                 }
             }
@@ -143,6 +152,9 @@ async function submitCampaign() {
             form.reset();
             showCreateForm.value = false;
             isUploadingQueue.value = false;
+
+            // Force full page reload to show updated campaign
+            window.location.reload();
         },
         onError: () => {
             isUploadingQueue.value = false;

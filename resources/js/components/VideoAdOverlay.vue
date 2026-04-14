@@ -90,6 +90,19 @@ function showAd(type: 'preroll' | 'midroll') {
     currentAd.value = ad;
     isAdVisible.value = true;
 
+    // Track impression
+    if (ad.campaign_id) {
+        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        fetch('/ad/impression', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfMeta?.getAttribute('content') || '',
+            },
+            body: JSON.stringify({ campaign_id: ad.campaign_id }),
+        }).catch(() => {}); // fire-and-forget
+    }
+
     if (ad.media_type === 'image') {
         countdown.value = props.adDuration;
         startCountdown();

@@ -34,6 +34,10 @@ Route::post('/content/{content}/view', \App\Http\Controllers\Content\IncrementCo
     ->middleware('auth')
     ->name('content.view');
 
+// Public: track ad campaign impressions
+Route::post('/ad/impression', \App\Http\Controllers\AdCampaign\TrackImpressionController::class)
+    ->name('ad.impression');
+
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
 require __DIR__.'/caeher.php';

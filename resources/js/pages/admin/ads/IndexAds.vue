@@ -101,63 +101,38 @@ function removeFromQueue(index: number) {
 async function submitCampaign() {
     if (createMediaQueue.value.length === 0) return;
 
-    // Use the first file as the initial campaign media
-    const firstItem = createMediaQueue.value[0];
-    form.media = firstItem.file;
-    form.media_type = firstItem.type as 'image' | 'video';
-
     isUploadingQueue.value = true;
     queueUploadProgress.value = 0;
 
-    // Save total count before Inertia clears things
-    const totalFiles = createMediaQueue.value.length;
-    const extraFiles = createMediaQueue.value.slice(1); // copy refs
+    // Build a single FormData with ALL files
+    const fd = new FormData();
+    fd.append('name', form.name);
+    fd.append('company_name', form.company_name || '');
+    
+    for (let i = 0; i < createMediaQueue.value.length; i++) {
+        fd.append('media_files[]', createMediaQueue.value[i].file);
+    }
 
-    form.post('/admin/ads', {
+    // Use Inertia router.post to send everything in one request
+    router.post('/admin/ads', fd, {
         forceFormData: true,
         preserveScroll: true,
-        onSuccess: async () => {
-            queueUploadProgress.value = 1;
-
-            // Upload additional files using fetch (faster, no Inertia overhead)
-            if (extraFiles.length > 0) {
-                // Get the latest campaign ID from refreshed props
-                const latestCampaign = props.campaigns[0];
-                if (latestCampaign) {
-                    // Get CSRF token
-                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-
-                    for (let i = 0; i < extraFiles.length; i++) {
-                        const item = extraFiles[i];
-                        const fd = new FormData();
-                        fd.append('media', item.file);
-
-                        try {
-                            await fetch(`/admin/ads/${latestCampaign.id}/media`, {
-                                method: 'POST',
-                                headers: { 'X-CSRF-TOKEN': csrfToken },
-                                body: fd,
-                            });
-                        } catch (e) {
-                            console.error('Failed to upload extra media:', e);
-                        }
-                        queueUploadProgress.value = i + 2; // +2 because first file = 1
-                    }
-                }
+        onProgress: (progress) => {
+            if (progress?.percentage) {
+                queueUploadProgress.value = Math.round((progress.percentage / 100) * createMediaQueue.value.length);
             }
-
+        },
+        onSuccess: () => {
             // Clean up
             createMediaQueue.value.forEach(item => URL.revokeObjectURL(item.preview));
             createMediaQueue.value = [];
             form.reset();
             showCreateForm.value = false;
             isUploadingQueue.value = false;
-
-            // Force full page reload to show updated campaign
-            window.location.reload();
         },
-        onError: () => {
+        onError: (errors) => {
             isUploadingQueue.value = false;
+            console.error('Campaign creation failed:', errors);
         },
     });
 }

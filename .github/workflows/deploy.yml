@@ -1,0 +1,38 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET }}
+          aws-region: us-east-2
+
+      - name: Generate SSH key pair
+        run: |
+          ssh-keygen -t rsa -b 2048 -f /tmp/deploy_key -N "" -q
+
+      - name: Push SSH key via EC2 Instance Connect
+        run: |
+          aws ec2-instance-connect send-ssh-public-key \
+            --instance-id i-0e8979285efc5b4f3 \
+            --instance-os-user ubuntu \
+            --ssh-public-key file:///tmp/deploy_key.pub \
+            --availability-zone us-east-2b
+
+      - name: Deploy via SSH
+        run: |
+          ssh -o StrictHostKeyChecking=no -i /tmp/deploy_key ubuntu@${{ secrets.EC2_HOST }} \
+            'cd /var/www/html/project-impulse && git pull origin main && php artisan optimize:clear && php artisan config:cache && php artisan route:cache && echo DEPLOY_DONE'
+
+      - name: Cleanup
+        if: always()
+        run: rm -f /tmp/deploy_key /tmp/deploy_key.pub

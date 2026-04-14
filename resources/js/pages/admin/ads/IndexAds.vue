@@ -18,17 +18,70 @@ const form = useForm({
     media_type: 'image' as 'image' | 'video',
 });
 
+// ─── Image Compression Utility ───
+const MAX_IMG_SIZE = 1200; // max width/height in px
+const IMG_QUALITY = 0.8;  // JPEG quality (0-1)
+
+function compressImage(file: File): Promise<File> {
+    return new Promise((resolve) => {
+        // Skip non-image files
+        if (!file.type.startsWith('image/')) { resolve(file); return; }
+        // Skip small files (< 200KB)
+        if (file.size < 200 * 1024) { resolve(file); return; }
+
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+            URL.revokeObjectURL(url);
+            let { width, height } = img;
+
+            // Only resize if larger than MAX
+            if (width > MAX_IMG_SIZE || height > MAX_IMG_SIZE) {
+                if (width > height) {
+                    height = Math.round((height / width) * MAX_IMG_SIZE);
+                    width = MAX_IMG_SIZE;
+                } else {
+                    width = Math.round((width / height) * MAX_IMG_SIZE);
+                    height = MAX_IMG_SIZE;
+                }
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d')!;
+            ctx.drawImage(img, 0, 0, width, height);
+
+            canvas.toBlob((blob) => {
+                if (blob && blob.size < file.size) {
+                    const compressed = new File([blob], file.name.replace(/\.\w+$/, '.jpg'), {
+                        type: 'image/jpeg',
+                        lastModified: Date.now(),
+                    });
+                    resolve(compressed);
+                } else {
+                    resolve(file); // keep original if compression didn't help
+                }
+            }, 'image/jpeg', IMG_QUALITY);
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+        img.src = url;
+    });
+}
+
 // Multi-file queue for creation
 const createMediaQueue = ref<{ file: File; preview: string; type: string }[]>([]);
 const isUploadingQueue = ref(false);
 const queueUploadProgress = ref(0);
 
-function handleFileChange(event: Event) {
+async function handleFileChange(event: Event) {
     const input = event.target as HTMLInputElement;
     if (input.files) {
         for (let i = 0; i < input.files.length; i++) {
-            const file = input.files[i];
-            const type = file.type.startsWith('video/') ? 'video' : 'image';
+            const raw = input.files[i];
+            const type = raw.type.startsWith('video/') ? 'video' : 'image';
+            // Compress images before adding to queue
+            const file = type === 'image' ? await compressImage(raw) : raw;
             createMediaQueue.value.push({
                 file,
                 preview: URL.createObjectURL(file),
@@ -139,10 +192,11 @@ function openAddMedia(campaignId: number) {
     addMediaForm.reset();
 }
 
-function handleAddMediaFile(event: Event) {
+async function handleAddMediaFile(event: Event) {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files[0]) {
-        const file = input.files[0];
+        const raw = input.files[0];
+        const file = raw.type.startsWith('image/') ? await compressImage(raw) : raw;
         addMediaForm.media = file;
         addMediaType.value = file.type.startsWith('video/') ? 'video' : 'image';
         addMediaPreview.value = URL.createObjectURL(file);

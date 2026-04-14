@@ -26,6 +26,18 @@ class PublishMovieController extends Controller
                 throw new \Exception(__("You are not authorized to publish this movie"));
             }
 
+            // Enforce per-category upload limit
+            $plan = $_user->getCurrentPlan();
+            if ($plan && !$plan->hasUnlimitedContent()) {
+                $monthlyCount = $_user->movies()
+                    ->where('status', \App\Enums\Content\ContentStatus::PUBLISHED->value)
+                    ->where('created_at', '>=', now()->startOfMonth())
+                    ->count();
+                if ($monthlyCount >= $plan->movies_upload_count) {
+                    throw new \Exception(__("Upload limit reached. Your plan allows {$plan->movies_upload_count} movies per month."));
+                }
+            }
+
             $data = $request->validated();
             $this->publish($movie, $data);
             // return redirect()->route('user.upload.movie');
@@ -35,7 +47,6 @@ class PublishMovieController extends Controller
                 __("Movie published successfully")
             );
         } catch (\Throwable $th) {
-            dd($th);
             return inertiaErrorHandler(
                 __("Error"),
                 $th->getMessage()

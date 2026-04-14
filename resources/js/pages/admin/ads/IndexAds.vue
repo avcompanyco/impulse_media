@@ -111,11 +111,14 @@ function submitAddMedia(campaignId: number) {
 }
 
 function removeMedia(mediaId: number) {
-    if (confirm('Remove this media file?')) {
+    pendingAction.value = () => {
         router.delete(`/admin/ads/media/${mediaId}`, {
             preserveScroll: true,
         });
-    }
+        showConfirmModal.value = false;
+    };
+    confirmMessage.value = 'Are you sure you want to remove this media file?';
+    showConfirmModal.value = true;
 }
 
 // ─── Toggle / Delete ───
@@ -123,10 +126,26 @@ function toggleCampaign(id: number) {
     router.put(`/admin/ads/${id}/toggle`, {}, { preserveScroll: true });
 }
 
+const showConfirmModal = ref(false);
+const confirmMessage = ref('');
+const pendingAction = ref<(() => void) | null>(null);
+
 function deleteCampaign(id: number) {
-    if (confirm('Are you sure? This will permanently delete the campaign and all its media files.')) {
+    pendingAction.value = () => {
         router.delete(`/admin/ads/${id}`, { preserveScroll: true });
-    }
+        showConfirmModal.value = false;
+    };
+    confirmMessage.value = 'Are you sure? This will permanently delete the campaign and all its media files.';
+    showConfirmModal.value = true;
+}
+
+function confirmAction() {
+    if (pendingAction.value) pendingAction.value();
+}
+
+function cancelConfirm() {
+    showConfirmModal.value = false;
+    pendingAction.value = null;
 }
 </script>
 
@@ -327,6 +346,25 @@ function deleteCampaign(id: number) {
             </div>
         </div>
     </AdminDashboardLayout>
+
+    <!-- Confirm Modal -->
+    <Teleport to="body">
+        <div v-if="showConfirmModal" class="confirm-overlay" @click.self="cancelConfirm">
+            <div class="confirm-card">
+                <div class="confirm-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h3>Confirm Action</h3>
+                <p>{{ confirmMessage }}</p>
+                <div class="confirm-actions">
+                    <button class="confirm-cancel-btn" @click="cancelConfirm">Cancel</button>
+                    <button class="confirm-delete-btn" @click="confirmAction">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </Teleport>
 </template>
 
 <style scoped>
@@ -745,6 +783,95 @@ function deleteCampaign(id: number) {
     background: rgba(255,255,255,0.03);
     border-radius: 12px;
     border: 1px solid rgba(255,255,255,0.08);
+}
+
+/* Confirm Modal */
+.confirm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease;
+}
+.confirm-card {
+    background: linear-gradient(145deg, #1e293b, #0f172a);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 420px;
+    width: 90%;
+    text-align: center;
+    animation: scaleIn 0.2s ease;
+}
+.confirm-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(239,68,68,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+}
+.confirm-icon i {
+    font-size: 1.5rem;
+    color: #ef4444;
+}
+.confirm-card h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #f8fafc;
+}
+.confirm-card p {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+}
+.confirm-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+}
+.confirm-cancel-btn {
+    padding: 0.6rem 1.4rem;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: transparent;
+    color: #cbd5e1;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+.confirm-cancel-btn:hover {
+    background: rgba(255,255,255,0.05);
+}
+.confirm-delete-btn {
+    padding: 0.6rem 1.4rem;
+    border-radius: 10px;
+    border: none;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+.confirm-delete-btn:hover {
+    transform: scale(1.03);
+    box-shadow: 0 4px 20px rgba(239,68,68,0.3);
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
 }
 
 @media (max-width: 768px) {

@@ -67,10 +67,6 @@ function handleFollowClick(event: Event, user: ShortUser) {
     }
 }
 
-function getCSRFToken(): string {
-    const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
-    return match ? decodeURIComponent(match[1]) : '';
-}
 
 async function addToFollow(userId: number) {
     addFollowLoading.value[userId] = true;
@@ -83,33 +79,22 @@ async function addToFollow(userId: number) {
         return s;
     });
 
-    try {
-        const response = await fetch(AddToFollowController({ user: userId }), {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-XSRF-TOKEN': getCSRFToken(),
-                'Accept': 'application/json',
-            },
-            credentials: 'same-origin',
-        });
-
-        // Reload shared Inertia data so sidebar subscriptions update
-        if (response.ok) {
-            router.reload({ only: ['subscriptions'], preserveScroll: true, preserveState: true });
-        }
-    } catch (error) {
-        // Revert on error
-        shorts.value = shorts.value.map(s => {
-            if (s.user.id === userId) {
-                return { ...s, user: { ...s.user, is_followed: false } };
-            }
-            return s;
-        });
-        console.error('Follow error:', error);
-    } finally {
-        addFollowLoading.value[userId] = false;
-    }
+    router.post(AddToFollowController({ user: userId }), {}, {
+        preserveScroll: true,
+        preserveState: true,
+        onError: () => {
+            // Revert on error
+            shorts.value = shorts.value.map(s => {
+                if (s.user.id === userId) {
+                    return { ...s, user: { ...s.user, is_followed: false } };
+                }
+                return s;
+            });
+        },
+        onFinish: () => {
+            addFollowLoading.value[userId] = false;
+        },
+    });
 }
 
 async function removeFromFollow(userId: number) {
@@ -123,33 +108,22 @@ async function removeFromFollow(userId: number) {
         return s;
     });
 
-    try {
-        const response = await fetch(RemoveToFollowController({ user: userId }), {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-XSRF-TOKEN': getCSRFToken(),
-                'Accept': 'application/json',
-            },
-            credentials: 'same-origin',
-        });
-
-        // Reload shared Inertia data so sidebar subscriptions update
-        if (response.ok) {
-            router.reload({ only: ['subscriptions'], preserveScroll: true, preserveState: true });
-        }
-    } catch (error) {
-        // Revert on error
-        shorts.value = shorts.value.map(s => {
-            if (s.user.id === userId) {
-                return { ...s, user: { ...s.user, is_followed: true } };
-            }
-            return s;
-        });
-        console.error('Unfollow error:', error);
-    } finally {
-        removeFollowLoading.value[userId] = false;
-    }
+    router.post(RemoveToFollowController({ user: userId }), {}, {
+        preserveScroll: true,
+        preserveState: true,
+        onError: () => {
+            // Revert on error
+            shorts.value = shorts.value.map(s => {
+                if (s.user.id === userId) {
+                    return { ...s, user: { ...s.user, is_followed: true } };
+                }
+                return s;
+            });
+        },
+        onFinish: () => {
+            removeFollowLoading.value[userId] = false;
+        },
+    });
 }
 
 // Navigate to creator profile

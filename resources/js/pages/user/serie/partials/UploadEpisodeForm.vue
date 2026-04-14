@@ -23,7 +23,7 @@ const uploadProgress = ref(0);
 const currentChunk = ref(0);
 const totalChunks = ref(0);
 
-const CHUNK_SIZE = 300 * 1024 * 1024; // 300MB
+const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB — smaller chunks show better progress
 
 const isDisableUpload = computed(() => {
     return isDisable.value || isUploading.value;

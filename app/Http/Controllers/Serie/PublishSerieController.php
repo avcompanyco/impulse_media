@@ -26,6 +26,18 @@ class PublishSerieController extends Controller
                 throw new \Exception(__("You are not authorized to publish this serie"));
             }
 
+            // Enforce per-category upload limit
+            $plan = $_user->getCurrentPlan();
+            if ($plan && !$plan->hasUnlimitedContent()) {
+                $monthlyCount = $_user->series()
+                    ->where('status', \App\Enums\Content\ContentStatus::PUBLISHED->value)
+                    ->where('created_at', '>=', now()->startOfMonth())
+                    ->count();
+                if ($monthlyCount >= $plan->series_upload_count) {
+                    throw new \Exception(__("Upload limit reached. Your plan allows {$plan->series_upload_count} series per month."));
+                }
+            }
+
             $data = $request->validated();
             $this->publish($serie, $data);
             return redirect()->route('user.upload.serie')

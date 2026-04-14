@@ -33,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'subscription/webhook',
             'public/content/*/view',
             'public/shorts/watched',
+            'ad/impression',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

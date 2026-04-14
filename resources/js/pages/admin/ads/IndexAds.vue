@@ -18,30 +18,81 @@ const form = useForm({
     media_type: 'image' as 'image' | 'video',
 });
 
-const previewUrl = ref('');
+// Multi-file queue for creation
+const createMediaQueue = ref<{ file: File; preview: string; type: string }[]>([]);
+const isUploadingQueue = ref(false);
+const queueUploadProgress = ref(0);
 
 function handleFileChange(event: Event) {
     const input = event.target as HTMLInputElement;
-    if (input.files && input.files[0]) {
-        const file = input.files[0];
-        form.media = file;
-        if (file.type.startsWith('video/')) {
-            form.media_type = 'video';
-        } else {
-            form.media_type = 'image';
+    if (input.files) {
+        for (let i = 0; i < input.files.length; i++) {
+            const file = input.files[i];
+            const type = file.type.startsWith('video/') ? 'video' : 'image';
+            createMediaQueue.value.push({
+                file,
+                preview: URL.createObjectURL(file),
+                type,
+            });
         }
-        previewUrl.value = URL.createObjectURL(file);
+        // Clear input so same file can be re-selected
+        input.value = '';
     }
 }
 
-function submitCampaign() {
+function removeFromQueue(index: number) {
+    URL.revokeObjectURL(createMediaQueue.value[index].preview);
+    createMediaQueue.value.splice(index, 1);
+}
+
+async function submitCampaign() {
+    if (createMediaQueue.value.length === 0) return;
+
+    // Use the first file as the initial campaign media
+    const firstItem = createMediaQueue.value[0];
+    form.media = firstItem.file;
+    form.media_type = firstItem.type as 'image' | 'video';
+
+    isUploadingQueue.value = true;
+    queueUploadProgress.value = 0;
+
     form.post('/admin/ads', {
         forceFormData: true,
         preserveScroll: true,
-        onSuccess: () => {
+        onSuccess: async () => {
+            queueUploadProgress.value = 1;
+
+            // If there are additional files, upload them to the newly created campaign
+            if (createMediaQueue.value.length > 1) {
+                // Find the newly created campaign (it's the latest one)
+                const latestCampaign = props.campaigns[0]; // Inertia refreshed props
+                if (latestCampaign) {
+                    for (let i = 1; i < createMediaQueue.value.length; i++) {
+                        const item = createMediaQueue.value[i];
+                        const extraForm = useForm({ media: item.file as File | null });
+                        await new Promise<void>((resolve) => {
+                            extraForm.post(`/admin/ads/${latestCampaign.id}/media`, {
+                                forceFormData: true,
+                                preserveScroll: true,
+                                onFinish: () => {
+                                    queueUploadProgress.value = i + 1;
+                                    resolve();
+                                },
+                            });
+                        });
+                    }
+                }
+            }
+
+            // Clean up
+            createMediaQueue.value.forEach(item => URL.revokeObjectURL(item.preview));
+            createMediaQueue.value = [];
             form.reset();
-            previewUrl.value = '';
             showCreateForm.value = false;
+            isUploadingQueue.value = false;
+        },
+        onError: () => {
+            isUploadingQueue.value = false;
         },
     });
 }
@@ -186,32 +237,56 @@ function cancelConfirm() {
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Media File (Image 1:1 or Video) *</label>
-                    <div class="file-upload-area" @click="createFileInputRef?.click()">
-                        <div v-if="!previewUrl" class="upload-placeholder">
-                            <i class="fas fa-cloud-upload-alt"></i>
-                            <p>Click to upload image or video</p>
-                            <span>Max 100MB • Supported: JPG, PNG, MP4, MOV</span>
+                    <label class="form-label">Media Files (Images or Videos) *</label>
+                    
+                    <!-- Queued files grid -->
+                    <div v-if="createMediaQueue.length > 0" class="queue-grid">
+                        <div v-for="(item, idx) in createMediaQueue" :key="idx" class="queue-thumb">
+                            <img v-if="item.type === 'image'" :src="item.preview" alt="Preview" />
+                            <video v-else :src="item.preview" muted></video>
+                            <span class="thumb-badge">{{ item.type === 'image' ? '🖼️' : '🎬' }}</span>
+                            <button type="button" class="thumb-remove" @click="removeFromQueue(idx)" title="Remove">
+                                <i class="fas fa-times"></i>
+                            </button>
                         </div>
-                        <div v-else class="upload-preview">
-                            <img v-if="form.media_type === 'image'" :src="previewUrl" alt="Preview" class="preview-img" />
-                            <video v-else :src="previewUrl" class="preview-video" controls></video>
-                            <span class="media-type-badge">{{ form.media_type.toUpperCase() }}</span>
+                        <!-- Add more button -->
+                        <div class="queue-thumb add-thumb" @click="createFileInputRef?.click()">
+                            <i class="fas fa-plus"></i>
+                            <span>Add More</span>
                         </div>
                     </div>
+                    
+                    <!-- Empty state: click to add first file -->
+                    <div v-else class="file-upload-area" @click="createFileInputRef?.click()">
+                        <div class="upload-placeholder">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>Click to add images or videos</p>
+                            <span>You can add multiple files • Max 100MB each • JPG, PNG, MP4, MOV</span>
+                        </div>
+                    </div>
+                    
                     <input
                         ref="createFileInputRef"
                         type="file"
                         accept="image/*,video/*"
+                        multiple
                         @change="handleFileChange"
                         style="display: none"
                     />
                     <span v-if="form.errors.media" class="form-error">{{ form.errors.media }}</span>
                 </div>
 
-                <button type="submit" class="submit-btn" :disabled="form.processing">
-                    <i class="fa-solid fa-circle-notch fa-spin" v-if="form.processing"></i>
-                    {{ form.processing ? 'Uploading...' : 'Create Campaign' }}
+                <!-- Upload progress -->
+                <div v-if="isUploadingQueue" class="queue-progress">
+                    <div class="queue-progress-bar">
+                        <div class="queue-progress-fill" :style="{ width: `${(queueUploadProgress / createMediaQueue.length) * 100}%` }"></div>
+                    </div>
+                    <span class="queue-progress-text">Uploading {{ queueUploadProgress }} / {{ createMediaQueue.length }} files...</span>
+                </div>
+
+                <button type="submit" class="submit-btn" :disabled="form.processing || isUploadingQueue || createMediaQueue.length === 0">
+                    <i class="fa-solid fa-circle-notch fa-spin" v-if="form.processing || isUploadingQueue"></i>
+                    {{ isUploadingQueue ? `Uploading ${queueUploadProgress}/${createMediaQueue.length}...` : form.processing ? 'Creating...' : `Create Campaign (${createMediaQueue.length} file${createMediaQueue.length !== 1 ? 's' : ''})` }}
                 </button>
             </form>
         </div>
@@ -783,6 +858,74 @@ function cancelConfirm() {
     background: rgba(255,255,255,0.03);
     border-radius: 12px;
     border: 1px solid rgba(255,255,255,0.08);
+}
+
+/* Multi-file Queue */
+.queue-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: rgba(255,255,255,0.02);
+    border: 2px dashed rgba(255,255,255,0.1);
+    border-radius: 12px;
+}
+.queue-thumb {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid rgba(255,255,255,0.1);
+}
+.queue-thumb img, .queue-thumb video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.queue-thumb.add-thumb {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    border-style: dashed;
+    border-color: rgba(255,255,255,0.2);
+    cursor: pointer;
+    color: rgba(255,255,255,0.4);
+    font-size: 0.75rem;
+    transition: all 0.2s;
+}
+.queue-thumb.add-thumb:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+.queue-thumb.add-thumb i {
+    font-size: 1.2rem;
+}
+
+.queue-progress {
+    margin-top: 0.75rem;
+}
+.queue-progress-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.queue-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #e8445a, #f5c518);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+.queue-progress-text {
+    display: block;
+    margin-top: 0.4rem;
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.5);
+    text-align: center;
 }
 
 /* Confirm Modal */

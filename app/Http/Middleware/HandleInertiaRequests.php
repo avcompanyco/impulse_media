@@ -58,12 +58,14 @@ class HandleInertiaRequests extends Middleware
                 // Build flat list of ad items from all active campaigns for equal rotation
                 $campaigns = AdCampaign::active()->with('mediaItems')->inRandomOrder()->get();
                 foreach ($campaigns as $campaign) {
+                    $mediaItemPaths = [];
                     // Add each media item as a separate ad entry for equal rotation
                     foreach ($campaign->mediaItems as $media) {
                         // Skip media items with no valid path
                         if (!$media->media_path || $media->media_path === '0' || $media->media_path === 0) {
                             continue;
                         }
+                        $mediaItemPaths[] = $media->media_path;
                         $adCampaigns[] = [
                             'campaign_id' => $campaign->id,
                             'campaign_name' => $campaign->name,
@@ -72,8 +74,9 @@ class HandleInertiaRequests extends Middleware
                             'media_type' => $media->media_type,
                         ];
                     }
-                    // Also include the legacy single media_path if no media items exist
-                    if ($campaign->mediaItems->isEmpty() && $campaign->media_path && $campaign->media_path !== '0') {
+                    // Include legacy media_path if it's valid and NOT already in mediaItems
+                    if ($campaign->media_path && $campaign->media_path !== '0'
+                        && !in_array($campaign->media_path, $mediaItemPaths)) {
                         $adCampaigns[] = [
                             'campaign_id' => $campaign->id,
                             'campaign_name' => $campaign->name,

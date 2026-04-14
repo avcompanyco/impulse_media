@@ -38,6 +38,13 @@ class StoreAdCampaignController extends Controller
             'status' => 'active',
         ]);
 
+        // Also create a mediaItem record so it appears in the gallery
+        // and rotates alongside any additional media added later
+        $campaign->mediaItems()->create([
+            'media_path' => $path,
+            'media_type' => $mediaType,
+        ]);
+
         return redirect()->back()->with([
             'type' => 'success',
             'title' => __('Campaign Created'),

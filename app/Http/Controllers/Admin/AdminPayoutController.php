@@ -6,6 +6,10 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Payout;
 use App\Models\Setting;
+use App\Models\Purchase;
+use App\Models\Payment;
+use App\Models\CreatorEarning;
+use App\Enums\Payment\PaymentStatus;
 use Inertia\Inertia;
 
 class AdminPayoutController extends Controller
@@ -29,10 +33,27 @@ class AdminPayoutController extends Controller
             'min_ppv_price' => (float)Setting::get('min_ppv_price', 0.99),
         ];
 
+        // Platform Accounting Stats
+        $platformPPVRevenue = (float) Purchase::where('status', 'completed')->sum('platform_share');
+        $totalSubscriptionPayments = (float) Payment::where('status', PaymentStatus::COMPLETED)->sum('amount');
+        $creatorMembershipEarnings = (float) CreatorEarning::where('source', 'membership_split')->sum('amount');
+        $platformSubscriptionShare = max(0.00, $totalSubscriptionPayments - $creatorMembershipEarnings);
+        $platformEarnings = $platformPPVRevenue + $platformSubscriptionShare;
+
+        $totalPaidOut = (float) Payout::where('status', 'approved')->sum('amount');
+        $totalPending = (float) Payout::where('status', 'pending')->sum('amount');
+
+        $platformStats = [
+            'platform_earnings' => $platformEarnings,
+            'total_paid_out' => $totalPaidOut,
+            'total_pending' => $totalPending,
+        ];
+
         return Inertia::render('admin/payouts/IndexPayouts', [
             'pendingPayouts' => $pendingPayouts,
             'payoutsHistory' => $payoutsHistory,
             'settings' => $settings,
+            'platformStats' => $platformStats,
         ]);
     }
 }

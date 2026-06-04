@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { useVideoPlayer, type UseVideoPlayerOptions } from '@/composables/useVideoPlayer';
 import VideoAdOverlay from '@/components/VideoAdOverlay.vue';
-import { ref } from 'vue';
+import { ref, onUnmounted, watch } from 'vue';
+import { router } from '@inertiajs/vue3';
+import axios from 'axios';
 
 export interface VideoPlayerProps {
     /** Video source URL */
@@ -18,6 +20,14 @@ export interface VideoPlayerProps {
     keyboardControls?: boolean;
     /** Show ads (based on user plan) */
     showAds?: boolean;
+    
+    // Monetization Props (B2)
+    contentId?: number;
+    hasFullAccess?: boolean;
+    ppvPrice?: number;
+    rawPpvPrice?: number;
+    isMember?: boolean;
+    allowMembership?: boolean;
 }
 
 const props = withDefaults(defineProps<VideoPlayerProps>(), {
@@ -26,6 +36,11 @@ const props = withDefaults(defineProps<VideoPlayerProps>(), {
     keyboardControls: true,
     subtitle: '',
     showAds: false,
+    hasFullAccess: true,
+    ppvPrice: 0,
+    rawPpvPrice: 0,
+    isMember: false,
+    allowMembership: false,
 });
 
 const emit = defineEmits<{
@@ -65,6 +80,85 @@ const {
     keyboardControls: props.keyboardControls,
     onEnded: () => emit('ended'),
 });
+
+// Heartbeat watch time logging
+let watchInterval: ReturnType<typeof setInterval> | null = null;
+let lastHeartbeatTime = Date.now();
+
+function startHeartbeat() {
+    if (watchInterval) return;
+    lastHeartbeatTime = Date.now();
+    watchInterval = setInterval(() => {
+        const now = Date.now();
+        const elapsedSeconds = Math.round((now - lastHeartbeatTime) / 1000);
+        
+        if (elapsedSeconds >= 1 && props.contentId) {
+            axios.post(`/content/${props.contentId}/watch-log`, {
+                duration_seconds: elapsedSeconds
+            }).catch(err => {
+                console.warn('Failed to log watch time:', err);
+            });
+        }
+        lastHeartbeatTime = now;
+    }, 10000);
+}
+
+function stopHeartbeat() {
+    if (watchInterval) {
+        const now = Date.now();
+        const elapsedSeconds = Math.round((now - lastHeartbeatTime) / 1000);
+        if (elapsedSeconds >= 1 && props.contentId) {
+            axios.post(`/content/${props.contentId}/watch-log`, {
+                duration_seconds: elapsedSeconds
+            }).catch(() => {});
+        }
+        clearInterval(watchInterval);
+        watchInterval = null;
+    }
+}
+
+watch(isPlaying, (playing) => {
+    if (playing) {
+        startHeartbeat();
+    } else {
+        stopHeartbeat();
+    }
+});
+
+// Enforce 5-minute preview limit (300 seconds)
+watch(currentTime, (newVal) => {
+    if (!props.hasFullAccess && newVal >= 300) {
+        pause();
+        if (videoEl.value) {
+            videoEl.value.currentTime = 300;
+        }
+        currentTime.value = 300;
+        stopHeartbeat();
+    }
+});
+
+watch(isPlaying, (playing) => {
+    if (playing && !props.hasFullAccess && currentTime.value >= 300) {
+        pause();
+        if (videoEl.value) {
+            videoEl.value.currentTime = 300;
+        }
+        currentTime.value = 300;
+    }
+});
+
+onUnmounted(() => {
+    stopHeartbeat();
+});
+
+function handleCheckout() {
+    if (!props.contentId) return;
+    router.post(`/ppv/checkout/${props.contentId}`, {}, {
+        onError: (err: any) => {
+            alert(err.message || 'Checkout failed');
+        }
+    });
+}
 
 // Ad event handlers
 function onAdStart() {
@@ -211,6 +305,50 @@ function onPrerollComplete() {
                         <i :class="isFullscreen ? 'fa-solid fa-compress' : 'fa-solid fa-expand'"></i>
                     </button>
                 </div>
+            </div>
+        </div>
+
+        <!-- 5-Minute Preview Paywall Overlay (B2) -->
+        <div 
+            v-if="!hasFullAccess && currentTime >= 300"
+            class="vp-paywall-overlay"
+        >
+            <div class="vp-paywall-content">
+                <div class="vp-paywall-lock-icon">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <h2 class="vp-paywall-title">Preview ended</h2>
+                <p class="vp-paywall-text">
+                    Unlock full access to continue watching this content.
+                </p>
+                
+                <div class="vp-paywall-pricing">
+                    <span class="vp-price-tag">${{ Number(ppvPrice).toFixed(2) }} USD</span>
+                    <span v-if="isMember && rawPpvPrice !== ppvPrice" class="vp-discount-badge">
+                        10% Member Discount Applied
+                    </span>
+                </div>
+
+                <div class="vp-paywall-actions">
+                    <button 
+                        class="vp-paywall-btn primary"
+                        @click="handleCheckout"
+                    >
+                        <i class="fa-solid fa-credit-card"></i> Buy Full Access
+                    </button>
+                    
+                    <a 
+                        v-if="allowMembership"
+                        href="/subscription"
+                        class="vp-paywall-btn secondary"
+                    >
+                        <i class="fa-solid fa-crown"></i> Subscribe to Membership
+                    </a>
+                </div>
+
+                <p v-if="!isMember && allowMembership" class="vp-paywall-promo">
+                    Impulse members save 10% on PPV purchases!
+                </p>
             </div>
         </div>
     </div>
@@ -641,6 +779,183 @@ function onPrerollComplete() {
 @media print {
     .vp-container {
         display: none;
+    }
+}
+
+/* === Paywall Overlay === */
+.vp-paywall-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(10, 10, 15, 0.85);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.vp-paywall-content {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 40px;
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    animation: vp-fade-in-up 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.vp-paywall-lock-icon {
+    width: 70px;
+    height: 70px;
+    background: rgba(232, 68, 90, 0.1);
+    border: 1px solid rgba(232, 68, 90, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    color: #e8445a;
+    font-size: 2rem;
+    box-shadow: 0 0 20px rgba(232, 68, 90, 0.15);
+    animation: vp-pulse 2s infinite;
+}
+
+.vp-paywall-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 0 0 12px 0;
+    color: #fff;
+}
+
+.vp-paywall-text {
+    font-size: 0.95rem;
+    color: #a0aec0;
+    margin: 0 0 24px 0;
+    line-height: 1.5;
+}
+
+.vp-paywall-pricing {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 30px;
+}
+
+.vp-price-tag {
+    font-size: 2.25rem;
+    font-weight: 800;
+    color: #fff;
+}
+
+.vp-discount-badge {
+    background: rgba(72, 187, 120, 0.15);
+    color: #48bb78;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.vp-paywall-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.vp-paywall-btn {
+    border: none;
+    border-radius: 12px;
+    padding: 14px 24px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.vp-paywall-btn.primary {
+    background: linear-gradient(135deg, #e8445a 0%, #b82337 100%);
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(232, 68, 90, 0.3);
+}
+
+.vp-paywall-btn.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(232, 68, 90, 0.5);
+    background: linear-gradient(135deg, #f8546a 0%, #c83347 100%);
+}
+
+.vp-paywall-btn.secondary {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.vp-paywall-btn.secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+.vp-paywall-promo {
+    font-size: 0.8rem;
+    color: #718096;
+    margin: 0;
+}
+
+@keyframes vp-fade-in-up {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes vp-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(232, 68, 90, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 15px rgba(232, 68, 90, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(232, 68, 90, 0);
+    }
+}
+
+@media (max-width: 640px) {
+    .vp-paywall-content {
+        padding: 30px 20px;
+    }
+    .vp-paywall-title {
+        font-size: 1.5rem;
+    }
+    .vp-price-tag {
+        font-size: 1.8rem;
     }
 }
 </style>

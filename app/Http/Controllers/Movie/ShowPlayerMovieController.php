@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 use App\Models\Movie;
+use App\Models\Setting;
 use App\Enums\Content\ContentStatus;
 
 class ShowPlayerMovieController extends Controller
@@ -29,11 +30,44 @@ class ShowPlayerMovieController extends Controller
                 })->inRandomOrder()->limit(20);
             }]);
         }, 'subcategory', 'user' => function ($query) {
-            $query->select('id', 'name', /*'username',*/ 'image');
+            $query->select('id', 'name', 'username', 'image');
         }]);
+
+        $user = Auth::user();
+        $hasFullAccess = false;
+        $isMember = $user ? $user->isImpulseMember() : false;
+        
+        $rawPpvPrice = (float)($content->ppv_price ?? 0);
+        $discountRate = (float)Setting::get('membership_discount_rate', 10);
+        
+        $ppvPrice = $rawPpvPrice;
+        if ($isMember && $discountRate > 0) {
+            $ppvPrice = max(0.00, round($rawPpvPrice * (1 - ($discountRate / 100)), 2));
+        }
+
+        if ($user) {
+            if ($user->hasRole('admin') || $user->id === $movie->user_id) {
+                $hasFullAccess = true;
+            } else {
+                if ($rawPpvPrice <= 0) {
+                    $hasFullAccess = true;
+                } else {
+                    if ($content->isPurchasedBy($user)) {
+                        $hasFullAccess = true;
+                    } elseif ($content->allow_membership && $isMember) {
+                        $hasFullAccess = true;
+                    }
+                }
+            }
+        }
 
         return Inertia::render('user/movie/ShowPlayerMovie', [
             'movie' => $movie,
+            'hasFullAccess' => $hasFullAccess,
+            'ppvPrice' => $ppvPrice,
+            'rawPpvPrice' => $rawPpvPrice,
+            'isMember' => $isMember,
+            'allowMembership' => (bool)$content->allow_membership,
         ]);
     }
 }

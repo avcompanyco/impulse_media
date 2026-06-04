@@ -20,11 +20,15 @@ class Content extends Model
         'type',
         'user_id',
         'views_count',
+        'ppv_price',
+        'allow_membership',
     ];
 
     protected $casts = [
         'type' => ContentType::class,
         'status' => ContentStatus::class,
+        'ppv_price' => 'decimal:2',
+        'allow_membership' => 'boolean',
     ];
 
     protected $appends = [
@@ -54,6 +58,22 @@ class Content extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function purchases()
+    {
+        return $this->hasMany(Purchase::class);
+    }
+
+    public function isPurchasedBy(?User $user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+        return $this->purchases()
+            ->where('user_id', $user->id)
+            ->where('status', 'completed')
+            ->exists();
     }
     
 }

@@ -1,5 +1,15 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick, watch, reactive, type Ref } from 'vue';
+import { router } from '@inertiajs/vue3';
+
+function watchFullContent(short: any) {
+    if (short.content_type === 'movie') {
+        router.visit(`/movie/${short.contentable_id}`);
+    } else {
+        router.visit(`/serie/${short.contentable_id}`);
+    }
+}
+
 
 // ─── Types ───────────────────────────────────────────────
 export interface ShortUser {
@@ -390,6 +400,16 @@ function startProgressLoop() {
         const video = getActiveVideo();
         if (video) {
             currentTime.value = video.currentTime;
+            
+            // Limit trailer play to 60 seconds (Phase A2)
+            if (currentShort.value && (currentShort.value as any).is_trailer && video.currentTime >= 60) {
+                video.pause();
+                video.currentTime = 60;
+                currentTime.value = 60;
+                isPlaying.value = false;
+                cancelRaf();
+                return;
+            }
         }
         rafId = requestAnimationFrame(tick);
     };
@@ -740,6 +760,40 @@ onUnmounted(() => {
                                 {{ currentShort.text_caption }}
                             </p>
                         </slot>
+                    </div>
+
+                    <!-- Trailer Watch Full Movie/Serie CTA Overlay (A2) -->
+                    <div 
+                        v-if="currentShort && (currentShort as any).is_trailer" 
+                        class="trailer-cta-container"
+                        @click.stop
+                    >
+                        <button 
+                            class="trailer-cta-btn" 
+                            @click="watchFullContent(currentShort)"
+                        >
+                            <i class="fa-solid fa-circle-play"></i>
+                            Watch Full {{ (currentShort as any).content_type === 'movie' ? 'Movie' : 'Series' }}
+                        </button>
+                    </div>
+
+                    <!-- Trailer Capped overlay (after 60 seconds) -->
+                    <div 
+                        v-if="currentShort && (currentShort as any).is_trailer && currentTime >= 60"
+                        class="trailer-ended-overlay"
+                        @click.stop
+                    >
+                        <div class="ended-content">
+                            <i class="fa-solid fa-lock ended-icon"></i>
+                            <h3>Trailer Preview Ended</h3>
+                            <p>Watch the full version to see the rest.</p>
+                            <button 
+                                class="trailer-large-cta-btn" 
+                                @click="watchFullContent(currentShort)"
+                            >
+                                <i class="fa-solid fa-play"></i> Watch Full Content
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Loading more indicator -->
@@ -1177,6 +1231,123 @@ onUnmounted(() => {
     .shorts-nav-arrow:disabled {
         opacity: 0.3;
         cursor: not-allowed;
+    }
+}
+
+/* ──────────────────────────────────────
+   Trailer CTA Styles
+────────────────────────────────────── */
+.trailer-cta-container {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 40;
+    pointer-events: auto;
+}
+
+.trailer-cta-btn {
+    background: linear-gradient(135deg, #e8445a 0%, #b82337 100%);
+    color: #fff;
+    border: none;
+    border-radius: 30px;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(232, 68, 90, 0.4);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.trailer-cta-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(232, 68, 90, 0.6);
+    background: linear-gradient(135deg, #f8546a 0%, #c83347 100%);
+}
+
+.trailer-cta-btn:active {
+    transform: translateY(0);
+}
+
+.trailer-ended-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+.ended-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    color: #fff;
+}
+
+.ended-icon {
+    font-size: 2.5rem;
+    color: #e8445a;
+    margin-bottom: 0.5rem;
+    animation: bounce 2s infinite;
+}
+
+.ended-content h3 {
+    font-size: 1.25rem;
+    margin: 0;
+    font-weight: 700;
+}
+
+.ended-content p {
+    font-size: 0.9rem;
+    color: #ccc;
+    margin: 0;
+}
+
+.trailer-large-cta-btn {
+    background: linear-gradient(135deg, #e8445a 0%, #b82337 100%);
+    color: #fff;
+    border: none;
+    border-radius: 30px;
+    padding: 0.8rem 1.8rem;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(232, 68, 90, 0.4);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    transition: all 0.3s ease;
+}
+
+.trailer-large-cta-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(232, 68, 90, 0.6);
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-10px);
+    }
+    60% {
+        transform: translateY(-5px);
     }
 }
 </style>

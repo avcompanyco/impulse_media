@@ -35,17 +35,23 @@ const props = defineProps<{
 
 const currentSlide = ref(0);
 
+const validFrontpage = computed(() => {
+    return props.frontpage.filter(c => c.contentable);
+});
+
 const currentContent = computed(() => {
-    if (props.frontpage.length === 0) return null;
-    return props.frontpage[currentSlide.value];
+    if (validFrontpage.value.length === 0) return null;
+    return validFrontpage.value[currentSlide.value];
 });
 
 const nextSlide = () => {
-    currentSlide.value = (currentSlide.value + 1) % props.frontpage.length;
+    if (validFrontpage.value.length === 0) return;
+    currentSlide.value = (currentSlide.value + 1) % validFrontpage.value.length;
 };
 
 const prevSlide = () => {
-    currentSlide.value = currentSlide.value === 0 ? props.frontpage.length - 1 : currentSlide.value - 1;
+    if (validFrontpage.value.length === 0) return;
+    currentSlide.value = currentSlide.value === 0 ? validFrontpage.value.length - 1 : currentSlide.value - 1;
 };
 
 const goToSlide = (index: number) => {
@@ -91,12 +97,12 @@ function unfollowUser(userId: number) {
 </script>
 
 <template>
-    <div class="carousel-container" v-if="frontpage.length > 0">
+    <div class="carousel-container" v-if="validFrontpage.length > 0">
         <div class="carousel-wrapper">
             <div class="main-carousel">
                 <div class="carousel-slides">
                     <div 
-                        v-for="(content, index) in frontpage" 
+                        v-for="(content, index) in validFrontpage" 
                         :key="content.id"
                         class="carousel-slide"
                         :class="{ 'active': index === currentSlide }"
@@ -119,7 +125,7 @@ function unfollowUser(userId: number) {
                 <div class="slide-indicators">
                     <div class="indicator-pill">
                         <div 
-                            v-for="(content, index) in frontpage" 
+                            v-for="(content, index) in validFrontpage" 
                             :key="content.id"
                             class="indicator-number"
                             :class="{ 'active': index === currentSlide }"

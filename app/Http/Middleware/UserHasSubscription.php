@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
-use Laravel\Cashier\Cashier;
+use App\Enums\User\UserType;
 
 class UserHasSubscription
 {
@@ -22,6 +22,12 @@ class UserHasSubscription
             return redirect()->route('login.user');
         }
         $user = User::find(Auth::user()->id);
+        
+        // Spectators are allowed to browse the catalog, preview, and buy PPV without subscription
+        if ($user->user_type === UserType::SPECTATOR) {
+            return $next($request);
+        }
+
         if (env('APP_ENV') !== 'production') {
             // In non-production, check if user has a plan assigned
             $plan = $user->getCurrentPlan();

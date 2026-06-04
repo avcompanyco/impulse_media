@@ -61,7 +61,7 @@ class CreateMovieController extends Controller
 
         $categories = Category::with('subcategories')->orderBy('name', 'asc')->get();
 
-        $plan = $_user->plan;
+        $plan = $_user->getCurrentPlan();
 
         if (!$plan) {
             return redirect()->route('user.profile.subscription');

@@ -23,7 +23,7 @@ class IndexUserDashboardController extends Controller
             ->inRandomOrder()
             ->limit(5)->get();
 
-        $categories = Category::with(['movies' => function ($query) {
+        $allCategories = Category::with(['movies' => function ($query) {
             $query->whereHas('content', function ($query) {
                 $query->where('status', ContentStatus::PUBLISHED);
             })->inRandomOrder()->limit(20);
@@ -31,8 +31,24 @@ class IndexUserDashboardController extends Controller
             $query->whereHas('content', function ($query) {
                 $query->where('status', ContentStatus::PUBLISHED);
             })->inRandomOrder()->limit(20);
-        }])
-        ->inRandomOrder()->limit(20)->get();
+        }])->get();
+
+        $seriesCategory = $allCategories->first(fn($c) => strtolower(trim($c->name)) === 'series');
+        $moviesCategory = $allCategories->first(fn($c) => strtolower(trim($c->name)) === 'movies');
+
+        $others = $allCategories->filter(function ($c) {
+            $name = strtolower(trim($c->name));
+            return $name !== 'series' && $name !== 'movies';
+        })->shuffle()->take(18);
+
+        $categories = collect();
+        if ($seriesCategory) {
+            $categories->push($seriesCategory);
+        }
+        if ($moviesCategory) {
+            $categories->push($moviesCategory);
+        }
+        $categories = $categories->merge($others);
 
         return Inertia::render('user/dashboard/IndexUserDashboard', [
             'frontpage' => $frontpage,

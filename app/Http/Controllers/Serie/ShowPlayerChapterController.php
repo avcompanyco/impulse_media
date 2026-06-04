@@ -9,6 +9,7 @@ use Inertia\Inertia;
 use App\Models\Serie;
 use App\Models\SeasonSerie;
 use App\Models\ChapterSerie;
+use App\Models\Setting;
 use App\Enums\Content\ContentStatus;
 use App\Enums\Content\ChapterStatus;
 
@@ -62,10 +63,43 @@ class ShowPlayerChapterController extends Controller
         // Load the specific chapter
         $chapter = $chapter->load(['season', 'user']);
 
+        $user = Auth::user();
+        $hasFullAccess = false;
+        $isMember = $user ? $user->isImpulseMember() : false;
+        
+        $rawPpvPrice = (float)($content->ppv_price ?? 0);
+        $discountRate = (float)Setting::get('membership_discount_rate', 10);
+        
+        $ppvPrice = $rawPpvPrice;
+        if ($isMember && $discountRate > 0) {
+            $ppvPrice = max(0.00, round($rawPpvPrice * (1 - ($discountRate / 100)), 2));
+        }
+
+        if ($user) {
+            if ($user->hasRole('admin') || $user->id === $serie->user_id) {
+                $hasFullAccess = true;
+            } else {
+                if ($rawPpvPrice <= 0) {
+                    $hasFullAccess = true;
+                } else {
+                    if ($content->isPurchasedBy($user)) {
+                        $hasFullAccess = true;
+                    } elseif ($content->allow_membership && $isMember) {
+                        $hasFullAccess = true;
+                    }
+                }
+            }
+        }
+
         return Inertia::render('user/serie/ShowPlayerChapter', [
             'serie' => $serie,
             'season' => $season,
             'chapter' => $chapter,
+            'hasFullAccess' => $hasFullAccess,
+            'ppvPrice' => $ppvPrice,
+            'rawPpvPrice' => $rawPpvPrice,
+            'isMember' => $isMember,
+            'allowMembership' => (bool)$content->allow_membership,
         ]);
     }
 }

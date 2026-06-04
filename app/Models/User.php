@@ -328,4 +328,50 @@ class User extends Authenticatable
 
         return $next_payment_date;
     }
+
+    public function purchases()
+    {
+        return $this->hasMany(Purchase::class);
+    }
+
+    public function earnings()
+    {
+        return $this->hasMany(CreatorEarning::class, 'creator_id');
+    }
+
+    public function payouts()
+    {
+        return $this->hasMany(Payout::class, 'creator_id');
+    }
+
+    public function isImpulseMember(): bool
+    {
+        if ($this->user_type !== UserType::SPECTATOR) {
+            return false;
+        }
+        
+        $plan = $this->getCurrentPlan();
+        if (!$plan || $plan->plan_type !== 'spectator') {
+            return false;
+        }
+
+        if (env('APP_ENV') == 'production') {
+            return $this->subscribed('default');
+        }
+
+        return true; // Local development bypass
+    }
+
+    public function getCreatorBalanceAttribute()
+    {
+        $earned = $this->earnings()->sum('amount');
+        $withdrawn = $this->payouts()->whereIn('status', ['approved', 'pending'])->sum('amount');
+        return max(0.00, (float)$earned - (float)$withdrawn);
+    }
+
+    public function getLifetimeEarningsAttribute()
+    {
+        return (float) $this->earnings()->sum('amount');
+    }
 }
+

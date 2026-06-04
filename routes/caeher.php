@@ -129,6 +129,14 @@ Route::middleware('auth')->group(function () {
             Route::delete('/media/{media}', \App\Http\Controllers\AdCampaign\RemoveMediaAdCampaignController::class)
                 ->name('admin.ads.media.remove');
         });
+
+        // Monetization Admin Routes (Phase B)
+        Route::get('/payouts', \App\Http\Controllers\Admin\AdminPayoutController::class)
+            ->name('admin.payouts.index');
+        Route::put('/payouts/{payout}', \App\Http\Controllers\Admin\UpdatePayoutController::class)
+            ->name('admin.payouts.update');
+        Route::put('/settings', \App\Http\Controllers\Admin\UpdateSettingsController::class)
+            ->name('admin.settings.update');
     });
 
     Route::prefix('subscription')->group(function () {
@@ -196,6 +204,13 @@ Route::middleware('auth')->group(function () {
             Route::get('/{user:username}/short', \App\Http\Controllers\Channel\ShowShortChannelController::class)
                 ->name('channel.show.short');
         });
+
+        Route::get('creator/dashboard', \App\Http\Controllers\Creator\CreatorDashboardController::class)
+            ->name('creator.dashboard');
+        Route::post('creator/payout-request', \App\Http\Controllers\Creator\StorePayoutRequestController::class)
+            ->name('creator.payout-request');
+        Route::put('creator/content/{content}/pricing', \App\Http\Controllers\Creator\UpdateContentPricingController::class)
+            ->name('creator.content.pricing');
 
         Route::get('creator/{user:username}', \App\Http\Controllers\CreatorProfile\ShowCreatorProfileController::class)
             ->name('user.creator.show');
@@ -374,6 +389,14 @@ Route::middleware('auth')->group(function () {
             Route::delete('/{short}/video', \App\Http\Controllers\Short\DeleteShortVideoController::class)
                 ->name('user.short.delete-video');
         });
+
+        // Monetization User & Creator Routes (Phase B)
+        Route::post('ppv/checkout/{content}', \App\Http\Controllers\Payment\PPVCheckoutController::class)
+            ->name('user.ppv.checkout');
+        Route::get('ppv/success', \App\Http\Controllers\Payment\PPVSuccessController::class)
+            ->name('user.ppv.success');
+        Route::post('content/{content}/watch-log', \App\Http\Controllers\Content\WatchLogController::class)
+            ->name('user.watch-log.store');
     });
 });
 

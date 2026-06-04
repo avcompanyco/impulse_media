@@ -11,6 +11,11 @@ import Toast from '@/components/Toast.vue';
 import ShowAdminProfileController from '@/actions/App/Http/Controllers/AdminProfile/ShowAdminProfileController';
 
 const dropdownOpen = ref(false);
+const sidebarOpen = ref(false);
+
+router.on('navigate', () => {
+    sidebarOpen.value = false;
+});
 
 onMounted(() => {
     // Event listener para cerrar el dropdown cuando se hace click fuera de él
@@ -54,7 +59,7 @@ watch(() => usePage().props, (newVal: any) => {
     <div class="html">
         <div class="body">
             <div class="admin-page-container">
-                <aside class="admin-sidebar">
+                <aside class="admin-sidebar" :class="{ 'active': sidebarOpen }">
                     <div class="sidebar-header">
                         <img src="/images/logo.png" alt="Platform Logo" class="logo-icon">
                         <h2>Admin Panel</h2>
@@ -119,9 +124,15 @@ watch(() => usePage().props, (newVal: any) => {
                         </ul>
                     </nav>
                 </aside>
+                <div v-if="sidebarOpen" class="sidebar-backdrop" @click="sidebarOpen = false"></div>
 
                 <div class="admin-main-content-wrapper">
                     <header class="admin-top-bar">
+                        <button class="mobile-nav-toggle" @click="sidebarOpen = !sidebarOpen" type="button">
+                            <svg viewBox="0 0 24 24" class="hamburger-icon">
+                                <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" />
+                            </svg>
+                        </button>
                         <div class="user-profile-dropdown" id="userProfileDropdown">
                             <button class="profile-trigger" @click="toggleDropdown">
                                 <span class="user-avatar">
@@ -471,5 +482,62 @@ watch(() => usePage().props, (newVal: any) => {
 
 .admin-table tr:last-child td {
     border-bottom: none;
+}
+
+/* Mobile responsive toggles and layout modifications */
+.mobile-nav-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--text-light);
+    cursor: pointer;
+    padding: 0.5rem;
+    align-items: center;
+    justify-content: center;
+}
+
+.hamburger-icon {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
+}
+
+.sidebar-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+}
+
+@media (max-width: 1024px) {
+    .mobile-nav-toggle {
+        display: flex;
+    }
+    
+    .admin-sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .admin-sidebar.active {
+        transform: translateX(0);
+    }
+    
+    .admin-main-content-wrapper {
+        margin-left: 0 !important;
+    }
+    
+    .admin-top-bar {
+        justify-content: space-between !important;
+    }
+    
+    .sidebar-backdrop {
+        display: block;
+    }
 }
 </style>

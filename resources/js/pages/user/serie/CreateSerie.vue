@@ -38,9 +38,10 @@ const subcategories = computed(() => {
 });
 
 watch(categorySelected, (newVal) => {
-    subcategorySelected.value = 0;
-    if (props.serie.subcategory_id) {
-        subcategorySelected.value = props.serie.subcategory_id;
+    if (newVal === props.serie.category_id) {
+        subcategorySelected.value = props.serie.subcategory_id || 0;
+    } else {
+        subcategorySelected.value = 0;
     }
 });
 

@@ -6,4 +6,5 @@ enum UserType: string
 {
     case SPECTATOR = 'spectator';
     case CREATOR = 'creator';
+    case ADMIN = 'admin';
 }

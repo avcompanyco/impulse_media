@@ -17,6 +17,8 @@ interface Payout {
     payout_method: string;
     payout_details: string;
     rejection_reason: string | null;
+    transaction_reference: string | null;
+    receipt_url: string | null;
     created_at: string;
 }
 
@@ -260,6 +262,16 @@ function getStatusBadgeClass(status: string) {
                                             </span>
                                             <div v-if="payout.status === 'rejected' && payout.rejection_reason" class="rejection-reason">
                                                 Reason: {{ payout.rejection_reason }}
+                                            </div>
+                                            <div v-if="payout.status === 'approved'" class="approved-details">
+                                                <div v-if="payout.transaction_reference" class="reference-text">
+                                                    Ref: {{ payout.transaction_reference }}
+                                                </div>
+                                                <div v-if="payout.receipt_url" class="receipt-link-container">
+                                                    <a :href="payout.receipt_url" target="_blank" class="receipt-download-link">
+                                                        <i class="fa-solid fa-file-invoice-dollar"></i> View Receipt
+                                                    </a>
+                                                </div>
                                             </div>
                                         </td>
                                     </tr>
@@ -947,5 +959,31 @@ select.form-control option {
 .icon-btn.cancel-btn:hover {
     background: #4a5568;
     transform: scale(1.05);
+}
+
+.approved-details {
+    margin-top: 6px;
+    font-size: 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.reference-text {
+    color: #a0aec0;
+}
+
+.receipt-download-link {
+    color: #3b82f6;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 600;
+}
+
+.receipt-download-link:hover {
+    color: #60a5fa;
+    text-decoration: underline;
 }
 </style>

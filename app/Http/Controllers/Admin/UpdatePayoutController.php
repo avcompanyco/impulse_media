@@ -18,11 +18,20 @@ class UpdatePayoutController extends Controller
             $data = $request->validate([
                 'status' => 'required|string|in:approved,rejected',
                 'rejection_reason' => 'required_if:status,rejected|nullable|string|max:1000',
+                'transaction_reference' => 'nullable|string|max:255',
+                'receipt' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:10240',
             ]);
+
+            $receiptPath = null;
+            if ($request->hasFile('receipt')) {
+                $receiptPath = $request->file('receipt')->store('receipts', 'public');
+            }
 
             $payout->update([
                 'status' => $data['status'],
                 'rejection_reason' => $data['status'] === 'rejected' ? $data['rejection_reason'] : null,
+                'transaction_reference' => $data['status'] === 'approved' ? ($data['transaction_reference'] ?? null) : null,
+                'receipt_path' => $data['status'] === 'approved' ? $receiptPath : null,
                 'processed_at' => now(),
             ]);
 

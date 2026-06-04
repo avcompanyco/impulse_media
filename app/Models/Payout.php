@@ -14,13 +14,24 @@ class Payout extends Model
         'payout_method',
         'payout_details',
         'rejection_reason',
+        'transaction_reference',
+        'receipt_path',
         'processed_at',
+    ];
+
+    protected $appends = [
+        'receipt_url',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
         'processed_at' => 'datetime',
     ];
+
+    public function getReceiptUrlAttribute(): ?string
+    {
+        return $this->receipt_path ? \Illuminate\Support\Facades\Storage::url($this->receipt_path) : null;
+    }
 
     public function creator(): BelongsTo
     {

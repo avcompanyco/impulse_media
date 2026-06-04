@@ -56,15 +56,37 @@ function saveSettings() {
     });
 }
 
-// Approve Payout
-function approvePayout(id: number) {
-    if (confirm('Are you sure you want to approve this payout request? Make sure the funds have been sent to the creator via their specified method.')) {
-        router.put(`/admin/payouts/${id}`, {
-            status: 'approved'
-        }, {
-            preserveScroll: true
-        });
-    }
+// Approve Payout Modal Management
+const showApproveModal = ref(false);
+const activeApprovePayoutId = ref<number | null>(null);
+
+const approveForm = useForm({
+    _method: 'PUT',
+    status: 'approved',
+    transaction_reference: '',
+    receipt: null as File | null,
+});
+
+function startApproval(id: number) {
+    activeApprovePayoutId.value = id;
+    approveForm.reset();
+    approveForm.transaction_reference = '';
+    approveForm.receipt = null;
+    showApproveModal.value = true;
+}
+
+function cancelApproval() {
+    activeApprovePayoutId.value = null;
+    showApproveModal.value = false;
+}
+
+function submitApproval() {
+    approveForm.post(`/admin/payouts/${activeApprovePayoutId.value}`, {
+        preserveScroll: true,
+        onSuccess: () => {
+            cancelApproval();
+        }
+    });
 }
 
 // Reject Payout Modal Management
@@ -234,7 +256,7 @@ function getStatusBadgeClass(status: string) {
                             </div>
 
                             <div class="card-actions">
-                                <button class="action-btn approve-btn" @click="approvePayout(payout.id)">
+                                <button class="action-btn approve-btn" @click="startApproval(payout.id)">
                                     <i class="fa-solid fa-check"></i> Approve
                                 </button>
                                 <button class="action-btn reject-btn" @click="startRejection(payout.id)">
@@ -284,6 +306,16 @@ function getStatusBadgeClass(status: string) {
                                     <div v-if="payout.status === 'rejected' && payout.rejection_reason" class="table-rejection">
                                         Reason: {{ payout.rejection_reason }}
                                     </div>
+                                    <div v-if="payout.status === 'approved'" class="table-approved-details">
+                                        <div v-if="payout.transaction_reference" class="reference-text">
+                                            Ref: {{ payout.transaction_reference }}
+                                        </div>
+                                        <div v-if="payout.receipt_url" class="receipt-link-container">
+                                            <a :href="payout.receipt_url" target="_blank" class="receipt-download-link">
+                                                <i class="fa-solid fa-file-invoice-dollar"></i> View Receipt
+                                            </a>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td>{{ payout.processed_at ? formatDate(payout.processed_at) : 'N/A' }}</td>
                             </tr>
@@ -316,6 +348,41 @@ function getStatusBadgeClass(status: string) {
                     <button class="modal-btn secondary" @click="cancelRejection">Cancel</button>
                     <button class="modal-btn danger" @click="submitRejection">Reject Request</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Approve Payout Modal -->
+        <div v-if="showApproveModal" class="reject-modal-overlay">
+            <div class="reject-modal-content">
+                <div class="modal-header">
+                    <h3>Approve Payout Request</h3>
+                    <button class="close-btn" @click="cancelApproval">&times;</button>
+                </div>
+                <form @submit.prevent="submitApproval" style="display: flex; flex-direction: column; gap: 1.25rem; margin-top: 1rem;">
+                    <div class="form-group">
+                        <label class="form-label">Transaction Reference / ID (Optional)</label>
+                        <input 
+                            type="text"
+                            v-model="approveForm.transaction_reference" 
+                            class="form-control" 
+                            placeholder="e.g., PayPal TxID, wire transfer reference..."
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Payment Receipt File (Optional)</label>
+                        <input 
+                            type="file" 
+                            @change="approveForm.receipt = $event.target.files[0]"
+                            class="form-control" 
+                            accept="image/*,application/pdf"
+                        >
+                        <span class="form-help">Upload a JPG, PNG, or PDF confirmation receipt.</span>
+                    </div>
+                    <div class="modal-footer" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.08);">
+                        <button type="button" class="modal-btn secondary" @click="cancelApproval">Cancel</button>
+                        <button type="submit" class="modal-btn" style="background-color: #48bb78; color: white;">Approve Request</button>
+                    </div>
+                </form>
             </div>
         </div>
     </AdminDashboardLayout>
@@ -798,5 +865,31 @@ function getStatusBadgeClass(status: string) {
 
 .modal-btn.danger:hover {
     background: #c53030;
+}
+
+.table-approved-details {
+    margin-top: 6px;
+    font-size: 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.reference-text {
+    color: #a0aec0;
+}
+
+.receipt-download-link {
+    color: #3b82f6;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 600;
+}
+
+.receipt-download-link:hover {
+    color: #60a5fa;
+    text-decoration: underline;
 }
 </style>

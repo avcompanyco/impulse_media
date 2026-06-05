@@ -170,7 +170,7 @@ onMounted(() => {
 // ─── Mid-roll: watch currentTime for trigger points ───
 watch(() => props.currentTime, (time) => {
     if (!props.showAds || !prerollComplete.value) return;
-    if (props.videoDuration < MID_ROLL_INTERVAL) return;
+    if (props.videoDuration <= 3600) return;
     if (isAdVisible.value) return;
 
     const midrollPoint = Math.floor(time / MID_ROLL_INTERVAL) * MID_ROLL_INTERVAL;

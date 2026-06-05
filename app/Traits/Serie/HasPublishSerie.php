@@ -11,7 +11,8 @@ trait HasPublishSerie
 {
     public function publish(Serie $serie, array $data)
     {
-        $serie->fill($data)->save();
+        $serieData = collect($data)->except(['ppv_price', 'allow_membership'])->toArray();
+        $serie->fill($serieData)->save();
         // verify required fields are filled (trailer is optional)
         $missing = [];
         if (!$serie->title) $missing[] = 'Title';
@@ -26,6 +27,8 @@ trait HasPublishSerie
 
         $content->fill([
             'status' => ContentStatus::PUBLISHED->value,
+            'ppv_price' => $data['ppv_price'] ?? 0.00,
+            'allow_membership' => (bool)($data['allow_membership'] ?? true),
         ])->save();
 
         // Log serie upload event

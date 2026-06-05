@@ -11,7 +11,8 @@ trait HasPublishMovie
 {
     public function publish(Movie $movie, array $data)
     {
-        $movie->fill($data)->save();
+        $movieData = collect($data)->except(['ppv_price', 'allow_membership'])->toArray();
+        $movie->fill($movieData)->save();
         // verify all fields are filled
         $missing = [];
         if (!$movie->title) $missing[] = 'Title';
@@ -28,6 +29,8 @@ trait HasPublishMovie
 
         $content->fill([
             'status' => ContentStatus::PUBLISHED->value,
+            'ppv_price' => $data['ppv_price'] ?? 0.00,
+            'allow_membership' => (bool)($data['allow_membership'] ?? true),
         ])->save();
 
         // Log movie upload event

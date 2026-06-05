@@ -67,6 +67,48 @@ function saveSettings() {
     });
 }
 
+// Membership Split Manual Runner
+const splitMonth = ref('');
+const isProcessingSplit = ref(false);
+const splitSuccessOutput = ref('');
+const splitErrorMsg = ref('');
+
+const currentMonthString = computed(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}`;
+});
+
+function runMembershipSplit() {
+    isProcessingSplit.value = true;
+    splitSuccessOutput.value = '';
+    splitErrorMsg.value = '';
+    
+    router.post('/admin/payouts/process-split', {
+        month: splitMonth.value || null
+    }, {
+        preserveScroll: true,
+        onSuccess: (page) => {
+            isProcessingSplit.value = false;
+            const flash = page.props.flash as any;
+            if (flash && flash.message) {
+                splitSuccessOutput.value = flash.message;
+            } else {
+                splitSuccessOutput.value = "Process completed successfully. Check Laravel log files for detailed outputs. / Proceso completado con éxito. Revise los archivos de log de Laravel para ver resultados detallados.";
+            }
+        },
+        onError: (errors) => {
+            isProcessingSplit.value = false;
+            if (errors.message) {
+                splitErrorMsg.value = errors.message;
+            } else {
+                splitErrorMsg.value = "An error occurred during calculations. / Ocurrió un error durante los cálculos.";
+            }
+        }
+    });
+}
+
 // Approve Payout Modal Management
 const showApproveModal = ref(false);
 const activeApprovePayoutId = ref<number | null>(null);
@@ -303,73 +345,110 @@ function getStatusBadgeClass(status: string) {
 
             <!-- Dashboard Layout Grid -->
             <div class="admin-layout-grid">
-                <!-- Left: Monetization Configuration Settings -->
-                <div class="admin-settings-panel">
-                    <h3 class="panel-title">
-                        <i class="fa-solid fa-gears text-accent"></i> Platform settings / Ajustes de Plataforma
-                    </h3>
-                    <form @submit.prevent="saveSettings" class="settings-form">
-                        <div class="form-group">
-                            <label class="form-label">Creator Share Ratio (%) / Comisión del Creador (%)</label>
-                            <input 
-                                type="number" 
-                                v-model="settingsForm.revenue_split_ratio" 
-                                class="form-control" 
-                                min="0" 
-                                max="100" 
-                                required
-                            >
-                            <span class="form-help">Percentage of PPV sales paid directly to creators. (Rest goes to platform) / Porcentaje de ventas de PPV pagado directamente a los creadores (El resto va a la plataforma).</span>
-                            <span v-if="settingsForm.errors.revenue_split_ratio" class="error-msg">{{ settingsForm.errors.revenue_split_ratio }}</span>
-                        </div>
+                <!-- Left Column -->
+                <div style="display: flex; flex-direction: column; gap: 2rem;">
+                    <!-- Left: Monetization Configuration Settings -->
+                    <div class="admin-settings-panel">
+                        <h3 class="panel-title">
+                            <i class="fa-solid fa-gears text-accent"></i> Platform settings / Ajustes de Plataforma
+                        </h3>
+                        <form @submit.prevent="saveSettings" class="settings-form">
+                            <div class="form-group">
+                                <label class="form-label">Creator Share Ratio (%) / Comisión del Creador (%)</label>
+                                <input 
+                                    type="number" 
+                                    v-model="settingsForm.revenue_split_ratio" 
+                                    class="form-control" 
+                                    min="0" 
+                                    max="100" 
+                                    required
+                                >
+                                <span class="form-help">Percentage of PPV sales paid directly to creators. (Rest goes to platform) / Porcentaje de ventas de PPV pagado directamente a los creadores (El resto va a la plataforma).</span>
+                                <span v-if="settingsForm.errors.revenue_split_ratio" class="error-msg">{{ settingsForm.errors.revenue_split_ratio }}</span>
+                            </div>
 
-                        <div class="form-group">
-                            <label class="form-label">Minimum Payout Limit ($) / Límite Mínimo de Retiro ($)</label>
-                            <input 
-                                type="number" 
-                                v-model="settingsForm.min_payout_threshold" 
-                                class="form-control" 
-                                min="1" 
-                                step="0.01" 
-                                required
-                            >
-                            <span class="form-help">Minimum balance required for a creator to request a withdrawal. / Saldo mínimo requerido para que un creador pueda solicitar un retiro.</span>
-                            <span v-if="settingsForm.errors.min_payout_threshold" class="error-msg">{{ settingsForm.errors.min_payout_threshold }}</span>
-                        </div>
+                            <div class="form-group">
+                                <label class="form-label">Minimum Payout Limit ($) / Límite Mínimo de Retiro ($)</label>
+                                <input 
+                                    type="number" 
+                                    v-model="settingsForm.min_payout_threshold" 
+                                    class="form-control" 
+                                    min="1" 
+                                    step="0.01" 
+                                    required
+                                >
+                                <span class="form-help">Minimum balance required for a creator to request a withdrawal. / Saldo mínimo requerido para que un creador pueda solicitar un retiro.</span>
+                                <span v-if="settingsForm.errors.min_payout_threshold" class="error-msg">{{ settingsForm.errors.min_payout_threshold }}</span>
+                            </div>
 
-                        <div class="form-group">
-                            <label class="form-label">Member PPV Discount Rate (%) / Tasa de Descuento PPV para Miembros (%)</label>
-                            <input 
-                                type="number" 
-                                v-model="settingsForm.membership_discount_rate" 
-                                class="form-control" 
-                                min="0" 
-                                max="100" 
-                                required
-                            >
-                            <span class="form-help">Discount percentage applied to PPV purchases for spectators with active Impulse Membership. / Porcentaje de descuento aplicado a compras PPV para espectadores con Membresía Impulse activa.</span>
-                            <span v-if="settingsForm.errors.membership_discount_rate" class="error-msg">{{ settingsForm.errors.membership_discount_rate }}</span>
-                        </div>
+                            <div class="form-group">
+                                <label class="form-label">Member PPV Discount Rate (%) / Tasa de Descuento PPV para Miembros (%)</label>
+                                <input 
+                                    type="number" 
+                                    v-model="settingsForm.membership_discount_rate" 
+                                    class="form-control" 
+                                    min="0" 
+                                    max="100" 
+                                    required
+                                >
+                                <span class="form-help">Discount percentage applied to PPV purchases for spectators with active Impulse Membership. / Porcentaje de descuento aplicado a compras PPV para espectadores con Membresía Impulse activa.</span>
+                                <span v-if="settingsForm.errors.membership_discount_rate" class="error-msg">{{ settingsForm.errors.membership_discount_rate }}</span>
+                            </div>
 
-                        <div class="form-group">
-                            <label class="form-label">Minimum PPV Purchase Price ($) / Precio Mínimo de Compra PPV ($)</label>
-                            <input 
-                                type="number" 
-                                v-model="settingsForm.min_ppv_price" 
-                                class="form-control" 
-                                min="0.01" 
-                                step="0.01" 
-                                required
-                            >
-                            <span class="form-help">Minimum price creators are allowed to set for their paid videos. / Precio mínimo que los creadores pueden establecer para sus videos de pago.</span>
-                            <span v-if="settingsForm.errors.min_ppv_price" class="error-msg">{{ settingsForm.errors.min_ppv_price }}</span>
-                        </div>
+                            <div class="form-group">
+                                <label class="form-label">Minimum PPV Purchase Price ($) / Precio Mínimo de Compra PPV ($)</label>
+                                <input 
+                                    type="number" 
+                                    v-model="settingsForm.min_ppv_price" 
+                                    class="form-control" 
+                                    min="0.01" 
+                                    step="0.01" 
+                                    required
+                                >
+                                <span class="form-help">Minimum price creators are allowed to set for their paid videos. / Precio mínimo que los creadores pueden establecer para sus videos de pago.</span>
+                                <span v-if="settingsForm.errors.min_ppv_price" class="error-msg">{{ settingsForm.errors.min_ppv_price }}</span>
+                            </div>
 
-                        <button type="submit" class="submit-btn" :disabled="isSavingSettings">
-                            <i class="fa-solid fa-circle-notch fa-spin" v-if="isSavingSettings"></i>
-                            Save Settings / Guardar Ajustes
-                        </button>
-                    </form>
+                            <button type="submit" class="submit-btn" :disabled="isSavingSettings">
+                                <i class="fa-solid fa-circle-notch fa-spin" v-if="isSavingSettings"></i>
+                                Save Settings / Guardar Ajustes
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Calculate Monthly Earnings Split Card -->
+                    <div class="admin-settings-panel">
+                        <h3 class="panel-title">
+                            <i class="fa-solid fa-calculator text-accent"></i> Membership Split / Comisión de Membresía
+                        </h3>
+                        <form @submit.prevent="runMembershipSplit" class="settings-form">
+                            <div class="form-group">
+                                <label class="form-label">Billing Month / Mes de Facturación</label>
+                                <input 
+                                    type="month" 
+                                    v-model="splitMonth" 
+                                    class="form-control"
+                                    :max="currentMonthString"
+                                >
+                                <span class="form-help">Select the month to process. If left blank, it defaults to the previous calendar month. / Seleccione el mes a procesar. Si se deja en blanco, procesará el mes calendario anterior.</span>
+                            </div>
+
+                            <button type="submit" class="submit-btn" :disabled="isProcessingSplit" style="background: linear-gradient(135deg, #805ad5 0%, #553c9a 100%); box-shadow: 0 4px 15px rgba(128, 90, 213, 0.3);">
+                                <i class="fa-solid fa-circle-notch fa-spin" v-if="isProcessingSplit"></i>
+                                Calculate Split / Calcular Comisión
+                            </button>
+                        </form>
+
+                        <!-- Console Output for calculated split -->
+                        <div v-if="splitSuccessOutput" class="console-output-box" style="margin-top: 1.5rem;">
+                            <span class="console-label">Execution Logs / Logs de Ejecución</span>
+                            <pre class="console-text">{{ splitSuccessOutput }}</pre>
+                        </div>
+                        <div v-if="splitErrorMsg" class="console-output-box error" style="margin-top: 1.5rem;">
+                            <span class="console-label">Error / Error</span>
+                            <pre class="console-text">{{ splitErrorMsg }}</pre>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Right: Pending Payout Requests -->
@@ -929,6 +1008,47 @@ function getStatusBadgeClass(status: string) {
 .submit-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* Console Output Styling */
+.console-output-box {
+    background: #000;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.console-output-box.error {
+    border-color: rgba(229, 62, 62, 0.4);
+    background: rgba(229, 62, 62, 0.05);
+}
+
+.console-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #a0aec0;
+    text-transform: uppercase;
+}
+
+.console-output-box.error .console-label {
+    color: #e53e3e;
+}
+
+.console-text {
+    margin: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.8rem;
+    color: #48bb78;
+    white-space: pre-wrap;
+    word-break: break-all;
+    line-height: 1.5;
+}
+
+.console-output-box.error .console-text {
+    color: #e53e3e;
 }
 
 /* Payout Cards */

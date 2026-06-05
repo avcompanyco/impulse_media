@@ -133,6 +133,8 @@ Route::middleware('auth')->group(function () {
         // Monetization Admin Routes (Phase B)
         Route::get('/payouts', \App\Http\Controllers\Admin\AdminPayoutController::class)
             ->name('admin.payouts.index');
+        Route::post('/payouts/process-split', \App\Http\Controllers\Admin\ProcessMembershipSplitController::class)
+            ->name('admin.payouts.process-split');
         Route::put('/payouts/{payout}', \App\Http\Controllers\Admin\UpdatePayoutController::class)
             ->name('admin.payouts.update');
         Route::put('/settings', \App\Http\Controllers\Admin\UpdateSettingsController::class)

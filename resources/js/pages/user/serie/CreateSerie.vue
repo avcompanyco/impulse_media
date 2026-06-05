@@ -29,6 +29,8 @@ const myRefForm = ref({
 
 const categorySelected = ref(0);
 const subcategorySelected = ref(0);
+const ppvPrice = ref(props.serie.content?.ppv_price || 0.00);
+const allowMembership = ref(props.serie.content?.allow_membership !== undefined ? !!props.serie.content.allow_membership : true);
 
 const subcategories = computed(() => {
     if (categorySelected.value) {
@@ -145,6 +147,41 @@ const isUploadingSomething = ref(false);
                                         :value="subcategory.id">{{ subcategory.name }}</option>
                                 </select>
                                 <ErrorLabel :message="errors.subcategory_id" />
+                            </div>
+
+                            <!-- Monetization Options -->
+                            <div class="form-section">
+                                <label class="form-label">Monetization Option / Opción de Monetización</label>
+                                <div class="monetization-options-group">
+                                    <label class="monetization-option-card" :class="{ active: allowMembership }">
+                                        <input type="radio" :value="true" v-model="allowMembership" class="sr-only">
+                                        <div class="option-card-content">
+                                            <div class="option-icon"><i class="fa-solid fa-crown text-accent"></i></div>
+                                            <div class="option-details">
+                                                <span class="option-title">Subscription / Suscripción (Option 1)</span>
+                                                <p class="option-desc">Available to members. Non-members can purchase via PPV. / Disponible para miembros. No miembros pueden comprarlo via PPV.</p>
+                                            </div>
+                                        </div>
+                                    </label>
+                                    <label class="monetization-option-card" :class="{ active: !allowMembership }">
+                                        <input type="radio" :value="false" v-model="allowMembership" class="sr-only">
+                                        <div class="option-card-content">
+                                            <div class="option-icon"><i class="fa-solid fa-ticket text-accent"></i></div>
+                                            <div class="option-details">
+                                                <span class="option-title">PPV Only / Solo PPV (Option 2)</span>
+                                                <p class="option-desc">All users must purchase this video individually to watch. / Todos los usuarios deben comprar este video individualmente para verlo.</p>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                                <input type="hidden" name="allow_membership" :value="allowMembership ? '1' : '0'">
+                            </div>
+
+                            <div class="form-section">
+                                <label for="ppvPriceInput" class="form-label">PPV Price ($) / Precio PPV ($)</label>
+                                <input name="ppv_price" type="number" step="0.01" min="0" id="ppvPriceInput" class="form-control" v-model="ppvPrice" placeholder="0.00 (Free / Gratis)">
+                                <span class="form-help">Enter 0 to make it free, or set a price (Minimum is ${{ Number($page.props.min_ppv_price || 0.99).toFixed(2) }}). / Ingrese 0 para hacerlo gratis, o fije un precio (Mínimo es ${{ Number($page.props.min_ppv_price || 0.99).toFixed(2) }}).</span>
+                                <ErrorLabel :message="errors.ppv_price" />
                             </div>
                         </Form>
                         <div>
@@ -736,5 +773,73 @@ input[type="file"] {
     .season-management {
         flex-direction: column;
     }
+}
+
+.monetization-options-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.monetization-option-card {
+    background: var(--input-bg);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: block;
+}
+
+.monetization-option-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--primary-color);
+}
+
+.monetization-option-card.active {
+    background: rgba(232, 68, 90, 0.08);
+    border-color: var(--primary-color);
+}
+
+.option-card-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.option-icon {
+    font-size: 1.5rem;
+    margin-top: 0.2rem;
+}
+
+.option-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.option-title {
+    font-weight: 700;
+    color: #fff;
+    font-size: 0.95rem;
+}
+
+.option-desc {
+    font-size: 0.8rem;
+    color: #aaa;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
 }
 </style>

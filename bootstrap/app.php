@@ -13,6 +13,9 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    ->withSchedule(function (\Illuminate\Console\Scheduling\Schedule $schedule) {
+        $schedule->command('impulse:process-membership-split')->monthlyOn(1, '00:00');
+    })
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->trustProxies(at: '*');
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);

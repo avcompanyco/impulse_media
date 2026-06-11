@@ -97,6 +97,7 @@ class CreatorDashboardController extends Controller
         // Settings fallbacks
         $minPayoutThreshold = (float)Setting::get('min_payout_threshold', 50.00);
         $minPpvPrice = (float)Setting::get('min_ppv_price', 0.99);
+        $revenueSplitRatio = (float)Setting::get('revenue_split_ratio', 50);
 
         return Inertia::render('user/creator/CreatorDashboard', [
             'stats' => [
@@ -111,6 +112,7 @@ class CreatorDashboardController extends Controller
             'settings' => [
                 'min_payout_threshold' => $minPayoutThreshold,
                 'min_ppv_price' => $minPpvPrice,
+                'revenue_split_ratio' => $revenueSplitRatio,
             ],
         ]);
     }

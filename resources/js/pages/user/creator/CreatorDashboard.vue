@@ -46,6 +46,7 @@ interface ContentItem {
 interface Settings {
     min_payout_threshold: number;
     min_ppv_price: number;
+    revenue_split_ratio: number;
 }
 
 const props = defineProps<{
@@ -132,14 +133,19 @@ function getStatusBadgeClass(status: string) {
     >
         <div class="creator-dashboard-container">
             <!-- Header -->
-            <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
                 <div>
                     <h1 class="dashboard-title">Creator Hub</h1>
                     <p class="dashboard-subtitle">Manage your content pricing, watch analytics, and revenue earnings.</p>
                 </div>
-                <Link :href="MovieChannelController()" class="view-channel-btn">
-                    <i class="fa-solid fa-user"></i> View My Channel
-                </Link>
+                <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <Link href="/user/upload/movie" class="upload-content-btn">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Upload Content
+                    </Link>
+                    <Link :href="MovieChannelController()" class="view-channel-btn">
+                        <i class="fa-solid fa-user"></i> View My Channel
+                    </Link>
+                </div>
             </div>
 
             <!-- Stats Grid -->
@@ -192,6 +198,13 @@ function getStatusBadgeClass(status: string) {
                     <!-- Request Payout -->
                     <div class="dashboard-panel">
                         <h3 class="panel-title"><i class="fa-solid fa-money-bill-transfer text-accent"></i> Request Payout</h3>
+                        
+                        <div class="revenue-split-info-box" style="margin-bottom: 1.5rem; background: rgba(72, 187, 120, 0.05); border: 1px solid rgba(72, 187, 120, 0.15); border-radius: 12px; padding: 0.9rem; display: flex; align-items: flex-start; gap: 0.75rem;">
+                            <i class="fa-solid fa-circle-check text-success" style="font-size: 1.1rem; margin-top: 0.1rem;"></i>
+                            <p style="margin: 0; font-size: 0.85rem; color: #cbd5e0; line-height: 1.4;">
+                                You receive <strong>{{ settings.revenue_split_ratio }}%</strong> of all PPV sales and proportional membership views. The platform commission is only <strong>{{ 100 - settings.revenue_split_ratio }}%</strong>.
+                            </p>
+                        </div>
                         
                         <div v-if="stats.current_balance < settings.min_payout_threshold" class="threshold-alert">
                             <i class="fa-solid fa-circle-info alert-icon"></i>
@@ -1016,6 +1029,28 @@ select.form-control option {
 
 .view-channel-btn:hover {
     background-color: #d81b60;
+    transform: translateY(-1px);
+}
+
+.upload-content-btn {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-light);
+    padding: 0.6rem 1.2rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.upload-content-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: var(--primary-color);
     transform: translateY(-1px);
 }
 </style>

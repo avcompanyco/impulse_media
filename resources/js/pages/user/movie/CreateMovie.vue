@@ -2,7 +2,7 @@
 import { computed, ref, watch, onMounted } from 'vue';
 import UserDashboardLayout from '@/layouts/UserDashboardLayout.vue';
 import ErrorLabel from '@/components/form/ErrorLabel.vue';
-import { Form, router } from '@inertiajs/vue3';
+import { Form, router, Link } from '@inertiajs/vue3';
 // import UpdateMovieController from '@/actions/App/Http/Controllers/Movie/UpdateMovieController';
 import PublishMovieController from '@/actions/App/Http/Controllers/Movie/PublishMovieController';
 import ShowManageSubscriptionProfileController from '@/actions/App/Http/Controllers/UserProfile/ShowManageSubscriptionProfileController';
@@ -58,7 +58,10 @@ const canPublish = computed(() => {
 });
 
 onMounted(() => {
-    if (props.movie.category_id) {
+    const moviesCat = props.categories.find((c: any) => c.name === 'Movies');
+    if (moviesCat) {
+        categorySelected.value = moviesCat.id;
+    } else if (props.movie.category_id) {
         categorySelected.value = props.movie.category_id;
     }
 });
@@ -96,12 +99,30 @@ const isUploadingSomething = ref(false);
 
 
         <div class="main-content">
-            <h1 class="page-title">Upload Content</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                <h1 class="page-title" style="margin-bottom: 0;">Upload Content</h1>
+                <Link href="/creator/dashboard" class="dashboard-shortcut-btn">
+                    <i class="fa-solid fa-chart-line text-accent"></i> Creator Dashboard
+                </Link>
+            </div>
 
             <div class="toggle-container">
                 <button class="toggle-btn active" data-form="movie" @click="goToMovieForm">Movie</button>
                 <button class="toggle-btn" data-form="serie" @click="goToSerieForm">Serie</button>
                 <button class="toggle-btn" data-form="short" @click="goToShortForm">Short</button>
+            </div>
+
+            <div class="creator-hub-banner">
+                <div class="banner-content">
+                    <div class="banner-info">
+                        <span class="banner-tag">CREATOR CENTER</span>
+                        <h3>Monitor Your Channel Performance</h3>
+                        <p>Track your play metrics, sales transactions, and request payout funds in your centralized hub.</p>
+                    </div>
+                    <Link href="/creator/dashboard" class="banner-action-btn">
+                        Go to Dashboard <i class="fa-solid fa-arrow-right"></i>
+                    </Link>
+                </div>
             </div>
 
             <template v-if="isCanPublish">
@@ -127,15 +148,7 @@ const isUploadingSomething = ref(false);
                             v-model="movieDescription" placeholder="Tell something about your movie..."></textarea>
                         <ErrorLabel :message="errors.description" />
                     </div>
-                    <div class="form-section">
-                        <label for="movieCategory" class="form-label">Category</label>
-                        <select v-model="categorySelected" id="movieCategory" name="category_id" class="form-control">
-                            <option value="0">Select Category</option>
-                            <option v-for="category in categories" :key="`category_${category.id}`" :value="category.id">{{
-                                category.name }}</option>
-                        </select>
-                        <ErrorLabel :message="errors.category_id" />
-                    </div>
+                    <input type="hidden" name="category_id" :value="categorySelected">
                     <div class="form-section">
                         <label for="movieSubcategory" class="form-label">Subcategory</label>
                         <select name="subcategory_id" id="movieSubcategory" class="form-control"
@@ -845,5 +858,92 @@ input[type="file"] {
     overflow: hidden;
     clip: rect(0, 0, 0, 0);
     border: 0;
+}
+
+.dashboard-shortcut-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-light);
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 30px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dashboard-shortcut-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
+}
+
+.creator-hub-banner {
+    background: linear-gradient(135deg, rgba(232, 68, 90, 0.08) 0%, rgba(255, 107, 129, 0.03) 100%);
+    border: 1px solid rgba(232, 68, 90, 0.2);
+    border-radius: 20px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.creator-hub-banner .banner-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+}
+
+.creator-hub-banner .banner-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-width: 500px;
+}
+
+.creator-hub-banner .banner-tag {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--primary-color);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.creator-hub-banner h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.creator-hub-banner p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #a0aec0;
+    line-height: 1.5;
+}
+
+.creator-hub-banner .banner-action-btn {
+    background: var(--primary-color);
+    color: #fff;
+    text-decoration: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 12px rgba(232, 68, 90, 0.25);
+}
+
+.creator-hub-banner .banner-action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(232, 68, 90, 0.4);
+    background: #f8546a;
 }
 </style>

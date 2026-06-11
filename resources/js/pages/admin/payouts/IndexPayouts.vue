@@ -43,6 +43,7 @@ const props = defineProps<{
     payoutsHistory: Payout[];
     settings: Settings;
     platformStats: PlatformStats;
+    creatorStats: any[];
 }>();
 
 // Settings Form
@@ -603,6 +604,48 @@ function getStatusBadgeClass(status: string) {
                                         </button>
                                     </div>
                                 </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Creator Monetization Metrics (Full Width) -->
+            <div class="admin-panel full-width" style="margin-top: 2rem;">
+                <h3 class="panel-title">
+                    <i class="fa-solid fa-users-gear text-accent"></i> Creator Balances & Lifetime Metrics / Saldos y Métricas de Creadores
+                </h3>
+                <div class="table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Creator / Creador</th>
+                                <th>Email</th>
+                                <th>Lifetime Earnings / Ingresos Históricos</th>
+                                <th>Available Balance / Saldo Disponible</th>
+                                <th>Total Paid Out / Total Retirado</th>
+                                <th>Total Pending / Total Pendiente</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-if="creatorStats.length === 0">
+                                <td colspan="6" class="empty-table-msg">No creators found on the platform. / No se encontraron creadores en la plataforma.</td>
+                            </tr>
+                            <tr v-for="creator in creatorStats" :key="creator.id">
+                                <td>
+                                    <div class="table-creator-cell">
+                                        <img :src="creator.image_url || '/images/default-avatar.png'" alt="Avatar" class="table-avatar">
+                                        <div class="creator-meta">
+                                            <span class="creator-name" style="font-weight: 600; color: #fff;">{{ creator.name }}</span>
+                                            <span class="creator-handle" style="font-size: 0.8rem; color: #a0aec0;">@{{ creator.username }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ creator.email }}</td>
+                                <td style="font-weight: 700; color: #48bb78;">${{ Number(creator.lifetime_earnings).toFixed(2) }}</td>
+                                <td style="font-weight: 700; color: #3182ce;">${{ Number(creator.balance).toFixed(2) }}</td>
+                                <td style="font-weight: 700; color: #e53e3e;">${{ Number(creator.total_paid).toFixed(2) }}</td>
+                                <td style="font-weight: 700; color: #dd6b20;">${{ Number(creator.total_pending).toFixed(2) }}</td>
                             </tr>
                         </tbody>
                     </table>

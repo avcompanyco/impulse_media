@@ -29,7 +29,7 @@ function logout() {
 
         <h1 class="plans-title">SELECT YOUR PLAN</h1>
 
-        <div class="plan-cards-container" style="margin-bottom: 2rem;">
+        <div class="plan-cards-container" :class="`plans-${plans?.length || 0}`" style="margin-bottom: 2rem;">
             <div v-for="plan in plans" :key="`plan_${plan.id}`" class="plan-card">
                 <div v-if="plan.free_days_trial > 0" class="trial-badge">
                     🎁 {{ plan.free_days_trial }} Days Free Trial
@@ -206,7 +206,10 @@ function logout() {
 /* Tablet */
 @media (min-width: 768px) {
     .app-container {
-        max-width: 680px;
+        max-width: 100% !important;
+        width: 100% !important;
+        padding-left: 2rem;
+        padding-right: 2rem;
     }
 
     .logo-icon {
@@ -222,9 +225,27 @@ function logout() {
 
     .plan-cards-container {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
         gap: 2rem;
         width: 100%;
+        max-width: 1200px;
+        justify-content: center;
+        margin: 0 auto;
+    }
+
+    .plan-cards-container.plans-3 {
+        grid-template-columns: repeat(3, 1fr);
+        max-width: 1100px;
+    }
+
+    .plan-cards-container.plans-2 {
+        grid-template-columns: repeat(2, 1fr);
+        max-width: 750px;
+    }
+
+    .plan-cards-container.plans-1 {
+        grid-template-columns: 1fr;
+        max-width: 380px;
     }
 
     .plan-card {

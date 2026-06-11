@@ -130,10 +130,19 @@ function handleChangePicture(event: Event) {
                 </div>
 
                 <div v-if="user.is_creator" class="form-group-custom">
-                    <label for="payoutDetails" class="form-label-custom">Payout Details / Detalles de Pago</label>
+                    <label for="payoutDetails" class="form-label-custom">
+                        {{ payout_method === 'paypal' ? 'PayPal Email Address / Correo de PayPal' : 'Bank Transfer Details / Detalles de Cuenta Bancaria' }}
+                    </label>
                     <textarea class="form-control-custom" id="payoutDetails" name="payout_details"
-                        placeholder="Enter your PayPal email address or bank details (IBAN, Swift, Account number)..." v-model="payout_details" rows="3"></textarea>
-                    <small class="form-text-sm">Enter account numbers, PayPal address, bank name, IBAN or Swift codes.</small>
+                        :placeholder="payout_method === 'paypal' 
+                            ? 'Enter your PayPal email address (e.g., account@paypal.com)...' 
+                            : 'Please enter all details:\n- Bank Name:\n- Account Holder Name:\n- IBAN / Account Number:\n- Swift / BIC Code:'" 
+                        v-model="payout_details" rows="4"></textarea>
+                    <small class="form-text-sm">
+                        {{ payout_method === 'paypal' 
+                            ? 'Ensure you enter a valid email address linked to your PayPal account.' 
+                            : 'Enter account numbers, holder name, bank name, IBAN or Swift codes.' }}
+                    </small>
                     <ErrorLabel :message="errors.payout_details" />
                 </div>
 

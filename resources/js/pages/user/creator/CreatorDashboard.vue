@@ -220,12 +220,16 @@ function getStatusBadgeClass(status: string) {
                             </div>
 
                             <div class="form-group">
-                                <label class="form-label">Payout details</label>
+                                <label class="form-label">
+                                    {{ payoutForm.payout_method === 'paypal' ? 'PayPal Email Address / Correo de PayPal' : 'Bank Transfer Details / Detalles de Cuenta Bancaria' }}
+                                </label>
                                 <textarea 
                                     v-model="payoutForm.payout_details" 
                                     class="form-control" 
-                                    rows="3" 
-                                    placeholder="Enter your PayPal email address or bank details (IBAN, Swift, Account number)..."
+                                    rows="4" 
+                                    :placeholder="payoutForm.payout_method === 'paypal' 
+                                        ? 'Enter your PayPal email address (e.g., account@paypal.com)...' 
+                                        : 'Please enter all details:\n- Bank Name:\n- Account Holder Name:\n- IBAN / Account Number:\n- Swift / BIC Code:'"
                                     required
                                 ></textarea>
                                 <span v-if="payoutForm.errors.payout_details" class="error-msg">{{ payoutForm.errors.payout_details }}</span>

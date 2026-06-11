@@ -44,7 +44,7 @@ const spectatorPlans = computed(() => props.plans.filter(p => p.plan_type === 's
         </div>
 
         <!-- Creator Plans -->
-        <div v-show="activeTab === 'creator'" class="plan-cards-container">
+        <div v-show="activeTab === 'creator'" class="plan-cards-container" :class="`plans-${creatorPlans.length}`">
             <div v-for="plan in creatorPlans" :key="plan.id" class="plan-card" :class="{ 'featured': plan.name === 'Golden' }">
                 <div class="plan-header">
                     <h3 class="plan-name">{{ plan.name }}</h3>
@@ -88,7 +88,7 @@ const spectatorPlans = computed(() => props.plans.filter(p => p.plan_type === 's
         </div>
 
         <!-- Spectator Plans -->
-        <div v-show="activeTab === 'spectator'" class="plan-cards-container">
+        <div v-show="activeTab === 'spectator'" class="plan-cards-container" :class="`plans-${spectatorPlans.length}`">
             <div v-for="plan in spectatorPlans" :key="plan.id" class="plan-card" :class="{ 'featured': plan.name === 'Premium' }">
                 <div class="plan-header">
                     <h3 class="plan-name">{{ plan.name }}</h3>
@@ -341,9 +341,28 @@ const spectatorPlans = computed(() => props.plans.filter(p => p.plan_type === 's
     }
 
     .plan-cards-container {
-        flex-direction: row;
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 2rem;
+        width: 100%;
+        max-width: 1200px;
+        justify-content: center;
         align-items: stretch;
+    }
+    
+    .plan-cards-container.plans-3 {
+        grid-template-columns: repeat(3, 1fr);
+        max-width: 1150px;
+    }
+    
+    .plan-cards-container.plans-2 {
+        grid-template-columns: repeat(2, 1fr);
+        max-width: 780px;
+    }
+    
+    .plan-cards-container.plans-1 {
+        grid-template-columns: 1fr;
+        max-width: 380px;
     }
 }
 

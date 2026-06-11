@@ -9,6 +9,7 @@ use App\Models\Setting;
 use App\Models\Purchase;
 use App\Models\Payment;
 use App\Models\CreatorEarning;
+use App\Models\User;
 use App\Enums\Payment\PaymentStatus;
 use Inertia\Inertia;
 

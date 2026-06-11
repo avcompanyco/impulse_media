@@ -139,6 +139,9 @@ Route::middleware('auth')->group(function () {
             ->name('admin.payouts.update');
         Route::put('/settings', \App\Http\Controllers\Admin\UpdateSettingsController::class)
             ->name('admin.settings.update');
+        Route::get('/settings', function () {
+            return redirect()->route('admin.payouts.index');
+        })->name('admin.settings.index');
     });
 
     Route::prefix('subscription')->group(function () {

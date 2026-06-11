@@ -1,5 +1,10 @@
 <?php
 
+if (isset($_SERVER['SERVER_NAME']) && ($_SERVER['SERVER_NAME'] === '127.0.0.1' || $_SERVER['SERVER_NAME'] === 'localhost')) {
+    ini_set('max_execution_time', 240);
+    set_time_limit(240);
+}
+
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 

@@ -42,8 +42,9 @@ const props = defineProps<{
                 </template>
 
                 <!-- Floating creator chip (top-right, shows/hides with controls) -->
-                <template #creator-chip v-if="movie.user">
+                <template #creator-chip>
                     <div 
+                        v-if="movie.user"
                         class="vp-creator-chip"
                         @click.stop="router.visit(ShowCreatorProfileController({ user: movie.user.username }))"
                     >

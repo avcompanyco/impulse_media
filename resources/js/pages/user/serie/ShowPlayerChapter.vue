@@ -91,8 +91,9 @@ const handleVideoEnded = () => {
                     </template>
 
                     <!-- Floating creator chip (top-right, shows/hides with controls) -->
-                    <template #creator-chip v-if="serie.user">
+                    <template #creator-chip>
                         <div 
+                            v-if="serie.user"
                             class="vp-creator-chip"
                             @click.stop="router.visit(ShowCreatorProfileController({ user: serie.user.username }))"
                         >

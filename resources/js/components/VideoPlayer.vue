@@ -237,6 +237,14 @@ function onPrerollComplete() {
             <slot name="back-button" />
         </div>
 
+        <!-- Floating Creator Chip (top-right, shows/hides with controls) -->
+        <div
+            class="vp-creator-chip-container"
+            :class="{ 'vp-visible': controlsVisible }"
+        >
+            <slot name="creator-chip" />
+        </div>
+
         <!-- Custom Controls -->
         <div
             class="vp-controls"
@@ -494,6 +502,118 @@ function onPrerollComplete() {
 .vp-back-container.vp-visible {
     opacity: 1;
     pointer-events: auto;
+}
+
+/* === Floating Creator Chip (top-right) === */
+.vp-creator-chip-container {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 22;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease-in-out;
+}
+
+.vp-creator-chip-container.vp-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.vp-container :deep(.vp-creator-chip) {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 40px;
+    padding: 6px 14px 6px 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    color: #fff;
+    max-width: 340px;
+}
+
+.vp-container :deep(.vp-creator-chip:hover) {
+    background: rgba(0, 0, 0, 0.7);
+    border-color: rgba(232, 68, 90, 0.4);
+    transform: scale(1.03);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.vp-container :deep(.vp-chip-avatar) {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #e8445a;
+    flex-shrink: 0;
+}
+
+.vp-container :deep(.vp-chip-text) {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+}
+
+.vp-container :deep(.vp-chip-name) {
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
+.vp-container :deep(.vp-chip-handle) {
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.55);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
+.vp-container :deep(.vp-chip-tag) {
+    background: rgba(232, 68, 90, 0.2);
+    color: #e8445a;
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+@media (max-width: 640px) {
+    .vp-creator-chip-container {
+        top: 14px;
+        right: 14px;
+    }
+    .vp-container :deep(.vp-creator-chip) {
+        max-width: 220px;
+        padding: 5px 10px 5px 5px;
+        gap: 8px;
+    }
+    .vp-container :deep(.vp-chip-avatar) {
+        width: 26px;
+        height: 26px;
+    }
+    .vp-container :deep(.vp-chip-name) {
+        font-size: 0.7rem;
+    }
+    .vp-container :deep(.vp-chip-handle) {
+        display: none;
+    }
+    .vp-container :deep(.vp-chip-tag) {
+        display: none;
+    }
 }
 
 /* Shared back button styles for slotted content */

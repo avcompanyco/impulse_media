@@ -75,6 +75,7 @@ const {
     showControls,
     play,
     pause,
+    seekRelative,
 } = useVideoPlayer({
     autoplay: shouldAutoplay,
     keyboardControls: props.keyboardControls,
@@ -266,6 +267,26 @@ function onPrerollComplete() {
                         @click.stop="togglePlayPause"
                     >
                         <i :class="isPlaying ? 'fa-solid fa-pause' : 'fa-solid fa-play'"></i>
+                    </button>
+
+                    <!-- Skip Backward 10s -->
+                    <button
+                        class="vp-btn vp-skip-btn"
+                        title="Retroceder 10s"
+                        @click.stop="seekRelative(-10)"
+                    >
+                        <i class="fa-solid fa-backward"></i>
+                        <span class="vp-skip-label">10</span>
+                    </button>
+
+                    <!-- Skip Forward 10s -->
+                    <button
+                        class="vp-btn vp-skip-btn"
+                        title="Adelantar 10s"
+                        @click.stop="seekRelative(10)"
+                    >
+                        <i class="fa-solid fa-forward"></i>
+                        <span class="vp-skip-label">10</span>
                     </button>
 
                     <!-- Volume -->
@@ -568,6 +589,24 @@ function onPrerollComplete() {
     outline-offset: 2px;
     border-radius: 4px;
 }
+
+/* === Skip Buttons === */
+.vp-skip-btn {
+    position: relative;
+    font-size: 1rem;
+}
+
+.vp-skip-label {
+    position: absolute;
+    bottom: 2px;
+    right: 4px;
+    font-size: 0.55rem;
+    font-weight: 800;
+    color: var(--vp-icon-color);
+    pointer-events: none;
+    line-height: 1;
+}
+
 
 /* === Progress Bar === */
 .vp-progress-container {

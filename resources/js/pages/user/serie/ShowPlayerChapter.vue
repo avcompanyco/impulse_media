@@ -70,22 +70,6 @@ const handleVideoEnded = () => {
         :headerTitle="`${chapter.title} - ${serie.title} - ${$page.props.name || 'Impulsemedia'}`">
         <template #main-content>
             <div style="margin-bottom: 80px;">
-                <!-- Clickable Creator Details Card (A3) -->
-                <div class="creator-card-container" v-if="serie.user">
-                    <div class="creator-card" @click="router.visit(ShowCreatorProfileController({ user: serie.user.username }))">
-                        <img :src="serie.user.image_url || '/images/default-avatar.png'" alt="Creator Avatar" class="creator-avatar">
-                        <div class="creator-info">
-                            <span class="creator-name">{{ serie.user.name }}</span>
-                            <span class="creator-handle">@{{ serie.user.username }}</span>
-                        </div>
-                        <div class="divider-dot"></div>
-                        <div class="content-meta">
-                            <span class="content-title">{{ chapter.title }} ({{ serie.title }})</span>
-                            <span class="content-tag">Episode</span>
-                        </div>
-                    </div>
-                </div>
-
                 <VideoPlayer
                     :video-src="chapter.chapter_video_url"
                     :title="serie.title"
@@ -116,6 +100,22 @@ const handleVideoEnded = () => {
                         </button>
                     </template>
                 </VideoPlayer>
+
+                <!-- Clickable Creator Details Card (A3) below the video player -->
+                <div class="creator-card-container" v-if="serie.user">
+                    <div class="creator-card" @click="router.visit(ShowCreatorProfileController({ user: serie.user.username }))">
+                        <img :src="serie.user.image_url || '/images/default-avatar.png'" alt="Creator Avatar" class="creator-avatar">
+                        <div class="creator-info">
+                            <span class="creator-name">{{ serie.user.name }}</span>
+                            <span class="creator-handle">@{{ serie.user.username }}</span>
+                        </div>
+                        <div class="divider-dot"></div>
+                        <div class="content-meta">
+                            <span class="content-title">{{ chapter.title }} ({{ serie.title }})</span>
+                            <span class="content-tag">Episode</span>
+                        </div>
+                    </div>
+                </div>
             </div>
             <br />
         </template>
@@ -124,6 +124,7 @@ const handleVideoEnded = () => {
 
 <style scoped>
 .creator-card-container {
+    margin-top: 1.5rem;
     margin-bottom: 1.5rem;
 }
 

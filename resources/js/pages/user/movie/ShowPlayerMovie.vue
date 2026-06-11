@@ -20,22 +20,6 @@ const props = defineProps<{
         :title="`${movie.title} - ${$page.props.name || 'Impulsemedia'}`" 
         :headerTitle="`${movie.title} - ${$page.props.name || 'Impulsemedia'}`">
         <div>
-            <!-- Clickable Creator Details Card (A3) -->
-            <div class="creator-card-container" v-if="movie.user">
-                <div class="creator-card" @click="router.visit(ShowCreatorProfileController({ user: movie.user.username }))">
-                    <img :src="movie.user.image_url || '/images/default-avatar.png'" alt="Creator Avatar" class="creator-avatar">
-                    <div class="creator-info">
-                        <span class="creator-name">{{ movie.user.name }}</span>
-                        <span class="creator-handle">@{{ movie.user.username }}</span>
-                    </div>
-                    <div class="divider-dot"></div>
-                    <div class="content-meta">
-                        <span class="content-title">{{ movie.title }}</span>
-                        <span class="content-tag">Movie</span>
-                    </div>
-                </div>
-            </div>
-
             <VideoPlayer
                 :video-src="movie.movie_video_url"
                 :title="movie.title || 'Video'"
@@ -57,12 +41,29 @@ const props = defineProps<{
                     </Link>
                 </template>
             </VideoPlayer>
+
+            <!-- Clickable Creator Details Card (A3) below the video player -->
+            <div class="creator-card-container" v-if="movie.user">
+                <div class="creator-card" @click="router.visit(ShowCreatorProfileController({ user: movie.user.username }))">
+                    <img :src="movie.user.image_url || '/images/default-avatar.png'" alt="Creator Avatar" class="creator-avatar">
+                    <div class="creator-info">
+                        <span class="creator-name">{{ movie.user.name }}</span>
+                        <span class="creator-handle">@{{ movie.user.username }}</span>
+                    </div>
+                    <div class="divider-dot"></div>
+                    <div class="content-meta">
+                        <span class="content-title">{{ movie.title }}</span>
+                        <span class="content-tag">Movie</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </UserDashboardLayout>
 </template>
 
 <style scoped>
 .creator-card-container {
+    margin-top: 1.5rem;
     margin-bottom: 1.5rem;
 }
 

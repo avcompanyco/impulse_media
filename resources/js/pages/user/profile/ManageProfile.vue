@@ -121,17 +121,17 @@ function handleChangePicture(event: Event) {
                 </div>
 
                 <div v-if="user.is_creator" class="form-group-custom">
-                    <label for="payoutMethod" class="form-label-custom">Preferred Payout Method / Método de Retiro</label>
+                    <label for="payoutMethod" class="form-label-custom">Preferred Payout Method</label>
                     <select class="form-control-custom" id="payoutMethod" name="payout_method" v-model="payout_method" style="background-color: #1a1a24; color: #fff;">
                         <option value="paypal">PayPal</option>
-                        <option value="bank_transfer">Bank Transfer / Transferencia Bancaria</option>
+                        <option value="bank_transfer">Bank Transfer</option>
                     </select>
                     <ErrorLabel :message="errors.payout_method" />
                 </div>
 
                 <div v-if="user.is_creator" class="form-group-custom">
                     <label for="payoutDetails" class="form-label-custom">
-                        {{ payout_method === 'paypal' ? 'PayPal Email Address / Correo de PayPal' : 'Bank Transfer Details / Detalles de Cuenta Bancaria' }}
+                        {{ payout_method === 'paypal' ? 'PayPal Email Address' : 'Bank Transfer Details' }}
                     </label>
                     <textarea class="form-control-custom" id="payoutDetails" name="payout_details"
                         :placeholder="payout_method === 'paypal' 

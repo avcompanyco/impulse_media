@@ -2,7 +2,7 @@
 import { computed, ref, watch, onMounted } from 'vue';
 import UserDashboardLayout from '@/layouts/UserDashboardLayout.vue';
 import ErrorLabel from '@/components/form/ErrorLabel.vue';
-import { Form, router } from '@inertiajs/vue3';
+import { Form, router, usePage } from '@inertiajs/vue3';
 import UploadTrailerSerieForm from './partials/UploadTrailerSerieForm.vue';
 import UploadVerticalImageSerieForm from './partials/UploadVerticalImageSerieForm.vue';
 import UploadHorizontalImageSerieForm from './partials/UploadHorizontalImageSerieForm.vue';
@@ -129,6 +129,13 @@ function getSeasonsWithDelay(delay = 1000) {
     }, delay);
 }
 
+watch(allowMembership, (newVal) => {
+    if (!newVal) {
+        if (Number(ppvPrice.value) === 0) {
+            ppvPrice.value = Number(usePage().props.min_ppv_price || 0.99);
+        }
+    }
+});
 </script>
 
 <template>
@@ -180,15 +187,15 @@ function getSeasonsWithDelay(delay = 1000) {
 
                 <!-- Monetization Options -->
                 <div class="form-section">
-                    <label class="form-label">Monetization Option / Opción de Monetización</label>
+                    <label class="form-label">Monetization Option</label>
                     <div class="monetization-options-group">
                         <label class="monetization-option-card" :class="{ active: allowMembership }">
                             <input type="radio" :value="true" v-model="allowMembership" class="sr-only">
                             <div class="option-card-content">
                                 <div class="option-icon"><i class="fa-solid fa-crown text-accent"></i></div>
                                 <div class="option-details">
-                                    <span class="option-title">Subscription / Suscripción (Option 1)</span>
-                                    <p class="option-desc">Available to members. Non-members can purchase via PPV. / Disponible para miembros. No miembros pueden comprarlo via PPV.</p>
+                                    <span class="option-title">Subscription (Option 1)</span>
+                                    <p class="option-desc">Available to members. Non-members can purchase via PPV.</p>
                                 </div>
                             </div>
                         </label>
@@ -197,8 +204,8 @@ function getSeasonsWithDelay(delay = 1000) {
                             <div class="option-card-content">
                                 <div class="option-icon"><i class="fa-solid fa-ticket text-accent"></i></div>
                                 <div class="option-details">
-                                    <span class="option-title">PPV Only / Solo PPV (Option 2)</span>
-                                    <p class="option-desc">All users must purchase this video individually to watch. / Todos los usuarios deben comprar este video individualmente para verlo.</p>
+                                    <span class="option-title">PPV Only (Option 2)</span>
+                                    <p class="option-desc">All users must purchase this video individually to watch.</p>
                                 </div>
                             </div>
                         </label>
@@ -207,9 +214,26 @@ function getSeasonsWithDelay(delay = 1000) {
                 </div>
 
                 <div class="form-section">
-                    <label for="ppvPriceInput" class="form-label">PPV Price ($) / Precio PPV ($)</label>
-                    <input name="ppv_price" type="number" step="0.01" min="0" id="ppvPriceInput" class="form-control" v-model="ppvPrice" placeholder="0.00 (Free / Gratis)">
-                    <span class="form-help">Enter 0 to make it free, or set a price (Minimum is ${{ Number($page.props.min_ppv_price || 0.99).toFixed(2) }}). / Ingrese 0 para hacerlo gratis, o fije un precio (Mínimo es ${{ Number($page.props.min_ppv_price || 0.99).toFixed(2) }}).</span>
+                    <label for="ppvPriceInput" class="form-label">
+                        {{ allowMembership ? 'PPV Price for Non-Members ($)' : 'PPV Price ($)' }}
+                    </label>
+                    <input 
+                        name="ppv_price" 
+                        type="number" 
+                        step="0.01" 
+                        :min="allowMembership ? 0 : ($page.props.min_ppv_price || 0.99)" 
+                        id="ppvPriceInput" 
+                        class="form-control" 
+                        v-model="ppvPrice" 
+                        :placeholder="allowMembership ? '0.00 (Free for everyone)' : 'Enter price'"
+                        :required="!allowMembership"
+                    >
+                    <span class="form-help">
+                        {{ allowMembership 
+                            ? `Enter 0 to make it free for everyone, or set a PPV price for non-members (Minimum is $${Number($page.props.min_ppv_price || 0.99).toFixed(2)}).` 
+                            : `All users must pay this price to watch this content. Minimum price is $${Number($page.props.min_ppv_price || 0.99).toFixed(2)}.` 
+                        }}
+                    </span>
                     <ErrorLabel :message="errors.ppv_price" />
                 </div>
             </Form>
@@ -359,8 +383,8 @@ input[type="file"] { display: none; }
 }
 
 .monetization-option-card {
-    background: var(--input-bg);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 12px;
     padding: 1rem;
     cursor: pointer;
@@ -370,12 +394,13 @@ input[type="file"] { display: none; }
 
 .monetization-option-card:hover {
     background: rgba(255, 255, 255, 0.08);
-    border-color: var(--primary-color);
+    border-color: rgba(232, 68, 90, 0.5);
 }
 
 .monetization-option-card.active {
-    background: rgba(232, 68, 90, 0.08);
+    background: rgba(232, 68, 90, 0.12);
     border-color: var(--primary-color);
+    box-shadow: 0 0 0 1px var(--primary-color);
 }
 
 .option-card-content {

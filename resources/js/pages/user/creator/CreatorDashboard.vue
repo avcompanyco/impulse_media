@@ -280,7 +280,7 @@ function getStatusBadgeClass(status: string) {
 
                             <div class="form-group">
                                 <label class="form-label">
-                                    {{ payoutForm.payout_method === 'paypal' ? 'PayPal Email Address / Correo de PayPal' : 'Bank Transfer Details / Detalles de Cuenta Bancaria' }}
+                                    {{ payoutForm.payout_method === 'paypal' ? 'PayPal Email Address' : 'Bank Transfer Details' }}
                                 </label>
                                 <textarea 
                                     v-model="payoutForm.payout_details" 

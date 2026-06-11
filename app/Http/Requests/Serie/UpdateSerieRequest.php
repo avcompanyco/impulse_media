@@ -33,8 +33,15 @@ class UpdateSerieRequest extends FormRequest
                 'numeric',
                 function ($attribute, $value, $fail) use ($minPpvPrice) {
                     $val = (float)$value;
-                    if ($val !== 0.00 && $val < $minPpvPrice) {
-                        $fail(__('The price must be either 0 (free) or at least $' . number_format($minPpvPrice, 2)));
+                    $allowMembership = (bool)$this->input('allow_membership');
+                    if (!$allowMembership) {
+                        if ($val < $minPpvPrice) {
+                            $fail(__('PPV Only content must have a price of at least $' . number_format($minPpvPrice, 2)));
+                        }
+                    } else {
+                        if ($val !== 0.00 && $val < $minPpvPrice) {
+                            $fail(__('The price must be either 0 (free) or at least $' . number_format($minPpvPrice, 2)));
+                        }
                     }
                 }
             ],

@@ -30,6 +30,7 @@ interface Settings {
     min_payout_threshold: number;
     membership_discount_rate: number;
     min_ppv_price: number;
+    free_preview_seconds: number;
 }
 
 interface PlatformStats {
@@ -52,6 +53,7 @@ const settingsForm = useForm({
     min_payout_threshold: props.settings.min_payout_threshold,
     membership_discount_rate: props.settings.membership_discount_rate,
     min_ppv_price: props.settings.min_ppv_price,
+    free_preview_seconds: props.settings.free_preview_seconds,
 });
 
 const isSavingSettings = ref(false);
@@ -408,6 +410,20 @@ function getStatusBadgeClass(status: string) {
                                 >
                                 <span class="form-help">Minimum price creators are allowed to set for their paid videos. / Precio mínimo que los creadores pueden establecer para sus videos de pago.</span>
                                 <span v-if="settingsForm.errors.min_ppv_price" class="error-msg">{{ settingsForm.errors.min_ppv_price }}</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Free PPV Video Preview Limit (Seconds) / Límite de Vista Previa Gratuita de Video PPV (Segundos)</label>
+                                <input 
+                                    type="number" 
+                                    v-model="settingsForm.free_preview_seconds" 
+                                    class="form-control" 
+                                    min="1" 
+                                    step="1" 
+                                    required
+                                >
+                                <span class="form-help">Number of seconds a spectator is allowed to watch a PPV video before the paywall blocks it. (e.g. 300 for 5 minutes). / Número de segundos que un espectador puede ver un video PPV antes de que aparezca el muro de pago (ej. 300 para 5 minutos).</span>
+                                <span v-if="settingsForm.errors.free_preview_seconds" class="error-msg">{{ settingsForm.errors.free_preview_seconds }}</span>
                             </div>
 
                             <button type="submit" class="submit-btn" :disabled="isSavingSettings">

@@ -32,6 +32,7 @@ class AdminPayoutController extends Controller
             'min_payout_threshold' => (float)Setting::get('min_payout_threshold', 50.00),
             'membership_discount_rate' => (float)Setting::get('membership_discount_rate', 10),
             'min_ppv_price' => (float)Setting::get('min_ppv_price', 0.99),
+            'free_preview_seconds' => (int)Setting::get('free_preview_seconds', 300),
         ];
 
         // Platform Accounting Stats

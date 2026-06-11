@@ -14,6 +14,7 @@ const props = defineProps<{
     rawPpvPrice: number;
     isMember: boolean;
     allowMembership: boolean;
+    freePreviewSeconds: number;
 }>();
 
 const goToSerie = () => {
@@ -83,6 +84,7 @@ const handleVideoEnded = () => {
                     :raw-ppv-price="rawPpvPrice"
                     :is-member="isMember"
                     :allow-membership="allowMembership"
+                    :free-preview-seconds="freePreviewSeconds"
                 >
                     <template #back-button>
                         <button @click="goToSerie" class="vp-back-btn" title="Volver a la serie">

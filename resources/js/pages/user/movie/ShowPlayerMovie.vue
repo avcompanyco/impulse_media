@@ -12,6 +12,7 @@ const props = defineProps<{
     rawPpvPrice: number;
     isMember: boolean;
     allowMembership: boolean;
+    freePreviewSeconds: number;
 }>();
 </script>
 
@@ -30,6 +31,7 @@ const props = defineProps<{
                 :raw-ppv-price="rawPpvPrice"
                 :is-member="isMember"
                 :allow-membership="allowMembership"
+                :free-preview-seconds="freePreviewSeconds"
             >
                 <template #back-button>
                     <Link 

@@ -68,6 +68,7 @@ class ShowPlayerMovieController extends Controller
             'rawPpvPrice' => $rawPpvPrice,
             'isMember' => $isMember,
             'allowMembership' => (bool)$content->allow_membership,
+            'freePreviewSeconds' => (int)Setting::get('free_preview_seconds', 300),
         ]);
     }
 }

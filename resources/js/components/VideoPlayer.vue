@@ -28,6 +28,7 @@ export interface VideoPlayerProps {
     rawPpvPrice?: number;
     isMember?: boolean;
     allowMembership?: boolean;
+    freePreviewSeconds?: number;
 }
 
 const props = withDefaults(defineProps<VideoPlayerProps>(), {
@@ -41,6 +42,7 @@ const props = withDefaults(defineProps<VideoPlayerProps>(), {
     rawPpvPrice: 0,
     isMember: false,
     allowMembership: false,
+    freePreviewSeconds: 300,
 });
 
 const emit = defineEmits<{
@@ -126,25 +128,25 @@ watch(isPlaying, (playing) => {
     }
 });
 
-// Enforce 5-minute preview limit (300 seconds - temporarily 3 seconds for testing)
+// Enforce dynamic preview limit (loaded from platform settings)
 watch(currentTime, (newVal) => {
-    if (!props.hasFullAccess && newVal >= 3) {
+    if (!props.hasFullAccess && newVal >= props.freePreviewSeconds) {
         pause();
         if (videoEl.value) {
-            videoEl.value.currentTime = 3;
+            videoEl.value.currentTime = props.freePreviewSeconds;
         }
-        currentTime.value = 3;
+        currentTime.value = props.freePreviewSeconds;
         stopHeartbeat();
     }
 });
 
 watch(isPlaying, (playing) => {
-    if (playing && !props.hasFullAccess && currentTime.value >= 3) {
+    if (playing && !props.hasFullAccess && currentTime.value >= props.freePreviewSeconds) {
         pause();
         if (videoEl.value) {
-            videoEl.value.currentTime = 3;
+            videoEl.value.currentTime = props.freePreviewSeconds;
         }
-        currentTime.value = 3;
+        currentTime.value = props.freePreviewSeconds;
     }
 });
 
@@ -337,9 +339,9 @@ function onPrerollComplete() {
             </div>
         </div>
 
-        <!-- 5-Minute Preview Paywall Overlay (B2 - temporarily 3 seconds for testing) -->
+        <!-- Dynamic Preview Paywall Overlay (B2) -->
         <div 
-            v-if="!hasFullAccess && currentTime >= 3"
+            v-if="!hasFullAccess && currentTime >= freePreviewSeconds"
             class="vp-paywall-overlay"
         >
             <div class="vp-paywall-content">

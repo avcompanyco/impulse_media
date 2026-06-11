@@ -55,6 +55,9 @@ watch(() => usePage().props, (newVal: any) => {
     }
 })
 
+const logout = () => {
+    router.post('/logout');
+};
 </script>
 
 <template>
@@ -104,6 +107,20 @@ watch(() => usePage().props, (newVal: any) => {
             <img :src="subscription.image_url" alt="User Avatar">
             <span>@{{ subscription.username }}</span>
             </Link>
+            
+            <div class="menu-section-title">Account</div>
+            <Link :href="profileRoute()" class="menu-item">
+            <div class="menu-profile-icon" style="display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                <i class="fa-solid fa-user-gear"></i>
+            </div>
+            <span>My Account</span>
+            </Link>
+            <button @click="logout" class="menu-item" style="width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-family: inherit;">
+            <div class="menu-profile-icon" style="display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                <i class="fa-solid fa-right-from-bracket text-accent"></i>
+            </div>
+            <span>Log Out</span>
+            </button>
         </div>
     </aside>
     <div class="app-wrapper">

@@ -53,8 +53,19 @@ class HandleInertiaRequests extends Middleware
             $_user = User::find(Auth::user()->id);
             $subscriptions = $_user->followings;
             $currentPlan = $_user->getCurrentPlan();
-            if ($currentPlan && $currentPlan->has_ads) {
-                $showAds = true;
+            
+            // Show ads to spectators on standard plans or with no plan (free/guest view)
+            if ($_user->user_type === \App\Enums\User\UserType::SPECTATOR) {
+                if (!$currentPlan || $currentPlan->has_ads) {
+                    $showAds = true;
+                }
+            } else {
+                if ($currentPlan && $currentPlan->has_ads) {
+                    $showAds = true;
+                }
+            }
+
+            if ($showAds) {
                 // Build flat list of ad items from all active campaigns for equal rotation
                 $campaigns = AdCampaign::active()->with('mediaItems')->inRandomOrder()->get();
                 foreach ($campaigns as $campaign) {

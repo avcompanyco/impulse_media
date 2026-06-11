@@ -111,7 +111,12 @@ watch(() => usePage().props, (newVal: any) => {
             <button class="hamburger-menu-btn" id="openMenuBtn" @click="openSideMenu">&#9776;</button>
             <img src="/images/logo.png" alt="Logo" class="logo-icon" style="margin: 0px;cursor: pointer;"
                 @click="router.visit(dashboardRoute())">
-            <div class="header-placeholder"></div>
+            <div class="header-right" style="width: 40px; display: flex; align-items: center; justify-content: flex-end;">
+                <Link v-if="$page.props.auth.user.is_creator" href="/creator/dashboard" class="header-creator-link" style="color: var(--text-light); font-size: 1.25rem;">
+                    <i class="fa-solid fa-chart-line text-accent"></i>
+                </Link>
+                <div v-else class="header-placeholder" style="width: 40px;"></div>
+            </div>
         </header>
     </div>
     <slot name="shorts-content" />

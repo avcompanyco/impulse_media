@@ -50,19 +50,24 @@ trait HasUpdateUser
             // Update user basic data
             $user->update($data);
 
+            // Sync roles based on user_type if it is being updated
+            if (isset($data['user_type'])) {
+                $userType = $data['user_type'];
+                $rolesToAssign = [];
+                if ($userType === 'spectator') {
+                    $rolesToAssign = ['spectator'];
+                } elseif ($userType === 'creator') {
+                    $rolesToAssign = ['user', 'creator'];
+                } elseif ($userType === 'admin') {
+                    $rolesToAssign = ['admin'];
+                }
+                $user->syncRoles($rolesToAssign);
+            }
+
             // Handle plan changes
             if ($oldPlanId !== $newPlanId) {
                 $this->updateUserPlan($user, $oldPlanId, $newPlanId, $trialDays);
             }
-
-            // // Sync roles if provided
-            // if (isset($data['roles'])) {
-            //     if (is_array($data['roles']) && !empty($data['roles'])) {
-            //         $user->syncRoles($data['roles']);
-            //     } else {
-            //         $user->syncRoles([]);
-            //     }
-            // }
 
             return $user;
         });

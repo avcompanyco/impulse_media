@@ -19,6 +19,7 @@ const form = useForm({
     status: 'active',
     plan_id: null as number | null,
     trial_days: 0,
+    user_type: 'spectator',
 });
 
 const submitForm = () => {
@@ -137,6 +138,15 @@ const closeModal = () => {
                                 </option>
                             </select>
                             <div v-if="form.errors.status" class="error-message">{{ form.errors.status }}</div>
+                        </div>
+                        <div class="form-group-custom">
+                            <label for="userType" class="form-label-custom">User Type</label>
+                            <select id="userType" class="form-control-custom" v-model="form.user_type" required>
+                                <option value="spectator">Spectator</option>
+                                <option value="creator">Creator</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                            <div v-if="form.errors.user_type" class="error-message">{{ form.errors.user_type }}</div>
                         </div>
                         <div class="form-group-custom full-width" v-if="form.plan_id">
                             <label for="freeTrial" class="form-label-custom">Free Trial Days</label>

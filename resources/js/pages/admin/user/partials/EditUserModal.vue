@@ -24,6 +24,7 @@ const form = useForm({
     status: 'active',
     plan_id: null as number | null,
     trial_days: null as number | null,
+    user_type: 'spectator',
 });
 
 // Watch for user prop changes to populate form
@@ -35,6 +36,7 @@ watch(() => props.user, (user) => {
         form.status = user.status;
         form.plan_id = user.plan_id || null;
         form.trial_days = user.trial_days ? Math.floor(user.trial_days) : null;
+        form.user_type = user.user_type;
         form.password = '';
         form.password_confirmation = '';
         isOpen.value = true;
@@ -163,6 +165,15 @@ defineExpose({
                                 </option>
                             </select>
                             <div v-if="form.errors.status" class="error-message">{{ form.errors.status }}</div>
+                        </div>
+                        <div class="form-group-custom">
+                            <label for="editUserType" class="form-label-custom">User Type</label>
+                            <select id="editUserType" class="form-control-custom" v-model="form.user_type" required>
+                                <option value="spectator">Spectator</option>
+                                <option value="creator">Creator</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                            <div v-if="form.errors.user_type" class="error-message">{{ form.errors.user_type }}</div>
                         </div>
                         <div class="form-group-custom full-width" v-if="form.plan_id">
                             <label for="editFreeTrial" class="form-label-custom">Trial Days Override</label>

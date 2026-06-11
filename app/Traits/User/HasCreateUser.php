@@ -25,9 +25,28 @@ trait HasCreateUser
             $roles = $data['roles'] ?? [];
             $trialDays = $data['trial_days'] ?? null;
             $planId = $data['plan_id'] ?? null;
+            $userType = $data['user_type'] ?? 'spectator';
 
             if (empty($roles)) {
-                $roles = ['user'];
+                if ($userType === 'spectator') {
+                    $roles = ['spectator'];
+                } elseif ($userType === 'creator') {
+                    $roles = ['user', 'creator'];
+                } elseif ($userType === 'admin') {
+                    $roles = ['admin'];
+                } else {
+                    $roles = ['spectator'];
+                }
+            }
+
+            if ($userType === 'creator' && !$planId) {
+                $defaultPlan = Plan::where('plan_type', 'creator')
+                    ->where('price', 0)
+                    ->active()
+                    ->first();
+                if ($defaultPlan) {
+                    $planId = $defaultPlan->id;
+                }
             }
 
             // Remove non-user fields

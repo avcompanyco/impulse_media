@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useForm, router, usePage } from '@inertiajs/vue3';
+import { useForm, router, usePage, Link } from '@inertiajs/vue3';
 import UserDashboardLayout from '@/layouts/UserDashboardLayout.vue';
+import MovieChannelController from '@/actions/App/Http/Controllers/Channel/MovieChannelController';
 
 interface Stats {
     lifetime_earnings: number;
@@ -131,11 +132,14 @@ function getStatusBadgeClass(status: string) {
     >
         <div class="creator-dashboard-container">
             <!-- Header -->
-            <div class="dashboard-header">
+            <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                 <div>
                     <h1 class="dashboard-title">Creator Hub</h1>
                     <p class="dashboard-subtitle">Manage your content pricing, watch analytics, and revenue earnings.</p>
                 </div>
+                <Link :href="MovieChannelController()" class="view-channel-btn">
+                    <i class="fa-solid fa-user"></i> View My Channel
+                </Link>
             </div>
 
             <!-- Stats Grid -->
@@ -992,5 +996,26 @@ select.form-control option {
 .receipt-download-link:hover {
     color: #60a5fa;
     text-decoration: underline;
+}
+
+.view-channel-btn {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.view-channel-btn:hover {
+    background-color: #d81b60;
+    transform: translateY(-1px);
 }
 </style>

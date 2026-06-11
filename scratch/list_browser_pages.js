@@ -1,9 +1,18 @@
+import fs from 'fs';
 import puppeteer from 'puppeteer-core';
 
 async function run() {
-    console.log('Connecting to existing browser...');
+    console.log('Reading DevToolsActivePort...');
+    const activePortContent = fs.readFileSync('/Users/antoniovarona/Library/Application Support/Google/Chrome/DevToolsActivePort', 'utf8');
+    const lines = activePortContent.trim().split('\n');
+    const port = lines[0].trim();
+    const path = lines[1].trim();
+    const wsUrl = `ws://127.0.0.1:${port}${path}`;
+    console.log(`Connecting to WS URL: ${wsUrl}`);
+
     const browser = await puppeteer.connect({
-        browserURL: 'http://127.0.0.1:9222'
+        browserWSEndpoint: wsUrl,
+        defaultViewport: null
     });
 
     console.log('Fetching open pages...');
@@ -20,3 +29,4 @@ async function run() {
 }
 
 run().catch(console.error);
+

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import UserDashboardLayout from '@/layouts/UserDashboardLayout.vue';
 import VideoPlayer from '@/components/VideoPlayer.vue';
 import ShowMovieController from '@/actions/App/Http/Controllers/Movie/ShowMovieController';
+import ShowCreatorProfileController from '@/actions/App/Http/Controllers/CreatorProfile/ShowCreatorProfileController';
 
 const props = defineProps<{
     movie: any;
@@ -27,6 +28,22 @@ const props = defineProps<{
                     >
                         ←
                     </Link>
+                </template>
+
+                <!-- Floating creator chip (top-right, shows/hides with controls) -->
+                <template #creator-chip>
+                    <div 
+                        v-if="movie.user"
+                        class="vp-creator-chip"
+                        @click.stop="router.visit(ShowCreatorProfileController({ user: movie.user.username }))"
+                    >
+                        <img :src="movie.user.image_url || '/images/default-avatar.png'" alt="" class="vp-chip-avatar">
+                        <div class="vp-chip-text">
+                            <span class="vp-chip-name">{{ movie.user.name }}</span>
+                            <span class="vp-chip-handle">@{{ movie.user.username }}</span>
+                        </div>
+                        <span class="vp-chip-tag">Trailer</span>
+                    </div>
                 </template>
             </VideoPlayer>
         </div>

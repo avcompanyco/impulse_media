@@ -29,7 +29,7 @@ class ShowPlayerTrailerMovieController extends Controller
                 })->inRandomOrder()->limit(20);
             }]);
         }, 'subcategory', 'user' => function ($query) {
-            $query->select('id', 'name', /*'username',*/ 'image');
+            $query->select('id', 'name', 'username', 'image');
         }]);
 
         return Inertia::render('user/movie/ShowPlayerTrailerMovie', [

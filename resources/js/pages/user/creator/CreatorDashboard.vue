@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useForm, router, usePage, Link } from '@inertiajs/vue3';
 import UserDashboardLayout from '@/layouts/UserDashboardLayout.vue';
 import MovieChannelController from '@/actions/App/Http/Controllers/Channel/MovieChannelController';
@@ -114,6 +114,48 @@ function saveContentPricing(itemId: number) {
 function formatDate(dateStr: string) {
     const d = new Date(dateStr);
     return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+// Search, Filter & Pagination
+const searchQuery = ref('');
+const filterType = ref('all');
+const currentPage = ref(1);
+const itemsPerPage = 5;
+
+const filteredContents = computed(() => {
+    return props.contents.filter((item: any) => {
+        const matchesSearch = item.title.toLowerCase().includes(searchQuery.value.toLowerCase());
+        const matchesType = filterType.value === 'all' || 
+                            (filterType.value === 'movie' && item.type === 'movie') ||
+                            (filterType.value === 'series' && item.type === 'series');
+        return matchesSearch && matchesType;
+    });
+});
+
+const paginatedContents = computed(() => {
+    const start = (currentPage.value - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    return filteredContents.value.slice(start, end);
+});
+
+const totalPages = computed(() => {
+    return Math.ceil(filteredContents.value.length / itemsPerPage) || 1;
+});
+
+watch([searchQuery, filterType], () => {
+    currentPage.value = 1;
+});
+
+function prevPage() {
+    if (currentPage.value > 1) {
+        currentPage.value--;
+    }
+}
+
+function nextPage() {
+    if (currentPage.value < totalPages.value) {
+        currentPage.value++;
+    }
 }
 
 function getStatusBadgeClass(status: string) {
@@ -308,14 +350,55 @@ function getStatusBadgeClass(status: string) {
                 <!-- Right Column: Content Listing & Pricing Toggles -->
                 <div class="layout-column">
                     <div class="dashboard-panel">
-                        <h3 class="panel-title"><i class="fa-solid fa-video text-accent"></i> Content Pricing & Performance</h3>
+                        <h3 class="panel-title" style="margin-bottom: 1.25rem;"><i class="fa-solid fa-video text-accent"></i> Content Pricing & Performance</h3>
+                        
+                        <!-- Search & Filter Controls -->
+                        <div class="list-controls-wrapper" style="margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+                            <div class="search-input-container" style="position: relative; width: 100%;">
+                                <i class="fa-solid fa-magnifying-glass search-icon" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #718096; font-size: 0.9rem;"></i>
+                                <input 
+                                    type="text" 
+                                    v-model="searchQuery" 
+                                    placeholder="Search by title..." 
+                                    class="form-control search-input" 
+                                    style="padding-left: 2.5rem; width: 100%; box-sizing: border-box;"
+                                >
+                            </div>
+                            <div class="filter-buttons-group" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                <button 
+                                    type="button" 
+                                    class="filter-pill-btn" 
+                                    :class="{ active: filterType === 'all' }"
+                                    @click="filterType = 'all'"
+                                >
+                                    All Content
+                                </button>
+                                <button 
+                                    type="button" 
+                                    class="filter-pill-btn" 
+                                    :class="{ active: filterType === 'movie' }"
+                                    @click="filterType = 'movie'"
+                                >
+                                    Movies
+                                </button>
+                                <button 
+                                    type="button" 
+                                    class="filter-pill-btn" 
+                                    :class="{ active: filterType === 'series' }"
+                                    @click="filterType = 'series'"
+                                >
+                                    Series
+                                </button>
+                            </div>
+                        </div>
+
                         <div class="content-list-container">
-                            <div v-if="contents.length === 0" class="empty-list-msg">
+                            <div v-if="filteredContents.length === 0" class="empty-list-msg">
                                 <i class="fa-solid fa-video-slash text-muted-icon"></i>
-                                <p>You haven't uploaded any content yet.</p>
+                                <p>{{ contents.length === 0 ? "You haven't uploaded any content yet." : "No content matches your search/filters." }}</p>
                             </div>
 
-                            <div v-for="item in contents" :key="item.id" class="content-item-row">
+                            <div v-for="item in paginatedContents" :key="item.id" class="content-item-row">
                                 <div class="item-meta-info">
                                     <span class="item-title">{{ item.title }}</span>
                                     <div class="item-badges">
@@ -381,6 +464,34 @@ function getStatusBadgeClass(status: string) {
                                         </button>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- Pagination Controls -->
+                        <div v-if="totalPages > 1" class="pagination-wrapper">
+                            <span class="pagination-info">
+                                Showing {{ (currentPage - 1) * itemsPerPage + 1 }} - {{ Math.min(currentPage * itemsPerPage, filteredContents.length) }} of {{ filteredContents.length }} contents
+                            </span>
+                            <div class="pagination-buttons">
+                                <button 
+                                    type="button" 
+                                    class="page-nav-btn" 
+                                    :disabled="currentPage === 1"
+                                    @click="prevPage"
+                                >
+                                    <i class="fa-solid fa-chevron-left"></i> Previous
+                                </button>
+                                <span class="page-current">
+                                    {{ currentPage }} / {{ totalPages }}
+                                </span>
+                                <button 
+                                    type="button" 
+                                    class="page-nav-btn" 
+                                    :disabled="currentPage === totalPages"
+                                    @click="nextPage"
+                                >
+                                    Next <i class="fa-solid fa-chevron-right"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1052,5 +1163,102 @@ select.form-control option {
     background-color: rgba(255, 255, 255, 0.1);
     border-color: var(--primary-color);
     transform: translateY(-1px);
+}
+
+/* Filter Buttons Styling */
+.filter-buttons-group {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.filter-pill-btn {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #cbd5e0;
+    padding: 0.5rem 1.25rem;
+    border-radius: 9999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    outline: none;
+}
+
+.filter-pill-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.filter-pill-btn.active {
+    background: linear-gradient(135deg, #e8445a 0%, #ff6b81 100%);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(232, 68, 90, 0.3);
+}
+
+/* Pagination Controls Styling */
+.pagination-wrapper {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.pagination-info {
+    font-size: 0.85rem;
+    color: #a0aec0;
+}
+
+.pagination-buttons {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.page-nav-btn {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #cbd5e0;
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.page-nav-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.page-nav-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.page-current {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #fff;
+    padding: 0.5rem 0.85rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    min-width: 3.5rem;
+    text-align: center;
 }
 </style>

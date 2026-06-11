@@ -7,6 +7,7 @@ import { dashboard as dashboardRoute } from '@/routes'
 import { show as profileRoute } from '@/routes/user/profile/index'
 
 import ShowWatchlistController from '@/actions/App/Http/Controllers/Watchlist/ShowWatchlistController';
+import ShowPurchasesController from '@/actions/App/Http/Controllers/Purchase/ShowPurchasesController';
 import ShowCategoryController from '@/actions/App/Http/Controllers/Category/ShowCategoryController';
 import ShowSubcategoryController from '@/actions/App/Http/Controllers/Subcategory/ShowSubcategoryController';
 import SearchController from '@/actions/App/Http/Controllers/SearchController';
@@ -75,6 +76,9 @@ watch(() => usePage().props, (newVal: any) => {
             </Link>
             <Link :href="ShowWatchlistController()" class="menu-item">
             <span>Watchlist</span>
+            </Link>
+            <Link :href="ShowPurchasesController()" class="menu-item" :class="{ active: $page.url === ShowPurchasesController.url() }">
+            <span>My Purchases</span>
             </Link>
             <div class="menu-section-title">Categories</div>
             <template v-for="(category, index) in $page.props.web_categories" :key="`web_category_${index}`">

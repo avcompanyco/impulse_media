@@ -43,6 +43,12 @@ class StorePayoutRequestController extends Controller
                 'payout_details' => $data['payout_details'],
             ]);
 
+            // Persist payout preferences on the user profile for future pre-fill
+            $user->update([
+                'payout_method' => $data['payout_method'],
+                'payout_details' => $data['payout_details'],
+            ]);
+
             return back()->with('success', __('Payout requested successfully.'));
         } catch (\Throwable $th) {
             return back()->withErrors(['amount' => $th->getMessage()]);

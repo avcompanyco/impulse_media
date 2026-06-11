@@ -258,6 +258,11 @@ Route::middleware('auth')->group(function () {
                 ->name('user.watchlist.delete');
         });
 
+        Route::prefix('purchases')->group(function () {
+            Route::get('/', \App\Http\Controllers\Purchase\ShowPurchasesController::class)
+                ->name('user.purchases.show');
+        });
+
         Route::prefix('upload')->group(function () {
             Route::get('/movie', \App\Http\Controllers\Movie\CreateMovieController::class)
                 ->name('user.upload.movie');

@@ -76,7 +76,7 @@ class PPVSuccessController extends Controller
                 'amount' => $creatorShare,
                 'source' => 'ppv_purchase',
                 'source_id' => $purchase->id,
-                'description' => "Pay-Per-View sale: " . ($content->contentable->title ?? 'Premium Content'),
+                'description' => "Pay-Per-View sale: " . ($content->contentable->title ?? 'Premium Content') . " (by @{$user->username})",
             ]);
 
             return redirect()->to($playerUrl)->with('success', 'Access unlocked successfully!');

@@ -32,25 +32,53 @@ class SubscriptionController extends Controller
             $user->createAsStripeCustomer();
         }
 
-        $subscription = $request->user()
-            ->newSubscription('default', $plan->stripe_price_id);
+        try {
+            $subscription = $request->user()
+                ->newSubscription('default', $plan->stripe_price_id);
 
-        // Add trial days if the plan has them
-        // Use trialUntil with endOfDay() so Stripe shows the exact number of trial days
-        // trialDays() counts from the exact timestamp, which loses partial days
-        if ($plan->free_days_trial > 0) {
-            $subscription->trialUntil(
-                now()->addDays($plan->free_days_trial)->endOfDay()
-            );
+            // Add trial days if the plan has them
+            // Use trialUntil with endOfDay() so Stripe shows the exact number of trial days
+            // trialDays() counts from the exact timestamp, which loses partial days
+            if ($plan->free_days_trial > 0) {
+                $subscription->trialUntil(
+                    now()->addDays($plan->free_days_trial)->endOfDay()
+                );
+            }
+
+            return $subscription
+                ->allowPromotionCodes()
+                ->checkout([
+                    'success_url' => route('subscription.success').'?session_id={CHECKOUT_SESSION_ID}',
+                    'cancel_url' => route('subscription.cancel'),
+                    'payment_method_types' => ['card'],
+                ]);
+        } catch (\Stripe\Exception\InvalidRequestException $e) {
+            if (str_contains($e->getMessage(), 'No such customer')) {
+                $user->stripe_id = null;
+                $user->save();
+
+                $user->createAsStripeCustomer();
+
+                $subscription = $request->user()
+                    ->newSubscription('default', $plan->stripe_price_id);
+
+                if ($plan->free_days_trial > 0) {
+                    $subscription->trialUntil(
+                        now()->addDays($plan->free_days_trial)->endOfDay()
+                    );
+                }
+
+                return $subscription
+                    ->allowPromotionCodes()
+                    ->checkout([
+                        'success_url' => route('subscription.success').'?session_id={CHECKOUT_SESSION_ID}',
+                        'cancel_url' => route('subscription.cancel'),
+                        'payment_method_types' => ['card'],
+                    ]);
+            }
+
+            throw $e;
         }
-
-        return $subscription
-            ->allowPromotionCodes()
-            ->checkout([
-                'success_url' => route('subscription.success').'?session_id={CHECKOUT_SESSION_ID}',
-                'cancel_url' => route('subscription.cancel'),
-                'payment_method_types' => ['card'],
-            ]);
     }
 
     public function success(Request $request)

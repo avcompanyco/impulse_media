@@ -49,11 +49,28 @@ class AdminPayoutController extends Controller
             'total_pending' => $totalPending,
         ];
 
+        $creatorStats = User::where('user_type', \App\Enums\User\UserType::CREATOR)
+            ->get()
+            ->map(function ($creator) {
+                return [
+                    'id' => $creator->id,
+                    'name' => $creator->name,
+                    'username' => $creator->username,
+                    'email' => $creator->email,
+                    'image_url' => $creator->image_url,
+                    'lifetime_earnings' => (float) $creator->lifetime_earnings,
+                    'balance' => (float) $creator->creator_balance,
+                    'total_paid' => (float) $creator->payouts()->where('status', 'approved')->sum('amount'),
+                    'total_pending' => (float) $creator->payouts()->where('status', 'pending')->sum('amount'),
+                ];
+            });
+
         return Inertia::render('admin/payouts/IndexPayouts', [
             'pendingPayouts' => $pendingPayouts,
             'payoutsHistory' => $payoutsHistory,
             'settings' => $settings,
             'platformStats' => $platformStats,
+            'creatorStats' => $creatorStats,
         ]);
     }
 }

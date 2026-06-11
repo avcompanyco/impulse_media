@@ -217,8 +217,10 @@ const spectatorPlans = computed(() => props.plans.filter(p => p.plan_type === 's
 }
 
 .plan-cards-container {
-    display: grid;
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     gap: 2rem;
     width: 100%;
     max-width: 1200px;
@@ -233,6 +235,8 @@ const spectatorPlans = computed(() => props.plans.filter(p => p.plan_type === 's
     display: flex;
     flex-direction: column;
     transition: all 0.3s ease;
+    width: 100%;
+    max-width: 350px;
 }
 
 .plan-card:hover {
@@ -337,7 +341,9 @@ const spectatorPlans = computed(() => props.plans.filter(p => p.plan_type === 's
     }
 
     .plan-cards-container {
-        grid-template-columns: repeat(2, 1fr);
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: stretch;
     }
 }
 
@@ -360,10 +366,6 @@ const spectatorPlans = computed(() => props.plans.filter(p => p.plan_type === 's
     .home-login-button {
         padding: 0.625rem 2.5rem;
         font-size: 1.1rem;
-    }
-
-    .plan-cards-container {
-        grid-template-columns: repeat(3, 1fr);
     }
 
     .plan-card {

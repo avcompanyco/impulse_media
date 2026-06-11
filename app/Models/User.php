@@ -42,6 +42,8 @@ class User extends Authenticatable
         'status',
         'user_type',
         'accepted_terms_at',
+        'payout_method',
+        'payout_details',
     ];
 
     /**

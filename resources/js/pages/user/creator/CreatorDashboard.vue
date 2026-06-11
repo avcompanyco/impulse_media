@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useForm, router } from '@inertiajs/vue3';
+import { useForm, router, usePage } from '@inertiajs/vue3';
 import UserDashboardLayout from '@/layouts/UserDashboardLayout.vue';
 
 interface Stats {
@@ -56,10 +56,11 @@ const props = defineProps<{
 }>();
 
 // Payout Form
+const user = usePage().props.auth.user as any;
 const payoutForm = useForm({
     amount: props.settings.min_payout_threshold,
-    payout_method: 'paypal',
-    payout_details: '',
+    payout_method: user.payout_method || 'paypal',
+    payout_details: user.payout_details || '',
 });
 
 const isSubmittingPayout = ref(false);
@@ -69,7 +70,9 @@ function submitPayoutRequest() {
     payoutForm.post('/creator/payout-request', {
         preserveScroll: true,
         onSuccess: () => {
-            payoutForm.reset('payout_details');
+            const updatedUser = usePage().props.auth.user as any;
+            payoutForm.payout_method = updatedUser.payout_method || 'paypal';
+            payoutForm.payout_details = updatedUser.payout_details || '';
             payoutForm.amount = props.settings.min_payout_threshold;
             isSubmittingPayout.value = false;
         },

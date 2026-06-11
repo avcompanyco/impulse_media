@@ -20,6 +20,8 @@ const username = ref(props.user.username);
 const email = ref(props.user.email);
 const bio = ref(props.user.bio || '');
 const external_link = ref(props.user.external_link || '');
+const payout_method = ref(props.user.payout_method || 'paypal');
+const payout_details = ref(props.user.payout_details || '');
 const password = ref('');
 const password_confirmation = ref('');
 
@@ -116,6 +118,23 @@ function handleChangePicture(event: Event) {
                         placeholder="https://yourwebsite.com" v-model="external_link">
                     <small class="form-text-sm">Link to your website or social media profile.</small>
                     <ErrorLabel :message="errors.external_link" />
+                </div>
+
+                <div v-if="user.is_creator" class="form-group-custom">
+                    <label for="payoutMethod" class="form-label-custom">Preferred Payout Method / Método de Retiro</label>
+                    <select class="form-control-custom" id="payoutMethod" name="payout_method" v-model="payout_method" style="background-color: #1a1a24; color: #fff;">
+                        <option value="paypal">PayPal</option>
+                        <option value="bank_transfer">Bank Transfer / Transferencia Bancaria</option>
+                    </select>
+                    <ErrorLabel :message="errors.payout_method" />
+                </div>
+
+                <div v-if="user.is_creator" class="form-group-custom">
+                    <label for="payoutDetails" class="form-label-custom">Payout Details / Detalles de Pago</label>
+                    <textarea class="form-control-custom" id="payoutDetails" name="payout_details"
+                        placeholder="Enter your PayPal email address or bank details (IBAN, Swift, Account number)..." v-model="payout_details" rows="3"></textarea>
+                    <small class="form-text-sm">Enter account numbers, PayPal address, bank name, IBAN or Swift codes.</small>
+                    <ErrorLabel :message="errors.payout_details" />
                 </div>
 
                 <div class="form-group-custom">

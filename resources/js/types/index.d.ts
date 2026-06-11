@@ -42,6 +42,10 @@ export interface User {
     content_count: number;
     is_following: boolean;
     is_followed: boolean;
+    is_creator?: boolean;
+    is_spectator?: boolean;
+    payout_method?: string | null;
+    payout_details?: string | null;
     plan?: Plan | null;
     plan_id?: number | null;
     trial_days?: number | null;

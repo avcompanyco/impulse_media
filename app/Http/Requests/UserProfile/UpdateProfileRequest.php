@@ -50,6 +50,8 @@ class UpdateProfileRequest extends FormRequest
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             'bio' => ['nullable', 'string', 'max:500'],
             'external_link' => ['nullable', 'string', 'max:255', 'url:http,https'],
+            'payout_method' => ['nullable', 'string', 'in:paypal,bank_transfer'],
+            'payout_details' => ['nullable', 'string', 'max:1000'],
         ];
     }
 

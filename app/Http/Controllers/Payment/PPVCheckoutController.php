@@ -47,15 +47,36 @@ class PPVCheckoutController extends Controller
             }
 
             // Create dynamic Checkout Charge session using Cashier
-            $checkout = $user->checkoutCharge(
-                $amountInCents,
-                "PPV Access: " . ($content->contentable->title ?? 'Premium Content'),
-                1,
-                [
-                    'success_url' => route('user.ppv.success') . '?session_id={CHECKOUT_SESSION_ID}&content_id=' . $content->id,
-                    'cancel_url' => url()->previous() ?: route('dashboard'),
-                ]
-            );
+            try {
+                $checkout = $user->checkoutCharge(
+                    $amountInCents,
+                    "PPV Access: " . ($content->contentable->title ?? 'Premium Content'),
+                    1,
+                    [
+                        'success_url' => route('user.ppv.success') . '?session_id={CHECKOUT_SESSION_ID}&content_id=' . $content->id,
+                        'cancel_url' => url()->previous() ?: route('dashboard'),
+                    ]
+                );
+            } catch (\Stripe\Exception\InvalidRequestException $e) {
+                if (str_contains($e->getMessage(), 'No such customer')) {
+                    $user->stripe_id = null;
+                    $user->save();
+
+                    $user->createAsStripeCustomer();
+
+                    $checkout = $user->checkoutCharge(
+                        $amountInCents,
+                        "PPV Access: " . ($content->contentable->title ?? 'Premium Content'),
+                        1,
+                        [
+                            'success_url' => route('user.ppv.success') . '?session_id={CHECKOUT_SESSION_ID}&content_id=' . $content->id,
+                            'cancel_url' => url()->previous() ?: route('dashboard'),
+                        ]
+                    );
+                } else {
+                    throw $e;
+                }
+            }
 
             // Inertia external redirect
             return Inertia::location($checkout->url);

@@ -17,8 +17,10 @@ class RegisterUserEventLogTest extends TestCase
     {
         parent::setUp();
         
-        // Create user role that's required for registration
+        // Create user roles required for registration
         Role::create(['name' => 'user', 'guard_name' => 'web']);
+        Role::create(['name' => 'spectator', 'guard_name' => 'web']);
+        Role::create(['name' => 'creator', 'guard_name' => 'web']);
     }
 
     public function test_user_registration_creates_binacle_event(): void
@@ -29,6 +31,8 @@ class RegisterUserEventLogTest extends TestCase
             'username' => 'johndoe',
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'user_type' => 'spectator',
+            'accept_terms' => true,
         ];
 
         $response = $this->post(route('register.user.store'), $userData);
@@ -61,6 +65,8 @@ class RegisterUserEventLogTest extends TestCase
             'username' => 'johndoe',
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'user_type' => 'spectator',
+            'accept_terms' => true,
         ];
 
         $response = $this->post(route('register.user.store'), $userData);

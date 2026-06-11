@@ -126,25 +126,25 @@ watch(isPlaying, (playing) => {
     }
 });
 
-// Enforce 5-minute preview limit (300 seconds)
+// Enforce 5-minute preview limit (300 seconds - temporarily 3 seconds for testing)
 watch(currentTime, (newVal) => {
-    if (!props.hasFullAccess && newVal >= 300) {
+    if (!props.hasFullAccess && newVal >= 3) {
         pause();
         if (videoEl.value) {
-            videoEl.value.currentTime = 300;
+            videoEl.value.currentTime = 3;
         }
-        currentTime.value = 300;
+        currentTime.value = 3;
         stopHeartbeat();
     }
 });
 
 watch(isPlaying, (playing) => {
-    if (playing && !props.hasFullAccess && currentTime.value >= 300) {
+    if (playing && !props.hasFullAccess && currentTime.value >= 3) {
         pause();
         if (videoEl.value) {
-            videoEl.value.currentTime = 300;
+            videoEl.value.currentTime = 3;
         }
-        currentTime.value = 300;
+        currentTime.value = 3;
     }
 });
 
@@ -337,9 +337,9 @@ function onPrerollComplete() {
             </div>
         </div>
 
-        <!-- 5-Minute Preview Paywall Overlay (B2) -->
+        <!-- 5-Minute Preview Paywall Overlay (B2 - temporarily 3 seconds for testing) -->
         <div 
-            v-if="!hasFullAccess && currentTime >= 300"
+            v-if="!hasFullAccess && currentTime >= 3"
             class="vp-paywall-overlay"
         >
             <div class="vp-paywall-content">

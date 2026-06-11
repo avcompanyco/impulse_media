@@ -129,6 +129,15 @@ watch(() => usePage().props, (newVal: any) => {
                                 Payouts & Monetization
                                 </a>
                             </li>
+                            <li class="nav-divider" style="height: 1px; background-color: var(--border-color); margin: 0.5rem 0;"></li>
+                            <li>
+                                <Link href="/" class="nav-link">
+                                <svg class="nav-icon-svg" viewBox="0 0 24 24">
+                                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                                </svg>
+                                Visit Website
+                                </Link>
+                            </li>
                         </ul>
                     </nav>
                 </aside>

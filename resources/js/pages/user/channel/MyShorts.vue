@@ -41,7 +41,12 @@ function goToSerieChannel() {
                     <p v-if="$page.props.auth.user.bio" class="channel-bio">{{ $page.props.auth.user.bio }}</p>
                     <a v-if="$page.props.auth.user.external_link" :href="$page.props.auth.user.external_link" target="_blank" rel="noopener noreferrer" class="channel-link">{{ $page.props.auth.user.external_link }}</a>
                 </div>
-                <button class="channel-action-btn edit" id="channelActionBtn" @click="goToProfile">Edit Profile</button>
+                <div class="channel-actions-wrapper" style="display: flex; gap: 0.75rem; margin-left: auto; flex-wrap: wrap;">
+                    <Link href="/creator/dashboard" class="channel-action-btn" style="margin-left: 0; background-color: var(--primary-color); text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+                        <i class="fa-solid fa-chart-line"></i> Dashboard
+                    </Link>
+                    <button class="channel-action-btn edit" id="channelActionBtn" @click="goToProfile" style="margin-left: 0;">Edit Profile</button>
+                </div>
             </div>
         </section>
 

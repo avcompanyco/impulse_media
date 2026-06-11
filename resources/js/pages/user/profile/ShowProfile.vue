@@ -61,6 +61,16 @@ function logout() {
                 </div>
             </section>
 
+            <section v-if="user.is_creator">
+                <h2 class="section-title">Creator Hub</h2>
+                <div class="info-card">
+                    <div>
+                        <p class="info-text">Access your content metrics, performance, earnings breakdown, and payments.</p>
+                    </div>
+                    <Link href="/creator/dashboard" class="manage-button">Go to Dashboard</Link>
+                </div>
+            </section>
+
             <section>
                 <button class="logout-button" @click="logout">
                     <i class="fa-solid fa-circle-notch fa-spin" v-if="isLoggingOut"></i>

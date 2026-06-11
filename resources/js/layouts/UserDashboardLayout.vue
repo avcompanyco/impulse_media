@@ -74,6 +74,12 @@ watch(() => usePage().props, (newVal: any) => {
             <img :src="$page.props.auth.user.image_url" alt="My Channel" class="menu-profile-icon">
             <span>My Channel</span>
             </Link>
+            <Link v-if="$page.props.auth.user.is_creator" href="/creator/dashboard" class="menu-item">
+            <div class="menu-profile-icon" style="display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                <i class="fa-solid fa-chart-line text-accent"></i>
+            </div>
+            <span>Creator Dashboard</span>
+            </Link>
             <Link :href="ShowWatchlistController()" class="menu-item">
             <span>Watchlist</span>
             </Link>

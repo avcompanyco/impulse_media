@@ -30,7 +30,7 @@ const props = defineProps<{
                     <Link href="/creator/dashboard" class="action-btn-primary">
                         <i class="fa-solid fa-chart-line"></i> Creator Dashboard
                     </Link>
-                    <Link href="/user/upload/movie" class="action-btn-secondary">
+                    <Link href="/upload/movie" class="action-btn-secondary">
                         <i class="fa-solid fa-cloud-arrow-up"></i> Upload Media
                     </Link>
                 </div>

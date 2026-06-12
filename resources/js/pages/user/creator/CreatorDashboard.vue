@@ -181,7 +181,7 @@ function getStatusBadgeClass(status: string) {
                     <p class="dashboard-subtitle">Manage your content pricing, watch analytics, and revenue earnings.</p>
                 </div>
                 <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-                    <Link href="/user/upload/movie" class="upload-content-btn">
+                    <Link href="/upload/movie" class="upload-content-btn">
                         <i class="fa-solid fa-cloud-arrow-up"></i> Upload Content
                     </Link>
                     <Link :href="MovieChannelController()" class="view-channel-btn">

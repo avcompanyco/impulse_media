@@ -16,7 +16,7 @@ class S3UrlService
      * @param string $disk The disk name
      * @return string|null
      */
-    public static function temporaryUrl(string $path, string $disk = null): ?string
+    public static function temporaryUrl(string $path, ?string $disk = null): ?string
     {
         if (!$path) {
             return null;
@@ -47,7 +47,7 @@ class S3UrlService
      * @param string $path
      * @param string $disk
      */
-    public static function forgetUrl(string $path, string $disk = null): void
+    public static function forgetUrl(string $path, ?string $disk = null): void
     {
         $disk = $disk ?: getDisk();
         $cacheKey = 's3_url_' . md5($path . $disk);

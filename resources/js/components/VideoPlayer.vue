@@ -29,6 +29,7 @@ export interface VideoPlayerProps {
     isMember?: boolean;
     allowMembership?: boolean;
     freePreviewSeconds?: number;
+    isTrailer?: boolean;
 }
 
 const props = withDefaults(defineProps<VideoPlayerProps>(), {
@@ -43,6 +44,7 @@ const props = withDefaults(defineProps<VideoPlayerProps>(), {
     isMember: false,
     allowMembership: false,
     freePreviewSeconds: 300,
+    isTrailer: false,
 });
 
 const emit = defineEmits<{
@@ -130,6 +132,15 @@ watch(isPlaying, (playing) => {
 
 // Enforce dynamic preview limit (loaded from platform settings)
 watch(currentTime, (newVal) => {
+    if (props.isTrailer && newVal >= 60) {
+        pause();
+        if (videoEl.value) {
+            videoEl.value.currentTime = 60;
+        }
+        currentTime.value = 60;
+        stopHeartbeat();
+        return;
+    }
     if (!props.hasFullAccess && newVal >= props.freePreviewSeconds) {
         pause();
         if (videoEl.value) {

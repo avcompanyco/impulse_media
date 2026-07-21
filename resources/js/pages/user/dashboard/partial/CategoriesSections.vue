@@ -29,9 +29,15 @@ function hasMoviesOrSeries(category: any) {
                 <div v-for="(movie, index) in mergeInRandomOrderMoviesAndSeries(category)"
                     :key="`movie_${movie.id}_card_${index + 1}`" class="movie-card">
                     <Link v-if="movie.movie_video" :href="ShowMovieController.url(movie)">
+                        <div v-if="movie.content" class="card-ppv-badge" :class="{ 'ppv-paid': !movie.content.allow_membership || Number(movie.content.ppv_price) > 0 }">
+                            {{ (!movie.content.allow_membership || Number(movie.content.ppv_price) > 0) ? `PPV $${Number(movie.content.ppv_price).toFixed(2)}` : 'INCLUDED' }}
+                        </div>
                         <img :src="movie.vertical_image_url" alt="Movie Poster" loading="lazy">
                     </Link>
                     <Link v-else :href="ShowSerieController.url(movie)">
+                        <div v-if="movie.content" class="card-ppv-badge" :class="{ 'ppv-paid': !movie.content.allow_membership || Number(movie.content.ppv_price) > 0 }">
+                            {{ (!movie.content.allow_membership || Number(movie.content.ppv_price) > 0) ? `PPV $${Number(movie.content.ppv_price).toFixed(2)}` : 'INCLUDED' }}
+                        </div>
                         <img :src="movie.vertical_image_url" alt="Movie Poster" loading="lazy">
                     </Link>
                 </div>
@@ -285,5 +291,28 @@ function hasMoviesOrSeries(category: any) {
     .slider-arrow.next {
         right: -80px;
     }
+}
+
+.card-ppv-badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: rgba(0, 0, 0, 0.75);
+    color: #48bb78;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 6px;
+    z-index: 10;
+    backdrop-filter: blur(4px);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border: 1px solid rgba(72, 187, 120, 0.3);
+}
+
+.card-ppv-badge.ppv-paid {
+    background: rgba(232, 68, 90, 0.85);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.4);
 }
 </style>

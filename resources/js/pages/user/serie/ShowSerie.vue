@@ -153,6 +153,16 @@ onMounted(async () => {
                         </template>
                     </div>
                     <div class="action-buttons-group">
+                        <button v-if="serie.trailer_video_url" class="trailer-button-inline" @click="playTrailerSerie">
+                            <i class="fa-solid fa-film"></i> Trailer
+                        </button>
+                        <button 
+                            v-if="serie.content && (!serie.content.allow_membership || Number(serie.content.ppv_price) > 0)" 
+                            class="ppv-buy-button" 
+                            @click="router.post(`/ppv/checkout/${serie.content.id}`)"
+                        >
+                            <i class="fa-solid fa-ticket"></i> PPV ${{ Number(serie.content.ppv_price).toFixed(2) }}
+                        </button>
                         <button v-if="!serie.watchlist" class="watchlist-button" id="watchlistBtn" @click="addToWatchlist" :disabled="watchlistButtonLoading">
                             <i class="fa-solid fa-circle-notch fa-spin"
                                 v-if="watchlistButtonLoading"></i>
@@ -882,5 +892,43 @@ onMounted(async () => {
     .episode-thumbnail {
         aspect-ratio: 16/9;
     }
+}
+
+.trailer-button-inline {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 0.75rem 1.5rem;
+    border-radius: 24px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+}
+.trailer-button-inline:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.ppv-buy-button {
+    background: linear-gradient(135deg, #e8445a 0%, #d03050 100%);
+    color: #fff;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 24px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 15px rgba(232, 68, 90, 0.4);
+    transition: all 0.2s;
+}
+.ppv-buy-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(232, 68, 90, 0.6);
 }
 </style>

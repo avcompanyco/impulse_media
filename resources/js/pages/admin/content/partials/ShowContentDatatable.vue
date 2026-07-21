@@ -18,6 +18,7 @@ interface Content {
     url: string;
     type: string;
     status: string;
+    is_featured?: boolean;
     created_at: string;
     updated_at: string;
 }
@@ -72,6 +73,15 @@ const fetchContents = async () => {
         loading.value = false;
     }
     console.log(contents.value);
+};
+
+const toggleFeatured = (contentId: number) => {
+    router.put(`/admin/content/featured/${contentId}`, {}, {
+        preserveScroll: true,
+        onSuccess: () => {
+            fetchContents();
+        }
+    });
 };
 
 const handleSearch = (event: Event) => {
@@ -256,6 +266,14 @@ onMounted(() => {
                             </span>
                         </td>
                         <td class="action-buttons">
+                            <button 
+                                class="btn-icon featured-toggle-btn" 
+                                :class="{ 'is-featured': content.is_featured }" 
+                                @click="toggleFeatured(content.id)" 
+                                :title="content.is_featured ? 'Remove from Hero Carousel' : 'Feature in Hero Carousel'"
+                            >
+                                <i :class="content.is_featured ? 'fa-solid fa-star text-warning' : 'fa-regular fa-star'"></i>
+                            </button>
                             <TogglePauseBtn :content="content" @updated="fetchContents" />
                             <DeleteContentModal :content="content" @updated="fetchContents" />
                         </td>

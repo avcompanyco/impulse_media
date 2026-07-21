@@ -77,6 +77,7 @@ function submitPayoutRequest() {
             payoutForm.payout_details = updatedUser.payout_details || '';
             payoutForm.amount = props.settings.min_payout_threshold;
             isSubmittingPayout.value = false;
+            router.reload({ only: ['payouts', 'stats'] });
         },
         onError: () => {
             isSubmittingPayout.value = false;
@@ -107,6 +108,7 @@ function saveContentPricing(itemId: number) {
         preserveScroll: true,
         onSuccess: () => {
             activeEditingContent.value = null;
+            router.reload({ only: ['contents'] });
         }
     });
 }

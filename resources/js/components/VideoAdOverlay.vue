@@ -128,9 +128,15 @@ function onCustomVideoEnded() {
     canSkip.value = true;
 }
 
+const skipTimerSeconds = ref(15);
+
 function onCustomVideoTimeUpdate() {
-    if (customVideoRef.value && customVideoRef.value.currentTime >= 5) {
-        canSkip.value = true;
+    if (customVideoRef.value) {
+        const time = customVideoRef.value.currentTime;
+        skipTimerSeconds.value = Math.max(0, Math.ceil(15 - time));
+        if (time >= 15) {
+            canSkip.value = true;
+        }
     }
 }
 
@@ -203,6 +209,9 @@ defineExpose({ prerollComplete, isAdVisible, showAd });
                         </span>
                         <span class="ad-countdown" v-if="countdown > 0">
                             Resuming in {{ countdown }}s
+                        </span>
+                        <span v-if="currentAd.media_type === 'video' && !canSkip" class="ad-countdown">
+                            Skip ad in {{ skipTimerSeconds }}s
                         </span>
                         <button
                             v-if="currentAd.media_type === 'video' && canSkip"

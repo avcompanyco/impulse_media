@@ -26,6 +26,8 @@ Route::middleware('auth')->group(function () {
                 ->name('admin.content.pause');
             Route::put('/publish/{content}', \App\Http\Controllers\Content\PublishContentController::class)
                 ->name('admin.content.publish');
+            Route::put('/featured/{content}', \App\Http\Controllers\Content\ToggleFeaturedContentController::class)
+                ->name('admin.content.featured');
 
             Route::delete('/{content}/delete', \App\Http\Controllers\Content\DeleteContentController::class)
                 ->name('admin.content.delete');

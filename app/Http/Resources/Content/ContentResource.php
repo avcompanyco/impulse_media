@@ -29,6 +29,7 @@ class ContentResource extends JsonResource
             'url' => $this->contentable->url_path,
             'type' => $this->type_formatted,
             'status' => $this->status_formatted,
+            'is_featured' => (bool)$this->is_featured,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

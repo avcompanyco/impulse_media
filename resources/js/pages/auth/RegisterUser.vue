@@ -243,7 +243,7 @@ const stepTitle = computed(() => {
                             v-model="acceptedTerms"
                             :disabled="!termsScrolledToBottom"
                         >
-                        <span>I have read and accept the Terms & Conditions</span>
+                        <span>I have read and agree to the Terms of Service, End User License Agreement (EULA), and Content Monetization Rights Policy</span>
                     </label>
 
                     <p v-if="!termsScrolledToBottom" class="scroll-hint">

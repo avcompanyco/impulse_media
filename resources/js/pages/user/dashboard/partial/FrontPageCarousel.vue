@@ -154,6 +154,9 @@ function unfollowUser(userId: number) {
         <h1 class="movie-title">{{ currentContent.contentable.title }}</h1>
         <div class="content-meta">
             <span class="content-type-tag">{{ currentContent.type }}</span>
+            <span v-if="currentContent" class="ppv-carousel-badge" :class="{ 'ppv-paid': !currentContent.allow_membership || Number(currentContent.ppv_price) > 0 }">
+                {{ (!currentContent.allow_membership || Number(currentContent.ppv_price) > 0) ? `PPV $${Number(currentContent.ppv_price).toFixed(2)}` : 'Included with Membership' }}
+            </span>
         </div>
         <div class="button-group">
             <button 
@@ -412,5 +415,24 @@ function unfollowUser(userId: number) {
 }
 .action-button.secondary:hover {
     background: rgba(255,255,255,0.3);
+}
+
+.ppv-carousel-badge {
+    display: inline-block;
+    margin-left: 0.5rem;
+    background: rgba(72, 187, 120, 0.2);
+    color: #48bb78;
+    border: 1px solid rgba(72, 187, 120, 0.4);
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    vertical-align: middle;
+}
+
+.ppv-carousel-badge.ppv-paid {
+    background: rgba(232, 68, 90, 0.2);
+    color: #e8445a;
+    border-color: rgba(232, 68, 90, 0.4);
 }
 </style>

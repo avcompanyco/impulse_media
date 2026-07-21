@@ -22,6 +22,7 @@ class Content extends Model
         'views_count',
         'ppv_price',
         'allow_membership',
+        'is_featured',
     ];
 
     protected $casts = [
@@ -29,6 +30,7 @@ class Content extends Model
         'status' => ContentStatus::class,
         'ppv_price' => 'decimal:2',
         'allow_membership' => 'boolean',
+        'is_featured' => 'boolean',
     ];
 
     protected $appends = [

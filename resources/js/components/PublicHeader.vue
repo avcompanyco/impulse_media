@@ -10,7 +10,7 @@ const props = defineProps<{
 
 <template>
     <header class="public-header">
-        <Link href="/">
+        <Link :href="user ? '/dashboard' : '/'">
             <img src="/images/logo.png" alt="Logo" class="public-logo">
         </Link>
         <div class="public-header-actions">

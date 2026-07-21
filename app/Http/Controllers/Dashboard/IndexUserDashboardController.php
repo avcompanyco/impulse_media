@@ -7,6 +7,7 @@ use Inertia\Inertia;
 
 use App\Models\User;
 use App\Models\Movie;
+use App\Models\Serie;
 use App\Models\Content;
 use App\Models\Category;
 use App\Enums\Content\ContentType;

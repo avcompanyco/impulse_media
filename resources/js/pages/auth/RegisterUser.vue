@@ -476,8 +476,9 @@ const stepTitle = computed(() => {
 
 /* ─── Responsive ─── */
 @media (max-width: 600px) {
+    .register-container { padding: 1.5rem 1.25rem; width: 94%; max-width: 100%; box-sizing: border-box; }
     .type-selection { grid-template-columns: 1fr; gap: 1rem; }
-    .register-container--wide { max-width: 460px; }
+    .register-container--wide { max-width: 100%; }
     .register-title { font-size: 1.25rem; }
     .terms-scroll-container { max-height: 280px; }
 }

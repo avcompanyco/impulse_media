@@ -251,302 +251,300 @@ function getStatusBadgeClass(status: string) {
                 </div>
             </div>
 
-            <!-- Two Column Layout -->
+            <!-- Top Row: Request Payout & Content Pricing & Performance -->
             <div class="dashboard-layout">
-                <!-- Left Column: Payout Requests & Payout History -->
-                <div class="layout-column">
-                    <!-- Request Payout -->
-                    <div class="dashboard-panel">
-                        <h3 class="panel-title"><i class="fa-solid fa-money-bill-transfer text-accent"></i> Request Payout</h3>
-                        
-                        <div class="revenue-split-info-box" style="margin-bottom: 1.5rem; background: rgba(72, 187, 120, 0.05); border: 1px solid rgba(72, 187, 120, 0.15); border-radius: 12px; padding: 0.9rem; display: flex; align-items: flex-start; gap: 0.75rem;">
-                            <i class="fa-solid fa-circle-check text-success" style="font-size: 1.1rem; margin-top: 0.1rem;"></i>
-                            <p style="margin: 0; font-size: 0.85rem; color: #cbd5e0; line-height: 1.4;">
-                                You receive <strong>{{ settings.revenue_split_ratio }}%</strong> of all PPV sales and proportional membership views. The platform commission is only <strong>{{ 100 - settings.revenue_split_ratio }}%</strong>.
-                            </p>
-                        </div>
-                        
-                        <div v-if="stats.current_balance < settings.min_payout_threshold" class="threshold-alert">
-                            <i class="fa-solid fa-circle-info alert-icon"></i>
-                            <p>You need a minimum balance of <strong>${{ Number(settings.min_payout_threshold).toFixed(2) }}</strong> to request a payout. (Current: ${{ Number(stats.current_balance).toFixed(2) }})</p>
-                        </div>
-
-                        <form v-else @submit.prevent="submitPayoutRequest" class="payout-form">
-                            <div class="form-group">
-                                <label class="form-label">Withdrawal Amount ($)</label>
-                                <input 
-                                    type="number" 
-                                    v-model="payoutForm.amount" 
-                                    class="form-control" 
-                                    step="0.01" 
-                                    :min="settings.min_payout_threshold" 
-                                    :max="stats.current_balance"
-                                    required
-                                >
-                                <span class="form-help">Minimum: ${{ Number(settings.min_payout_threshold).toFixed(2) }} | Max: ${{ Number(stats.current_balance).toFixed(2) }}</span>
-                                <span v-if="payoutForm.errors.amount" class="error-msg">{{ payoutForm.errors.amount }}</span>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Payout Method</label>
-                                <select v-model="payoutForm.payout_method" class="form-control">
-                                    <option value="paypal">PayPal</option>
-                                    <option value="bank_transfer">Bank Transfer</option>
-                                </select>
-                                <span v-if="payoutForm.errors.payout_method" class="error-msg">{{ payoutForm.errors.payout_method }}</span>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">
-                                    {{ payoutForm.payout_method === 'paypal' ? 'PayPal Email Address' : 'Bank Transfer Details' }}
-                                </label>
-                                <textarea 
-                                    v-model="payoutForm.payout_details" 
-                                    class="form-control" 
-                                    rows="4" 
-                                    :placeholder="payoutForm.payout_method === 'paypal' 
-                                        ? 'Enter your PayPal email address (e.g., account@paypal.com)...' 
-                                        : 'Please enter all details:\n- Bank Name:\n- Account Holder Name:\n- IBAN / Account Number:\n- Swift / BIC Code:'"
-                                    required
-                                ></textarea>
-                                <span v-if="payoutForm.errors.payout_details" class="error-msg">{{ payoutForm.errors.payout_details }}</span>
-                            </div>
-
-                            <button type="submit" class="submit-btn" :disabled="isSubmittingPayout">
-                                <i class="fa-solid fa-circle-notch fa-spin" v-if="isSubmittingPayout"></i>
-                                Request Withdrawal
-                            </button>
-                        </form>
+                <!-- Request Payout Panel -->
+                <div class="dashboard-panel">
+                    <h3 class="panel-title"><i class="fa-solid fa-money-bill-transfer text-accent"></i> Request Payout</h3>
+                    
+                    <div class="revenue-split-info-box" style="margin-bottom: 1.5rem; background: rgba(72, 187, 120, 0.05); border: 1px solid rgba(72, 187, 120, 0.15); border-radius: 12px; padding: 0.9rem; display: flex; align-items: flex-start; gap: 0.75rem;">
+                        <i class="fa-solid fa-circle-check text-success" style="font-size: 1.1rem; margin-top: 0.1rem;"></i>
+                        <p style="margin: 0; font-size: 0.85rem; color: #cbd5e0; line-height: 1.4;">
+                            You receive <strong>{{ settings.revenue_split_ratio }}%</strong> of all PPV sales and proportional membership views. The platform commission is only <strong>{{ 100 - settings.revenue_split_ratio }}%</strong>.
+                        </p>
+                    </div>
+                    
+                    <div v-if="stats.current_balance < settings.min_payout_threshold" class="threshold-alert">
+                        <i class="fa-solid fa-circle-info alert-icon"></i>
+                        <p>You need a minimum balance of <strong>${{ Number(settings.min_payout_threshold).toFixed(2) }}</strong> to request a payout. (Current: ${{ Number(stats.current_balance).toFixed(2) }})</p>
                     </div>
 
-                    <!-- Payout History -->
-                    <div class="dashboard-panel">
-                        <h3 class="panel-title"><i class="fa-solid fa-history text-accent"></i> Payout History</h3>
-                        <div class="table-responsive">
-                            <table class="dashboard-table">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Amount</th>
-                                        <th>Method</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-if="payouts.length === 0">
-                                        <td colspan="4" class="empty-table-msg">No payout requests yet.</td>
-                                    </tr>
-                                    <tr v-for="payout in payouts" :key="payout.id">
-                                        <td>{{ formatDate(payout.created_at) }}</td>
-                                        <td class="font-bold">${{ Number(payout.amount).toFixed(2) }}</td>
-                                        <td class="text-capitalize">{{ payout.payout_method.replace('_', ' ') }}</td>
-                                        <td>
-                                            <span class="badge" :class="getStatusBadgeClass(payout.status)">
-                                                {{ payout.status }}
-                                            </span>
-                                            <div v-if="payout.status === 'rejected' && payout.rejection_reason" class="rejection-reason">
-                                                Reason: {{ payout.rejection_reason }}
-                                            </div>
-                                            <div v-if="payout.status === 'approved'" class="approved-details">
-                                                <div v-if="payout.transaction_reference" class="reference-text">
-                                                    Ref: {{ payout.transaction_reference }}
-                                                </div>
-                                                <div v-if="payout.receipt_url" class="receipt-link-container">
-                                                    <a :href="payout.receipt_url" target="_blank" class="receipt-download-link">
-                                                        <i class="fa-solid fa-file-invoice-dollar"></i> View Receipt
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                    <form v-else @submit.prevent="submitPayoutRequest" class="payout-form">
+                        <div class="form-group">
+                            <label class="form-label">Withdrawal Amount ($)</label>
+                            <input 
+                                type="number" 
+                                v-model="payoutForm.amount" 
+                                class="form-control" 
+                                step="0.01" 
+                                :min="settings.min_payout_threshold" 
+                                :max="stats.current_balance"
+                                required
+                            >
+                            <span class="form-help">Minimum: ${{ Number(settings.min_payout_threshold).toFixed(2) }} | Max: ${{ Number(stats.current_balance).toFixed(2) }}</span>
+                            <span v-if="payoutForm.errors.amount" class="error-msg">{{ payoutForm.errors.amount }}</span>
                         </div>
-                    </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Payout Method</label>
+                            <select v-model="payoutForm.payout_method" class="form-control">
+                                <option value="paypal">PayPal</option>
+                                <option value="bank_transfer">Bank Transfer</option>
+                            </select>
+                            <span v-if="payoutForm.errors.payout_method" class="error-msg">{{ payoutForm.errors.payout_method }}</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                {{ payoutForm.payout_method === 'paypal' ? 'PayPal Email Address' : 'Bank Transfer Details' }}
+                            </label>
+                            <textarea 
+                                v-model="payoutForm.payout_details" 
+                                class="form-control" 
+                                rows="4" 
+                                :placeholder="payoutForm.payout_method === 'paypal' 
+                                    ? 'Enter your PayPal email address (e.g., account@paypal.com)...' 
+                                    : 'Please enter all details:\n- Bank Name:\n- Account Holder Name:\n- IBAN / Account Number:\n- Swift / BIC Code:'"
+                                required
+                            ></textarea>
+                            <span v-if="payoutForm.errors.payout_details" class="error-msg">{{ payoutForm.errors.payout_details }}</span>
+                        </div>
+
+                        <button type="submit" class="submit-btn" :disabled="isSubmittingPayout">
+                            <i class="fa-solid fa-circle-notch fa-spin" v-if="isSubmittingPayout"></i>
+                            Request Withdrawal
+                        </button>
+                    </form>
                 </div>
 
-                <!-- Right Column: Content Listing & Pricing Toggles -->
-                <div class="layout-column">
-                    <div class="dashboard-panel">
-                        <h3 class="panel-title" style="margin-bottom: 1.25rem;"><i class="fa-solid fa-video text-accent"></i> Content Pricing & Performance</h3>
-                        
-                        <!-- Search & Filter Controls -->
-                        <div class="list-controls-wrapper" style="margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
-                            <div class="search-input-container" style="position: relative; width: 100%;">
-                                <i class="fa-solid fa-magnifying-glass search-icon" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #718096; font-size: 0.9rem;"></i>
-                                <input 
-                                    type="text" 
-                                    v-model="searchQuery" 
-                                    placeholder="Search by title..." 
-                                    class="form-control search-input" 
-                                    style="padding-left: 2.5rem; width: 100%; box-sizing: border-box;"
-                                >
-                            </div>
-                            <div class="filter-buttons-group" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                                <button 
-                                    type="button" 
-                                    class="filter-pill-btn" 
-                                    :class="{ active: filterType === 'all' }"
-                                    @click="filterType = 'all'"
-                                >
-                                    All Content
-                                </button>
-                                <button 
-                                    type="button" 
-                                    class="filter-pill-btn" 
-                                    :class="{ active: filterType === 'movie' }"
-                                    @click="filterType = 'movie'"
-                                >
-                                    Movies
-                                </button>
-                                <button 
-                                    type="button" 
-                                    class="filter-pill-btn" 
-                                    :class="{ active: filterType === 'series' }"
-                                    @click="filterType = 'series'"
-                                >
-                                    Series
-                                </button>
-                            </div>
+                <!-- Content Listing & Pricing Toggles -->
+                <div class="dashboard-panel">
+                    <h3 class="panel-title" style="margin-bottom: 1.25rem;"><i class="fa-solid fa-video text-accent"></i> Content Pricing & Performance</h3>
+                    
+                    <!-- Search & Filter Controls -->
+                    <div class="list-controls-wrapper" style="margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+                        <div class="search-input-container" style="position: relative; width: 100%;">
+                            <i class="fa-solid fa-magnifying-glass search-icon" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #718096; font-size: 0.9rem;"></i>
+                            <input 
+                                type="text" 
+                                v-model="searchQuery" 
+                                placeholder="Search by title..." 
+                                class="form-control search-input" 
+                                style="padding-left: 2.5rem; width: 100%; box-sizing: border-box;"
+                            >
+                        </div>
+                        <div class="filter-buttons-group" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <button 
+                                type="button" 
+                                class="filter-pill-btn" 
+                                :class="{ active: filterType === 'all' }"
+                                @click="filterType = 'all'"
+                            >
+                                All Content
+                            </button>
+                            <button 
+                                type="button" 
+                                class="filter-pill-btn" 
+                                :class="{ active: filterType === 'movie' }"
+                                @click="filterType = 'movie'"
+                            >
+                                Movies
+                            </button>
+                            <button 
+                                type="button" 
+                                class="filter-pill-btn" 
+                                :class="{ active: filterType === 'series' }"
+                                @click="filterType = 'series'"
+                            >
+                                Series
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="content-list-container">
+                        <div v-if="filteredContents.length === 0" class="empty-list-msg">
+                            <i class="fa-solid fa-video-slash text-muted-icon"></i>
+                            <p>{{ contents.length === 0 ? "You haven't uploaded any content yet." : "No content matches your search/filters." }}</p>
                         </div>
 
-                        <div class="content-list-container">
-                            <div v-if="filteredContents.length === 0" class="empty-list-msg">
-                                <i class="fa-solid fa-video-slash text-muted-icon"></i>
-                                <p>{{ contents.length === 0 ? "You haven't uploaded any content yet." : "No content matches your search/filters." }}</p>
+                        <div v-for="item in paginatedContents" :key="item.id" class="content-item-row">
+                            <div class="item-meta-info">
+                                <span class="item-title">{{ item.title }}</span>
+                                <div class="item-badges">
+                                    <span class="item-badge-type" :class="item.type">
+                                        {{ item.type }}
+                                    </span>
+                                    <span class="item-badge-stats">
+                                        <i class="fa-solid fa-eye"></i> {{ item.views_count }} views
+                                    </span>
+                                    <span class="item-badge-stats">
+                                        <i class="fa-solid fa-shopping-cart"></i> {{ item.sales_count }} sales
+                                    </span>
+                                    <span class="item-badge-stats font-bold text-success">
+                                        ${{ Number(item.revenue).toFixed(2) }} earned
+                                    </span>
+                                </div>
                             </div>
 
-                            <div v-for="item in paginatedContents" :key="item.id" class="content-item-row">
-                                <div class="item-meta-info">
-                                    <span class="item-title">{{ item.title }}</span>
-                                    <div class="item-badges">
-                                        <span class="item-badge-type" :class="item.type">
-                                            {{ item.type }}
-                                        </span>
-                                        <span class="item-badge-stats">
-                                            <i class="fa-solid fa-eye"></i> {{ item.views_count }} views
-                                        </span>
-                                        <span class="item-badge-stats">
-                                            <i class="fa-solid fa-shopping-cart"></i> {{ item.sales_count }} sales
-                                        </span>
-                                        <span class="item-badge-stats font-bold text-success">
-                                            ${{ Number(item.revenue).toFixed(2) }} earned
-                                        </span>
+                            <!-- Pricing Controls -->
+                            <div class="pricing-controls">
+                                <!-- Inline Edit Form -->
+                                <div v-if="activeEditingContent === item.id" class="inline-edit-box">
+                                    <div class="inline-inputs">
+                                        <div class="price-input-wrapper">
+                                            <span class="currency-symbol">$</span>
+                                            <input 
+                                                type="number" 
+                                                v-model="editPrice" 
+                                                class="form-control inline-price-input" 
+                                                step="0.01" 
+                                                min="0"
+                                                placeholder="0.00"
+                                            >
+                                        </div>
+                                        <label class="membership-checkbox-label">
+                                            <input type="checkbox" v-model="editAllowMembership">
+                                            <span>Allow Membership</span>
+                                        </label>
+                                    </div>
+                                    <div class="inline-actions">
+                                        <button class="icon-btn save-btn" title="Save" @click="saveContentPricing(item.id)">
+                                            <i class="fa-solid fa-check"></i>
+                                        </button>
+                                        <button class="icon-btn cancel-btn" title="Cancel" @click="cancelEditing">
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </button>
                                     </div>
                                 </div>
 
-                                <!-- Pricing Controls -->
-                                <div class="pricing-controls">
-                                    <!-- Inline Edit Form -->
-                                    <div v-if="activeEditingContent === item.id" class="inline-edit-box">
-                                        <div class="inline-inputs">
-                                            <div class="price-input-wrapper">
-                                                <span class="currency-symbol">$</span>
-                                                <input 
-                                                    type="number" 
-                                                    v-model="editPrice" 
-                                                    class="form-control inline-price-input" 
-                                                    step="0.01" 
-                                                    min="0"
-                                                    placeholder="0.00"
-                                                >
-                                            </div>
-                                            <label class="membership-checkbox-label">
-                                                <input type="checkbox" v-model="editAllowMembership">
-                                                <span>Allow Membership</span>
-                                            </label>
-                                        </div>
-                                        <div class="inline-actions">
-                                            <button class="icon-btn save-btn" title="Save" @click="saveContentPricing(item.id)">
-                                                <i class="fa-solid fa-check"></i>
-                                            </button>
-                                            <button class="icon-btn cancel-btn" title="Cancel" @click="cancelEditing">
-                                                <i class="fa-solid fa-xmark"></i>
-                                            </button>
-                                        </div>
+                                <!-- Read Only pricing -->
+                                <div v-else class="read-only-pricing">
+                                    <div class="pricing-labels">
+                                        <span class="price-display">
+                                            PPV Price: <strong>{{ item.ppv_price > 0 ? `$${Number(item.ppv_price).toFixed(2)}` : 'FREE' }}</strong>
+                                        </span>
+                                        <span class="membership-display" :class="{ allowed: item.allow_membership }">
+                                            <i :class="item.allow_membership ? 'fa-solid fa-circle-check text-success' : 'fa-solid fa-circle-xmark text-danger'"></i>
+                                            {{ item.allow_membership ? 'Member Access Allowed' : 'PPV Exclusive' }}
+                                        </span>
                                     </div>
-
-                                    <!-- Read Only pricing -->
-                                    <div v-else class="read-only-pricing">
-                                        <div class="pricing-labels">
-                                            <span class="price-display">
-                                                PPV Price: <strong>{{ item.ppv_price > 0 ? `$${Number(item.ppv_price).toFixed(2)}` : 'FREE' }}</strong>
-                                            </span>
-                                            <span class="membership-display" :class="{ allowed: item.allow_membership }">
-                                                <i :class="item.allow_membership ? 'fa-solid fa-circle-check text-success' : 'fa-solid fa-circle-xmark text-danger'"></i>
-                                                {{ item.allow_membership ? 'Member Access Allowed' : 'PPV Exclusive' }}
-                                            </span>
-                                        </div>
-                                        <div class="content-action-buttons">
-                                            <button class="edit-price-btn" @click="startEditing(item)">
-                                                <i class="fa-solid fa-pen"></i> Edit Pricing
-                                            </button>
-                                            <Link :href="getEditUrl(item)" class="edit-content-btn" title="Edit content details">
-                                                <i class="fa-solid fa-pen-to-square"></i> Edit Content
-                                            </Link>
-                                            <DeleteContentModal :content="item" @updated="refreshContents" />
-                                        </div>
+                                    <div class="content-action-buttons">
+                                        <button class="edit-price-btn" @click="startEditing(item)">
+                                            <i class="fa-solid fa-pen"></i> Edit Pricing
+                                        </button>
+                                        <Link :href="getEditUrl(item)" class="edit-content-btn" title="Edit content details">
+                                            <i class="fa-solid fa-pen-to-square"></i> Edit Content
+                                        </Link>
+                                        <DeleteContentModal :content="item" @updated="refreshContents" />
                                     </div>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Pagination Controls -->
-                        <div v-if="totalPages > 1" class="pagination-wrapper">
-                            <span class="pagination-info">
-                                Showing {{ (currentPage - 1) * itemsPerPage + 1 }} - {{ Math.min(currentPage * itemsPerPage, filteredContents.length) }} of {{ filteredContents.length }} contents
+                    <!-- Pagination Controls -->
+                    <div v-if="totalPages > 1" class="pagination-wrapper">
+                        <span class="pagination-info">
+                            Showing {{ (currentPage - 1) * itemsPerPage + 1 }} - {{ Math.min(currentPage * itemsPerPage, filteredContents.length) }} of {{ filteredContents.length }} contents
+                        </span>
+                        <div class="pagination-buttons">
+                            <button 
+                                type="button" 
+                                class="page-nav-btn" 
+                                :disabled="currentPage === 1"
+                                @click="prevPage"
+                            >
+                                <i class="fa-solid fa-chevron-left"></i> Previous
+                            </button>
+                            <span class="page-current">
+                                {{ currentPage }} / {{ totalPages }}
                             </span>
-                            <div class="pagination-buttons">
-                                <button 
-                                    type="button" 
-                                    class="page-nav-btn" 
-                                    :disabled="currentPage === 1"
-                                    @click="prevPage"
-                                >
-                                    <i class="fa-solid fa-chevron-left"></i> Previous
-                                </button>
-                                <span class="page-current">
-                                    {{ currentPage }} / {{ totalPages }}
-                                </span>
-                                <button 
-                                    type="button" 
-                                    class="page-nav-btn" 
-                                    :disabled="currentPage === totalPages"
-                                    @click="nextPage"
-                                >
-                                    Next <i class="fa-solid fa-chevron-right"></i>
-                                </button>
-                            </div>
+                            <button 
+                                type="button" 
+                                class="page-nav-btn" 
+                                :disabled="currentPage === totalPages"
+                                @click="nextPage"
+                            >
+                                Next <i class="fa-solid fa-chevron-right"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Recent Earnings Log (Bottom) -->
-            <div class="dashboard-panel full-width">
-                <h3 class="panel-title"><i class="fa-solid fa-receipt text-accent"></i> Recent Earnings Log</h3>
-                <div class="table-responsive">
-                    <table class="dashboard-table">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Source</th>
-                                <th>Description</th>
-                                <th>Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-if="earnings.length === 0">
-                                <td colspan="4" class="empty-table-msg">No earnings recorded yet.</td>
-                            </tr>
-                            <tr v-for="earning in earnings" :key="earning.id">
-                                <td>{{ formatDate(earning.created_at) }}</td>
-                                <td class="text-capitalize">{{ earning.source.replace('_', ' ') }}</td>
-                                <td>{{ earning.description }}</td>
-                                <td class="font-bold text-success">+${{ Number(earning.amount).toFixed(2) }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+            <!-- Bottom Row: Payout History & Recent Earnings Log Side-by-Side -->
+            <div class="dashboard-layout secondary-layout">
+                <!-- Payout History Panel -->
+                <div class="dashboard-panel">
+                    <h3 class="panel-title"><i class="fa-solid fa-history text-accent"></i> Payout History</h3>
+                    <div class="table-responsive">
+                        <table class="dashboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Method</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-if="payouts.length === 0">
+                                    <td colspan="4" class="empty-table-msg">No payout requests yet.</td>
+                                </tr>
+                                <tr v-for="payout in payouts" :key="payout.id">
+                                    <td>{{ formatDate(payout.created_at) }}</td>
+                                    <td class="font-bold">${{ Number(payout.amount).toFixed(2) }}</td>
+                                    <td class="text-capitalize">{{ payout.payout_method.replace('_', ' ') }}</td>
+                                    <td>
+                                        <span class="badge" :class="getStatusBadgeClass(payout.status)">
+                                            {{ payout.status }}
+                                        </span>
+                                        <div v-if="payout.status === 'rejected' && payout.rejection_reason" class="rejection-reason">
+                                            Reason: {{ payout.rejection_reason }}
+                                        </div>
+                                        <div v-if="payout.status === 'approved'" class="approved-details">
+                                            <div v-if="payout.transaction_reference" class="reference-text">
+                                                Ref: {{ payout.transaction_reference }}
+                                            </div>
+                                            <div v-if="payout.receipt_url" class="receipt-link-container">
+                                                <a :href="payout.receipt_url" target="_blank" class="receipt-download-link">
+                                                    <i class="fa-solid fa-file-invoice-dollar"></i> View Receipt
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Recent Earnings Log Panel -->
+                <div class="dashboard-panel">
+                    <h3 class="panel-title"><i class="fa-solid fa-receipt text-accent"></i> Recent Earnings Log</h3>
+                    <div class="table-responsive">
+                        <table class="dashboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Source</th>
+                                    <th>Description</th>
+                                    <th>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-if="earnings.length === 0">
+                                    <td colspan="4" class="empty-table-msg">No earnings recorded yet.</td>
+                                </tr>
+                                <tr v-for="earning in earnings" :key="earning.id">
+                                    <td>{{ formatDate(earning.created_at) }}</td>
+                                    <td class="text-capitalize">{{ earning.source.replace('_', ' ') }}</td>
+                                    <td>{{ earning.description }}</td>
+                                    <td class="font-bold text-success">+${{ Number(earning.amount).toFixed(2) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>

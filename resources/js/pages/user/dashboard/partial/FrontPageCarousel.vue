@@ -8,19 +8,18 @@ const isUserMember = computed(() => {
     return Boolean((page.props.auth as any)?.user?.is_member);
 });
 
-const isCurrentContentPaid = computed(() => {
+const isCurrentContentStrictPpv = computed(() => {
     if (!currentContent.value) return false;
     const price = Number(currentContent.value.ppv_price || 0);
     const allowMembership = Boolean(currentContent.value.allow_membership);
-    if (allowMembership && isUserMember.value) return false;
-    return price > 0 || !allowMembership;
+    return !allowMembership && price > 0;
 });
 
 const currentContentBadgeText = computed(() => {
     if (!currentContent.value) return '';
     const price = Number(currentContent.value.ppv_price || 0);
     const allowMembership = Boolean(currentContent.value.allow_membership);
-    if (allowMembership && (price <= 0 || isUserMember.value)) {
+    if (allowMembership) {
         return 'Included with Membership';
     }
     if (price > 0) {
@@ -181,7 +180,7 @@ function unfollowUser(userId: number) {
         <h1 class="movie-title">{{ currentContent.contentable.title }}</h1>
         <div class="content-meta">
             <span class="content-type-tag">{{ currentContent.type }}</span>
-            <span v-if="currentContent" class="ppv-carousel-badge" :class="{ 'ppv-paid': isCurrentContentPaid }">
+            <span v-if="currentContent" class="ppv-carousel-badge" :class="{ 'ppv-paid': isCurrentContentStrictPpv }">
                 {{ currentContentBadgeText }}
             </span>
         </div>

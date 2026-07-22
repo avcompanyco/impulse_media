@@ -790,6 +790,8 @@ select.form-control option {
 .table-responsive {
     width: 100%;
     overflow-x: auto;
+    max-height: 380px;
+    overflow-y: auto;
 }
 
 .dashboard-table {
@@ -867,6 +869,9 @@ select.form-control option {
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
+    max-height: 480px;
+    overflow-y: auto;
+    padding-right: 6px;
 }
 
 .empty-list-msg {

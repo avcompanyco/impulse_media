@@ -247,12 +247,12 @@ function copyClipboard(email: string) {
     </div>
 
     <!-- Pagination -->
-    <div v-if="pagination.total > 0" class="d-flex justify-content-between align-items-center mt-4">
-        <div class="text-muted">
+    <div v-if="pagination.total > 0" class="pagination-container">
+        <div class="pagination-info">
             Showing {{ pagination.from }} to {{ pagination.to }} of {{ pagination.total }} users
         </div>
         
-        <nav aria-label="User pagination">
+        <nav aria-label="User pagination" class="pagination-nav">
             <ul class="pagination mb-0">
                 <li class="page-item" :class="{ disabled: pagination.currentPage <= 1 || loading }">
                     <button 
@@ -480,5 +480,91 @@ function copyClipboard(email: string) {
 .status-inactive, .status-suspended, .status-banned {
     background: rgba(239, 68, 68, 0.15);
     color: #ef4444;
+}
+
+/* Pagination Dark Theme Responsive Styles */
+.pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.pagination-info {
+    color: #a0aec0;
+    font-size: 0.88rem;
+    font-weight: 500;
+}
+
+.pagination-nav .pagination {
+    display: flex;
+    gap: 5px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex-wrap: wrap;
+}
+
+.page-item {
+    display: inline-block;
+}
+
+.page-link {
+    background-color: var(--section-bg, #1a1a3a);
+    color: var(--text-light, #ffffff);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.page-link:hover:not(:disabled) {
+    background-color: var(--primary-color, #e8445a);
+    color: #ffffff;
+    border-color: var(--primary-color, #e8445a);
+}
+
+.page-item.active .page-link {
+    background-color: var(--primary-color, #e8445a);
+    color: #ffffff;
+    border-color: var(--primary-color, #e8445a);
+    font-weight: 700;
+}
+
+.page-item.disabled .page-link,
+.page-link:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+@media (max-width: 768px) {
+    .pagination-container {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 0.75rem;
+    }
+
+    .pagination-nav .pagination {
+        justify-content: center;
+    }
+
+    .page-link {
+        padding: 0.3rem 0.6rem;
+        font-size: 0.78rem;
+        border-radius: 6px;
+    }
+
+    .search-bar input[type="search"] {
+        min-width: 100% !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
 }
 </style>

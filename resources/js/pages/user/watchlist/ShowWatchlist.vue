@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, onMounted } from 'vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import UserDashboardLayout from '@/layouts/UserDashboardLayout.vue';
 
 import ShowMovieController from '@/actions/App/Http/Controllers/Movie/ShowMovieController';
@@ -11,53 +10,135 @@ const props = defineProps<{
     watchlist: any;
 }>();
 
+const page = usePage();
 
+function isUserMember() {
+    return Boolean((page.props.auth as any)?.user?.is_member);
+}
+
+function getBadgeText(content: any) {
+    if (!content) return '';
+    const price = Number(content.ppv_price || 0);
+    const allowMembership = Boolean(content.allow_membership);
+
+    if (allowMembership && (price <= 0 || isUserMember())) {
+        return 'INCLUDED';
+    }
+    if (price > 0) {
+        return `PPV $${price.toFixed(2)}`;
+    }
+    return 'INCLUDED';
+}
+
+function isPpvPaid(content: any) {
+    if (!content) return false;
+    const price = Number(content.ppv_price || 0);
+    const allowMembership = Boolean(content.allow_membership);
+
+    if (allowMembership && isUserMember()) {
+        return false;
+    }
+    return price > 0 || !allowMembership;
+}
+
+// Instant Smooth Scroll helper
+function scrollWatchlistRow(rowId: string, direction: 'left' | 'right') {
+    const container = document.getElementById(`watchlist-row-${rowId}`);
+    if (container) {
+        const scrollAmount = container.clientWidth * 0.75;
+        container.scrollBy({
+            left: direction === 'left' ? -scrollAmount : scrollAmount,
+            behavior: 'smooth'
+        });
+    }
+}
 </script>
+
 <template>
     <UserDashboardLayout 
         :title="`Watchlist - ${$page.props.name || 'Impulsemedia'}`" 
         :headerTitle="`Watchlist - ${$page.props.name || 'Impulsemedia'}`">
-        <h1 class="page-title">Watchlist</h1>
+        
+        <div class="watchlist-page-container">
+            <h1 class="page-title">My Watchlist</h1>
 
-        <template v-for="(content, categoryName) in watchlist" :key="`name_${content.category.id}`">
-            <div v-if="content.items.length > 0" class="movies-section" style="margin-bottom: 80px;">
-                <div class="section-header">
-                    <Link :href="ShowCategoryController({ category: content.category.id })" class="section-title">{{
-                    categoryName }}</Link>
-                </div>
-                <div class="movies-row">
-
-                    <div v-for="item in content.items" class="movie-card">
-                        <Link v-if="item.watchlistable.content.type == 'movies'"
-                            :href="ShowMovieController({ movie: item.watchlistable.id })">
-                        <img :src="item.watchlistable.vertical_image_url" alt="Movie Poster" />
-                        </Link>
-                        <Link v-if="item.watchlistable.content.type == 'series'"
-                            :href="ShowSerieController({ serie: item.watchlistable.id })">
-                        <img :src="item.watchlistable.vertical_image_url" alt="Serie Poster" />
+            <template v-for="(content, categoryName) in watchlist" :key="`name_${content.category?.id || categoryName}`">
+                <div v-if="content.items && content.items.length > 0" class="movies-section">
+                    <div class="section-header">
+                        <Link :href="ShowCategoryController({ category: content.category.id })" class="section-title">
+                            {{ categoryName }}
                         </Link>
                     </div>
+
+                    <div class="slider-wrapper">
+                        <!-- Native Instant SVG Arrow Left -->
+                        <button 
+                            type="button" 
+                            class="slider-arrow prev-arrow" 
+                            aria-label="Scroll left"
+                            @click="scrollWatchlistRow(String(content.category?.id || categoryName), 'left')"
+                        >
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M15 18l-6-6 6-6" />
+                            </svg>
+                        </button>
+
+                        <div :id="`watchlist-row-${content.category?.id || categoryName}`" class="movies-row">
+                            <div v-for="item in content.items" :key="`watchlist_item_${item.id}`" class="movie-card">
+                                <Link v-if="item.watchlistable?.content?.type == 'movies' || item.watchlistable?.duration !== undefined"
+                                    :href="ShowMovieController({ movie: item.watchlistable.id })">
+                                    <div v-if="item.watchlistable?.content" class="card-ppv-badge" :class="{ 'ppv-paid': isPpvPaid(item.watchlistable.content) }">
+                                        {{ getBadgeText(item.watchlistable.content) }}
+                                    </div>
+                                    <img :src="item.watchlistable.vertical_image_url || item.watchlistable.horizontal_image_url || '/images/default_poster.webp'" alt="Movie Poster" loading="lazy" />
+                                </Link>
+                                <Link v-else
+                                    :href="ShowSerieController({ serie: item.watchlistable.id })">
+                                    <div v-if="item.watchlistable?.content" class="card-ppv-badge" :class="{ 'ppv-paid': isPpvPaid(item.watchlistable.content) }">
+                                        {{ getBadgeText(item.watchlistable.content) }}
+                                    </div>
+                                    <img :src="item.watchlistable.vertical_image_url || item.watchlistable.horizontal_image_url || '/images/default_poster.webp'" alt="Serie Poster" loading="lazy" />
+                                </Link>
+                            </div>
+                        </div>
+
+                        <!-- Native Instant SVG Arrow Right -->
+                        <button 
+                            type="button" 
+                            class="slider-arrow next-arrow" 
+                            aria-label="Scroll right"
+                            @click="scrollWatchlistRow(String(content.category?.id || categoryName), 'right')"
+                        >
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 18l6-6-6-6" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
-            </div>
-            <br />
-        </template>
+            </template>
+        </div>
     </UserDashboardLayout>
 </template>
 
 <style scoped>
-/* Título de la página */
-.page-title {
-    font-size: 2rem;
-    font-weight: 600;
-    padding: 1rem;
-    margin: 1rem 0 0.5rem 0;
+.watchlist-page-container {
+    padding-bottom: 80px;
 }
 
-/* Secciones de películas (Estilo dashboard.html) */
+.page-title {
+    font-size: 2.25rem;
+    font-weight: 800;
+    margin: 1.5rem 1rem 2rem 1rem;
+    text-align: center;
+    background: linear-gradient(135deg, #ffffff 0%, #a0aec0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
 .movies-section {
     position: relative;
     padding: 0 1rem;
-    margin-bottom: 2rem;
+    margin-bottom: 2.5rem;
     overflow: visible;
 }
 
@@ -69,25 +150,34 @@ const props = defineProps<{
 }
 
 .section-title {
-    font-size: 1.75rem;
-    font-weight: 600;
-    margin-bottom: 0;
-    color: inherit;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #ffffff;
     text-decoration: none;
+    transition: color 0.2s;
+}
+
+.section-title:hover {
+    color: #e8445a;
+}
+
+.slider-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
 }
 
 .movies-row {
     position: relative;
     display: flex;
-    gap: 0.75rem;
+    gap: 1rem;
     overflow-x: auto;
-    padding: 1rem;
-    margin: -1rem;
+    padding: 0.5rem 0.25rem 1rem 0.25rem;
+    width: 100%;
     scroll-snap-type: x mandatory;
     -ms-overflow-style: none;
     scrollbar-width: none;
-    cursor: grab;
-    user-select: none;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
 }
@@ -96,21 +186,18 @@ const props = defineProps<{
     display: none;
 }
 
-.movies-row.grabbing {
-    cursor: grabbing;
-}
-
 .movie-card {
     flex: 0 0 auto;
-    width: 110px;
+    width: 130px;
     aspect-ratio: 2/3;
-    border-radius: 12px;
+    border-radius: 14px;
     overflow: hidden;
-    transition: all 0.3s var(--transition-bezier);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s;
     scroll-snap-align: start;
     position: relative;
     display: block;
     text-decoration: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .movie-card a {
@@ -123,124 +210,115 @@ const props = defineProps<{
     width: 100%;
     height: 100%;
     object-fit: cover;
+    transition: transform 0.3s ease;
 }
 
+.movie-card:hover {
+    transform: translateY(-5px) scale(1.04);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5);
+    z-index: 10;
+}
+
+.movie-card:hover img {
+    transform: scale(1.06);
+}
+
+/* Disney+ / Netflix Arrow Buttons */
 .slider-arrow {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    width: 40px;
-    height: 40px;
-    background: rgba(128, 128, 128, 0.3);
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
-    display: none;
+    background: rgba(15, 23, 42, 0.88);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+    display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    z-index: 99;
-    border: none;
-    color: white;
-    transition: all 0.2s ease;
+    z-index: 25;
+    transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+    opacity: 1;
 }
 
-.slider-arrow::after {
-    content: '›';
-    font-size: 28px;
-    font-weight: 400;
-    line-height: 1;
-}
-
-.slider-arrow.prev::after {
-    content: '‹';
+.slider-arrow svg {
+    display: block;
+    transition: transform 0.2s ease;
 }
 
 .slider-arrow:hover {
-    background: rgba(128, 128, 128, 0.5);
+    background: #e8445a;
+    border-color: #e8445a;
+    transform: translateY(-50%) scale(1.12);
+    box-shadow: 0 8px 20px rgba(232, 68, 90, 0.6);
 }
 
-/* Navegación Inferior (Estilo dashboard.html) */
-.bottom-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: var(--main-bg);
-    padding: 1rem;
-    display: flex;
-    justify-content: space-around;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    z-index: 1000;
+.prev-arrow {
+    left: -18px;
 }
 
-.nav-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    color: white;
-    text-decoration: none;
-    font-size: 0.8rem;
-    gap: 4px;
+.next-arrow {
+    right: -18px;
 }
 
-.nav-item.active {
-    color: var(--gradient-start);
+.card-ppv-badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: rgba(0, 0, 0, 0.75);
+    color: #48bb78;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 6px;
+    z-index: 10;
+    backdrop-filter: blur(4px);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border: 1px solid rgba(72, 187, 120, 0.3);
 }
 
-.nav-icon {
-    width: 24px;
-    height: 24px;
+.card-ppv-badge.ppv-paid {
+    background: rgba(232, 68, 90, 0.85);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.4);
 }
 
-/* Estilos Desktop (Estilo dashboard.html) */
 @media (min-width: 1200px) {
-    .app-wrapper {
-        max-width: 1600px;
-        margin: 0 auto;
-        padding: 0 4rem 80px;
-    }
-
-    .header {
-        justify-content: space-between;
-    }
-
-    .page-title {
-        font-size: 2.5rem;
-        padding: 1rem 0;
-    }
-
     .movies-section {
         padding: 0;
         margin: 0 60px 3rem;
     }
 
-    .movies-row {
-        padding: 2rem;
-        margin: -2rem;
-    }
-
     .movie-card {
-        width: 180px;
+        width: 185px;
     }
 
-    .movie-card:hover {
-        transform: scale(1.2);
-        z-index: 20;
+    .prev-arrow {
+        left: -24px;
     }
 
-    .movie-card:hover~.movie-card {
-        transform: translateX(30px);
+    .next-arrow {
+        right: -24px;
     }
+}
 
+@media (max-width: 768px) {
     .slider-arrow {
-        display: flex;
+        width: 36px;
+        height: 36px;
     }
 
-    .slider-arrow.prev {
-        left: -80px;
+    .prev-arrow {
+        left: -10px;
     }
 
-    .slider-arrow.next {
-        right: -80px;
+    .next-arrow {
+        right: -10px;
     }
 }
 </style>

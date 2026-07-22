@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('description');
 
             $table->string('movie_video'); // path to the movie video
-            $table->string('trailer_video'); // path to the trailer video
+            $table->string('trailer_video')->nullable(); // path to the trailer video
             $table->string('horizontal_image'); // path to the horizontal image
             $table->string('vertical_image'); // path to the vertical image
 

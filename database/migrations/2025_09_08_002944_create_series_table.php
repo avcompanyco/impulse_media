@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('description');
             $table->string('vertical_image');
             $table->string('horizontal_image');
-            $table->string('trailer_video');
+            $table->string('trailer_video')->nullable();
 
             $table->foreignId('user_id')
                 ->constrained('users');

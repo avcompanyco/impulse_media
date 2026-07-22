@@ -18,7 +18,6 @@ trait HasPublishMovie
         if (!$movie->title) $missing[] = 'Title';
         if (!$movie->description) $missing[] = 'Description';
         if (!$movie->movie_video) $missing[] = 'Movie Video';
-        if (!$movie->trailer_video) $missing[] = 'Trailer Video';
         if (!$movie->horizontal_image) $missing[] = 'Horizontal Image';
         if (!$movie->vertical_image) $missing[] = 'Vertical Image';
         if (!empty($missing)) {

@@ -46,9 +46,31 @@ function handleVideoChange(event: Event) {
     const target = event.target as HTMLInputElement;
     const file = target.files?.[0];
     if (file) {
+        validateAndUploadTrailer(file);
+    }
+}
+
+function validateAndUploadTrailer(file: File) {
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.src = URL.createObjectURL(file);
+    video.onloadedmetadata = () => {
+        URL.revokeObjectURL(video.src);
+        if (video.duration > 60.5) {
+            alert('El tráiler debe tener una duración máxima de 60 segundos. Por favor selecciona o recorta un video de 60 segundos o menos.');
+            selectedFile.value = null;
+            const input = document.getElementById('serieTrailerFile') as HTMLInputElement;
+            if (input) input.value = '';
+            return;
+        }
         selectedFile.value = file;
         uploadChunks(file);
-    }
+    };
+    video.onerror = () => {
+        // Fallback if metadata cannot be parsed directly
+        selectedFile.value = file;
+        uploadChunks(file);
+    };
 }
 
 function handleDrop(event: DragEvent) {
@@ -61,14 +83,13 @@ function handleDrop(event: DragEvent) {
     if (files && files.length > 0) {
         const file = files[0];
         if (file.type.startsWith('video/')) {
-            selectedFile.value = file;
             const input = document.getElementById('serieTrailerFile') as HTMLInputElement;
             if (input) {
                 const dt = new DataTransfer();
                 dt.items.add(file);
                 input.files = dt.files;
             }
-            uploadChunks(file);
+            validateAndUploadTrailer(file);
         }
     }
 }

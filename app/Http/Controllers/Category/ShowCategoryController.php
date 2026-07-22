@@ -11,7 +11,6 @@ use App\Models\Subcategory;
 use App\Models\Movie;
 use App\Models\Serie;
 use App\Enums\Content\ContentStatus;
-use App\Models\User;
 
 class ShowCategoryController extends Controller
 {
@@ -115,11 +114,42 @@ class ShowCategoryController extends Controller
                 ]);
             }
 
+            // Virtual Section 5: Documentary
+            if ($catKey === 'documentary' || $catKey === 'documentaries') {
+                $docCategory = Category::where('name', 'LIKE', '%documentar%')->first();
+                $docMovies = Movie::whereHas('content', fn($q) => $q->where('status', ContentStatus::PUBLISHED->value))
+                    ->when($docCategory, fn($q) => $q->where('category_id', $docCategory->id))
+                    ->with('content')->get()->values();
+
+                $docSeries = Serie::whereHas('content', fn($q) => $q->where('status', ContentStatus::PUBLISHED->value))
+                    ->when($docCategory, fn($q) => $q->where('category_id', $docCategory->id))
+                    ->with('content')->get()->values();
+
+                return Inertia::render('user/category/ShowCategory', [
+                    'category' => [
+                        'id' => 'documentary',
+                        'name' => 'Documentary',
+                    ],
+                    'subcategories' => [
+                        [
+                            'id' => 99905,
+                            'name' => 'Documentary Collection',
+                            'movies' => $docMovies,
+                            'series' => $docSeries,
+                        ]
+                    ],
+                ]);
+            }
+
             // Standard DB Category Lookup
             if (is_numeric($category)) {
-                $categoryModel = Category::findOrFail($category);
+                $categoryModel = Category::find($category);
             } else {
-                $categoryModel = Category::where('slug', $category)->orWhere('name', 'LIKE', $category)->firstOrFail();
+                $categoryModel = Category::where('slug', $category)->orWhere('name', 'LIKE', $category)->first();
+            }
+
+            if (!$categoryModel) {
+                return redirect()->route('dashboard');
             }
 
             $subcategories = Subcategory::where('category_id', $categoryModel->id)
@@ -127,24 +157,39 @@ class ShowCategoryController extends Controller
                     $query->whereHas('content', function ($query) {
                         $query->where('status', ContentStatus::PUBLISHED->value);
                     });
-                    $query->inRandomOrder()->limit(20);
                 }, 'series' => function ($query) {
                     $query->whereHas('content', function ($query) {
                         $query->where('status', ContentStatus::PUBLISHED->value);
                     });
-                    $query->inRandomOrder()->limit(20);
                 }])
                 ->get();
+
+            // If no subcategories exist for this category, create a default subcategory container
+            if ($subcategories->isEmpty()) {
+                $catMovies = Movie::where('category_id', $categoryModel->id)
+                    ->whereHas('content', fn($q) => $q->where('status', ContentStatus::PUBLISHED->value))
+                    ->with('content')->get();
+
+                $catSeries = Serie::where('category_id', $categoryModel->id)
+                    ->whereHas('content', fn($q) => $q->where('status', ContentStatus::PUBLISHED->value))
+                    ->with('content')->get();
+
+                $subcategories = collect([
+                    [
+                        'id' => $categoryModel->id,
+                        'name' => $categoryModel->name,
+                        'movies' => $catMovies,
+                        'series' => $catSeries,
+                    ]
+                ]);
+            }
 
             return Inertia::render('user/category/ShowCategory', [
                 'category' => $categoryModel,
                 'subcategories' => $subcategories,
             ]);
         } catch (\Throwable $th) {
-            return inertiaErrorHandler(
-                __("Error"),
-                $th->getMessage()
-            );
+            return redirect()->route('dashboard');
         }
     }
 

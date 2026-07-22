@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import ShowCategoryController from '@/actions/App/Http/Controllers/Category/ShowCategoryController';
 import ShowMovieController from '@/actions/App/Http/Controllers/Movie/ShowMovieController';
 import ShowSerieController from '@/actions/App/Http/Controllers/Serie/ShowSerieController';
 
@@ -12,17 +11,24 @@ const page = usePage();
 
 function getCategoryUrl(category: any) {
     if (typeof category === 'object' && category.id) {
+        if (category.id === 'popular') return '/category/popular';
+        if (category.id === 'pay_per_view') return '/category/pay_per_view';
+        if (category.id === 'all_movies') return '/movies';
+        if (category.id === 'all_series') return '/series';
+        if (category.id === 'documentary') return '/category/documentary';
         return `/category/${category.id}`;
     }
-    return ShowCategoryController(category);
+    return `/category/${category}`;
 }
 
-function mergeInRandomOrderMoviesAndSeries(category: any) {
-    return [...category.movies, ...category.series].sort(() => Math.random() - 0.5);
+function mergeMoviesAndSeries(category: any) {
+    const movies = category.movies || [];
+    const series = category.series || [];
+    return [...movies, ...series];
 }
 
 function hasMoviesOrSeries(category: any) {
-    return category.movies && (category.movies.length > 0 || category.series.length > 0);
+    return (category.movies && category.movies.length > 0) || (category.series && category.series.length > 0);
 }
 
 function isUserMember() {
@@ -64,19 +70,19 @@ function isPpvPaid(content: any) {
                 <Link :href="getCategoryUrl(category)" class="view-all-btn">View All</Link>
             </div>
             <div class="movies-row" data-slider="action">
-                <div v-for="(movie, index) in mergeInRandomOrderMoviesAndSeries(category)"
-                    :key="`movie_${movie.id}_card_${index + 1}`" class="movie-card">
-                    <Link v-if="movie.movie_video" :href="ShowMovieController.url(movie)">
-                        <div v-if="movie.content" class="card-ppv-badge" :class="{ 'ppv-paid': isPpvPaid(movie.content) }">
-                            {{ getBadgeText(movie.content) }}
+                <div v-for="(item, index) in mergeMoviesAndSeries(category)"
+                    :key="`content_${item.id}_card_${index + 1}`" class="movie-card">
+                    <Link v-if="item.movie_video || item.duration !== undefined || item.video_url !== undefined" :href="ShowMovieController.url(item)">
+                        <div v-if="item.content" class="card-ppv-badge" :class="{ 'ppv-paid': isPpvPaid(item.content) }">
+                            {{ getBadgeText(item.content) }}
                         </div>
-                        <img :src="movie.vertical_image_url" alt="Movie Poster" loading="lazy">
+                        <img :src="item.vertical_image_url || item.horizontal_image_url || '/images/default_poster.webp'" alt="Poster" loading="lazy">
                     </Link>
-                    <Link v-else :href="ShowSerieController.url(movie)">
-                        <div v-if="movie.content" class="card-ppv-badge" :class="{ 'ppv-paid': isPpvPaid(movie.content) }">
-                            {{ getBadgeText(movie.content) }}
+                    <Link v-else :href="ShowSerieController.url(item)">
+                        <div v-if="item.content" class="card-ppv-badge" :class="{ 'ppv-paid': isPpvPaid(item.content) }">
+                            {{ getBadgeText(item.content) }}
                         </div>
-                        <img :src="movie.vertical_image_url" alt="Movie Poster" loading="lazy">
+                        <img :src="item.vertical_image_url || item.horizontal_image_url || '/images/default_poster.webp'" alt="Poster" loading="lazy">
                     </Link>
                 </div>
             </div>
@@ -106,34 +112,39 @@ function isPpvPaid(content: any) {
     margin-bottom: 0;
     color: inherit;
     text-decoration: none;
+    transition: color 0.2s;
+}
+
+.section-title:hover {
+    color: #e8445a;
 }
 
 .view-all-btn {
     background-color: rgba(255, 255, 255, 0.1);
     color: var(--text-light);
     text-decoration: none;
-    padding: 0.25rem 0.75rem;
+    padding: 0.3rem 0.85rem;
     border-radius: 12px;
-    font-size: 0.8rem;
-    font-weight: 500;
-    transition: background-color 0.2s;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
 }
 
 .view-all-btn:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-    color: var(--text-light);
+    background-color: rgba(232, 68, 90, 0.8);
+    color: #ffffff;
 }
 
 .movies-row {
     position: relative;
     display: flex;
-    gap: 0.75rem;
+    gap: 0.85rem;
     overflow-x: auto;
-    padding: 1rem;
-    margin: -1rem;
+    padding: 0.5rem 0.5rem 1rem 0.5rem;
     scroll-snap-type: x mandatory;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+    -ms-overflow-style: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
     cursor: grab;
     user-select: none;
     scroll-behavior: smooth;
@@ -141,7 +152,12 @@ function isPpvPaid(content: any) {
 }
 
 .movies-row::-webkit-scrollbar {
-    display: none;
+    height: 6px;
+}
+
+.movies-row::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
 }
 
 .movies-row.grabbing {
@@ -150,11 +166,11 @@ function isPpvPaid(content: any) {
 
 .movie-card {
     flex: 0 0 auto;
-    width: 110px;
+    width: 125px;
     aspect-ratio: 2/3;
     border-radius: 12px;
     overflow: hidden;
-    transition: all 0.3s var(--transition-bezier);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s;
     scroll-snap-align: start;
     position: relative;
     display: block;
@@ -173,161 +189,21 @@ function isPpvPaid(content: any) {
     object-fit: cover;
 }
 
-/* Navigation Arrows Style */
-.slider-arrow {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 40px;
-    height: 40px;
-    background: rgba(128, 128, 128, 0.3);
-    border-radius: 50%;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 99;
-    border: none;
-    color: white;
-    transition: all 0.2s ease;
-    opacity: 0;
-}
-
-.slider-arrow::after {
-    content: '›';
-    font-size: 28px;
-    font-weight: 400;
-    line-height: 1;
-}
-
-.slider-arrow.prev::after {
-    content: '‹';
-}
-
-.slider-arrow:hover {
-    background: rgba(128, 128, 128, 0.5);
-}
-
-/* Bottom Navigation */
-.bottom-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: var(--main-bg);
-    padding: 1rem;
-    display: flex;
-    justify-content: space-around;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    z-index: 1000;
-}
-
-.nav-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    color: white;
-    text-decoration: none;
-    font-size: 0.8rem;
-    gap: 4px;
-    transition: all 0.3s var(--transition-bezier);
-}
-
-.nav-item.active {
-    color: var(--gradient-start);
-}
-
-.nav-icon {
-    width: 24px;
-    height: 24px;
+.movie-card:hover {
+    transform: translateY(-4px) scale(1.03);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    z-index: 10;
 }
 
 /* Desktop Styles */
 @media (min-width: 1200px) {
-    .app-wrapper {
-        max-width: 1600px;
-        margin: 0 auto;
-        padding: 0 4rem 80px;
-    }
-
-    .header {
-        justify-content: space-between;
-    }
-
-    .logo-icon {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-    }
-
-    .carousel-container {
-        padding: 0;
-    }
-
-    .carousel-content {
-        aspect-ratio: 21/9;
-    }
-
-    .mobile-image {
-        display: none;
-    }
-
-    .desktop-image {
-        display: block;
-    }
-
     .movies-section {
         padding: 0;
         margin: 0 60px 3rem;
     }
 
-    .movies-row {
-        padding: 2rem;
-        margin: -2rem;
-    }
-
     .movie-card {
         width: 180px;
-        transition: all 0.3s ease;
-        transform-origin: center center;
-    }
-
-    .movies-row:hover .movie-card {
-        transform-origin: center left;
-    }
-
-    .movie-card:hover {
-        transform: scale(1.2);
-        z-index: 20;
-    }
-
-    .movie-card:hover~.movie-card {
-        transform: translateX(30px);
-    }
-
-    .movies-row .movie-card:first-child {
-        transform-origin: left center;
-    }
-
-    .movies-row .movie-card:last-child {
-        transform-origin: right center;
-    }
-
-    .movie-title {
-        font-size: 2.5rem;
-        max-width: 800px;
-    }
-
-    .slider-arrow {
-        display: flex;
-    }
-
-    .slider-arrow.prev {
-        left: -80px;
-    }
-
-    .slider-arrow.next {
-        right: -80px;
     }
 }
 

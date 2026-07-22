@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Dashboard;
 use App\Http\Controllers\Controller;
 use Inertia\Inertia;
 
-use App\Models\User;
 use App\Models\Movie;
 use App\Models\Serie;
 use App\Models\Content;
@@ -17,7 +16,7 @@ class IndexUserDashboardController extends Controller
 {
     public function __invoke()
     {
-        // 1. Featured Pool for Carousel
+        // 1. Featured Pool for Carousel (Only Movies & Series)
         $featured = Content::whereIn('type', [ContentType::MOVIE, ContentType::SERIE])
             ->where('status', ContentStatus::PUBLISHED)
             ->where('is_featured', true)
@@ -42,21 +41,27 @@ class IndexUserDashboardController extends Controller
         // 2. Query All Published Movies & Series with Content
         $publishedMovies = Movie::whereHas('content', function ($q) {
             $q->where('status', ContentStatus::PUBLISHED);
-        })->with('content')->get();
+        })->with(['content', 'category'])->latest()->get();
 
         $publishedSeries = Serie::whereHas('content', function ($q) {
             $q->where('status', ContentStatus::PUBLISHED);
-        })->with('content')->get();
+        })->with(['content', 'category'])->latest()->get();
 
-        // Section A: Popular & New Releases
-        $popularMovies = $publishedMovies->sortByDesc(fn($m) => $m->content?->views_count ?? 0)->take(15)->values();
-        $popularSeries = $publishedSeries->sortByDesc(fn($s) => $s->content?->views_count ?? 0)->take(15)->values();
+        // Section 1: Popular & New Releases (Algorithm: Sorted by highest views_count & created_at)
+        $popularMovies = $publishedMovies->sortByDesc(fn($m) => ($m->content?->views_count ?? 0) * 1000 + ($m->content?->id ?? 0))->take(15)->values();
+        $popularSeries = $publishedSeries->sortByDesc(fn($s) => ($s->content?->views_count ?? 0) * 1000 + ($s->content?->id ?? 0))->take(15)->values();
 
-        // Section B: Pay Per View
+        // Section 2: Pay Per View (All content with ppv_price > 0 or allow_membership = false)
         $ppvMovies = $publishedMovies->filter(fn($m) => $m->content && (!$m->content->allow_membership || (float)$m->content->ppv_price > 0))->values();
         $ppvSeries = $publishedSeries->filter(fn($s) => $s->content && (!$s->content->allow_membership || (float)$s->content->ppv_price > 0))->values();
 
-        // Section C: All Categories from DB
+        // Section 3: Movies (ALL Movies regardless of free/paid/category)
+        $allMoviesSection = $publishedMovies->values();
+
+        // Section 4: TV Shows / Series (ALL Series regardless of free/paid/category)
+        $allSeriesSection = $publishedSeries->values();
+
+        // Section 5: Documentaries Category Lookup
         $allCategories = Category::with(['movies' => function ($query) {
             $query->whereHas('content', function ($query) {
                 $query->where('status', ContentStatus::PUBLISHED);
@@ -67,67 +72,64 @@ class IndexUserDashboardController extends Controller
             })->with('content');
         }])->get();
 
-        $moviesCategory = $allCategories->first(fn($c) => strtolower(trim($c->name)) === 'movies');
-        $seriesCategory = $allCategories->first(fn($c) => in_array(strtolower(trim($c->name)), ['series', 'tv shows', 'tv show']));
         $docsCategory = $allCategories->first(fn($c) => in_array(strtolower(trim($c->name)), ['documentaries', 'documentary', 'documentales']));
 
         $categories = collect();
 
-        // 1. Popular Section
-        if ($popularMovies->isNotEmpty() || $popularSeries->isNotEmpty()) {
-            $categories->push([
-                'id' => 'popular',
-                'name' => 'Popular & New Releases',
-                'movies' => $popularMovies,
-                'series' => $popularSeries,
-            ]);
-        }
+        // 1. Popular & New Releases
+        $categories->push([
+            'id' => 'popular',
+            'name' => 'Popular & New Releases',
+            'movies' => $popularMovies,
+            'series' => $popularSeries,
+        ]);
 
-        // 2. Pay Per View Section
-        if ($ppvMovies->isNotEmpty() || $ppvSeries->isNotEmpty()) {
-            $categories->push([
-                'id' => 'pay_per_view',
-                'name' => 'Pay Per View',
-                'movies' => $ppvMovies,
-                'series' => $ppvSeries,
-            ]);
-        }
+        // 2. Pay Per View
+        $categories->push([
+            'id' => 'pay_per_view',
+            'name' => 'Pay Per View',
+            'movies' => $ppvMovies,
+            'series' => $ppvSeries,
+        ]);
 
-        // 3. Movies Section
-        if ($moviesCategory) {
-            $categories->push($moviesCategory);
-        } else if ($publishedMovies->isNotEmpty()) {
-            $categories->push([
-                'id' => 'all_movies',
-                'name' => 'Movies',
-                'movies' => $publishedMovies,
-                'series' => collect(),
-            ]);
-        }
+        // 3. Movies (All Movies)
+        $categories->push([
+            'id' => 'all_movies',
+            'name' => 'Movies',
+            'movies' => $allMoviesSection,
+            'series' => collect(),
+        ]);
 
-        // 4. TV Shows / Series Section
-        if ($seriesCategory) {
-            $categories->push($seriesCategory);
-        } else if ($publishedSeries->isNotEmpty()) {
-            $categories->push([
-                'id' => 'all_series',
-                'name' => 'TV Shows',
-                'movies' => collect(),
-                'series' => $publishedSeries,
-            ]);
-        }
+        // 4. TV Shows (All Series)
+        $categories->push([
+            'id' => 'all_series',
+            'name' => 'TV Shows',
+            'movies' => collect(),
+            'series' => $allSeriesSection,
+        ]);
 
-        // 5. Documentaries Section
+        // 5. Documentaries
         if ($docsCategory) {
-            $categories->push($docsCategory);
+            $categories->push([
+                'id' => $docsCategory->id,
+                'name' => 'Documentary',
+                'movies' => $docsCategory->movies,
+                'series' => $docsCategory->series,
+            ]);
+        } else {
+            // Fallback filtering by category/subcategory name if DB model not found
+            $docMovies = $publishedMovies->filter(fn($m) => str_contains(strtolower($m->category?->name ?? ''), 'doc'))->values();
+            $docSeries = $publishedSeries->filter(fn($s) => str_contains(strtolower($s->category?->name ?? ''), 'doc'))->values();
+            
+            $categories->push([
+                'id' => 'documentary',
+                'name' => 'Documentary',
+                'movies' => $docMovies,
+                'series' => $docSeries,
+            ]);
         }
 
-        // 6. Remaining categories
-        $usedCategoryIds = array_filter([$moviesCategory?->id, $seriesCategory?->id, $docsCategory?->id]);
-        $remainingCategories = $allCategories->reject(fn($c) => in_array($c->id, $usedCategoryIds));
-        foreach ($remainingCategories as $cat) {
-            $categories->push($cat);
-        }
+        // NOTE: Per Mark's specification, NO extra categories (Sci-Fi, Adventure, etc.) below Documentary!
 
         return Inertia::render('user/dashboard/IndexUserDashboard', [
             'frontpage' => $frontpage,

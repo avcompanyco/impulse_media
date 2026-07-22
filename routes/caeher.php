@@ -172,6 +172,14 @@ Route::middleware('auth')->group(function () {
         Route::get('category/{category}', \App\Http\Controllers\Category\ShowCategoryController::class)
             ->name('category.show');
 
+        Route::get('movies', function () {
+            return app(\App\Http\Controllers\Category\ShowCategoryController::class)('movies');
+        })->name('movies.index');
+
+        Route::get('series', function () {
+            return app(\App\Http\Controllers\Category\ShowCategoryController::class)('series');
+        })->name('series.index');
+
         Route::get('subcategory/{subcategory}', \App\Http\Controllers\Subcategory\ShowSubcategoryController::class)
             ->name('subcategory.show');
 

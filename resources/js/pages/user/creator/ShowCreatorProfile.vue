@@ -522,8 +522,9 @@ function scrollCreatorRow(tab: 'movies' | 'series' | 'shorts', direction: 'left'
 }
 
 .movie-card.short-card-style {
-    aspect-ratio: 9/16;
-    width: 140px;
+    /* Identical sizing to movie cards */
+    width: 130px;
+    aspect-ratio: 2/3;
 }
 
 .movie-card a {

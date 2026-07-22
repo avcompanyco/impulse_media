@@ -10,14 +10,13 @@ const props = defineProps<{
 const videoRef = ref<HTMLVideoElement | null>(null);
 const isHovering = ref(false);
 const previewTimer = ref<ReturnType<typeof setTimeout> | null>(null);
-const PREVIEW_DURATION = 3000; // 3 segundos
+const PREVIEW_DURATION = 3000;
 
 const handleMouseEnter = () => {
     isHovering.value = true;
     if (videoRef.value) {
-        videoRef.value.play();
+        videoRef.value.play().catch(() => {});
         
-        // Configurar timer para pausar después de 3 segundos
         previewTimer.value = setTimeout(() => {
             if (videoRef.value && isHovering.value) {
                 videoRef.value.pause();
@@ -30,7 +29,6 @@ const handleMouseEnter = () => {
 const handleMouseLeave = () => {
     isHovering.value = false;
     
-    // Limpiar timer si existe
     if (previewTimer.value) {
         clearTimeout(previewTimer.value);
         previewTimer.value = null;
@@ -43,11 +41,9 @@ const handleMouseLeave = () => {
 };
 
 onUnmounted(() => {
-    // Limpiar timer al desmontar componente
     if (previewTimer.value) {
         clearTimeout(previewTimer.value);
     }
-    
     if (videoRef.value) {
         videoRef.value.pause();
     }
@@ -62,8 +58,10 @@ onUnmounted(() => {
                 :src="short.short_video_url" 
                 muted
                 loop
-                preload="metadata"
-                :class="{ 'video-preview': true, 'playing': isHovering }"
+                preload="auto"
+                playsinline
+                class="video-preview"
+                :class="{ 'playing': isHovering }"
             />
             <div class="video-overlay">
                 <div class="play-icon" v-if="!isHovering">
@@ -78,35 +76,13 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* Contenido del Canal */
-.channel-content {
-    padding: 0 1rem;
-}
-
-.content-grid {
-    display: none;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 1rem;
-}
-
-.content-grid.active {
-    display: grid;
-}
-
 .content-card {
     position: relative;
-    aspect-ratio: 2/3;
-    border-radius: 12px;
-    overflow: hidden;
-    background-color: #000;
-}
-
-.content-card img,
-.content-card video {
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    display: block;
+    border-radius: 14px;
+    overflow: hidden;
+    background-color: #000000;
 }
 
 .content-card a {
@@ -115,47 +91,55 @@ onUnmounted(() => {
     height: 100%;
 }
 
-.options-menu-btn {
+.video-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+.content-card:hover .video-preview {
+    transform: scale(1.06);
+}
+
+.video-overlay {
     position: absolute;
-    top: 8px;
-    right: 8px;
-    background: rgba(0, 0, 0, 0.6);
-    color: white;
-    border: none;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, transparent 60%);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 10px;
+    pointer-events: none;
+}
+
+.play-icon {
+    align-self: center;
+    margin-top: auto;
+    margin-bottom: auto;
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(6px);
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 10;
+    color: #ffffff;
+    font-size: 0.9rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.options-dropdown {
-    display: none;
-    position: absolute;
-    top: 40px;
-    right: 8px;
-    background-color: #333;
-    border-radius: 8px;
+.video-caption {
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.2;
     overflow: hidden;
-    z-index: 11;
-}
-
-.options-dropdown button {
-    display: block;
-    width: 100%;
-    background: none;
-    border: none;
-    color: white;
-    padding: 0.75rem 1.5rem;
-    text-align: left;
-    white-space: nowrap;
-    cursor: pointer;
-}
-
-.options-dropdown button:hover {
-    background-color: var(--primary-color);
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
 }
 </style>

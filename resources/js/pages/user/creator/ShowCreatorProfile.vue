@@ -282,7 +282,7 @@ function scrollCreatorRow(tab: 'movies' | 'series' | 'shorts', direction: 'left'
                         </button>
 
                         <div id="creator-row-shorts" class="movies-row">
-                            <div v-for="short in shorts" :key="`short_${short.id}`" class="movie-card short-card-style">
+                            <div v-for="short in shorts" :key="`short_${short.id}`" class="movie-card">
                                 <ShortCard :short="short.contentable" />
                             </div>
                         </div>
@@ -521,11 +521,7 @@ function scrollCreatorRow(tab: 'movies' | 'series' | 'shorts', direction: 'left'
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-.movie-card.short-card-style {
-    /* Identical sizing to movie cards */
-    width: 130px;
-    aspect-ratio: 2/3;
-}
+
 
 .movie-card a {
     display: block;

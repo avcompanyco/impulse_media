@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import UserDashboardLayout from '@/layouts/UserDashboardLayout.vue';
-import ShowMovieController from '@/actions/App/Http/Controllers/Movie/ShowMovieController';
-import ShowSerieController from '@/actions/App/Http/Controllers/Serie/ShowSerieController';
 import { dashboard as dashboardRoute } from '@/routes';
 
 const props = defineProps<{
@@ -30,6 +28,16 @@ const props = defineProps<{
     }>;
 }>();
 
+// Helper to get direct player URL
+const getPlayerUrl = (type: string, contentableId: number) => {
+    if (type === 'movies') {
+        return `/movie/${contentableId}/player`;
+    } else if (type === 'series') {
+        return `/serie/${contentableId}/player`;
+    }
+    return `/dashboard`;
+};
+
 // Helper to format date
 const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -50,7 +58,7 @@ const formatDate = (dateString: string) => {
             <div class="purchases-header">
                 <h1 class="page-title">My Purchases</h1>
                 <p class="purchases-count" v-if="purchases.length > 0">
-                    You have unlocked {{ purchases.length }} premium content {{ purchases.length === 1 ? 'item' : 'items' }}.
+                    You have unlocked {{ purchases.length }} premium content {{ purchases.length === 1 ? 'item' : 'items' }}. You can rewatch your purchases as many times as you like.
                 </p>
             </div>
 
@@ -77,16 +85,9 @@ const formatDate = (dateString: string) => {
                         />
                         <div class="card-overlay">
                             <Link 
-                                v-if="purchase.content.type === 'movies'"
-                                :href="ShowMovieController({ movie: purchase.content.contentable.id })"
+                                :href="getPlayerUrl(purchase.content.type, purchase.content.contentable.id)"
                                 class="play-btn-overlay"
-                            >
-                                <i class="fas fa-play"></i>
-                            </Link>
-                            <Link 
-                                v-else-if="purchase.content.type === 'series'"
-                                :href="ShowSerieController({ serie: purchase.content.contentable.id })"
-                                class="play-btn-overlay"
+                                title="Watch Now"
                             >
                                 <i class="fas fa-play"></i>
                             </Link>
@@ -94,7 +95,9 @@ const formatDate = (dateString: string) => {
                     </div>
                     <div class="card-details">
                         <h3 class="content-title">
-                            {{ purchase.content.contentable.title || purchase.content.contentable.text_caption || 'Untitled' }}
+                            <Link :href="getPlayerUrl(purchase.content.type, purchase.content.contentable.id)" class="title-link">
+                                {{ purchase.content.contentable.title || purchase.content.contentable.text_caption || 'Untitled' }}
+                            </Link>
                         </h3>
                         <p class="creator-name" v-if="purchase.content.contentable.user">
                             by @{{ purchase.content.contentable.user.username }}
@@ -104,6 +107,12 @@ const formatDate = (dateString: string) => {
                             <span class="dot">•</span>
                             <span class="purchase-date">{{ formatDate(purchase.created_at) }}</span>
                         </div>
+                        <Link 
+                            :href="getPlayerUrl(purchase.content.type, purchase.content.contentable.id)"
+                            class="watch-now-btn"
+                        >
+                            <i class="fas fa-play" style="font-size: 0.75rem;"></i> Watch Now
+                        </Link>
                     </div>
                 </div>
             </div>
@@ -194,22 +203,24 @@ const formatDate = (dateString: string) => {
 /* Purchases Grid */
 .purchases-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 1.5rem;
 }
 
 .purchase-card {
     background: rgba(255, 255, 255, 0.02);
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
     transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s;
 }
 
 .purchase-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.35);
+    border-color: rgba(236, 72, 153, 0.3);
 }
 
 .card-image-wrapper {
@@ -251,13 +262,13 @@ const formatDate = (dateString: string) => {
     width: 48px;
     height: 48px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #6c3aed 0%, #ec4899 100%);
+    background: linear-gradient(135deg, #e8445a 0%, #d83b50 100%);
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.2rem;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 15px rgba(232, 68, 90, 0.4);
     transition: transform 0.2s;
     text-decoration: none;
 }
@@ -267,22 +278,36 @@ const formatDate = (dateString: string) => {
 }
 
 .card-details {
-    padding: 0.75rem;
+    padding: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    flex-grow: 1;
 }
 
 .content-title {
     font-size: 0.95rem;
     font-weight: 600;
+    margin: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    margin: 0 0 0.15rem 0;
+}
+
+.title-link {
+    color: #fff;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.title-link:hover {
+    color: #e8445a;
 }
 
 .creator-name {
     font-size: 0.8rem;
     color: rgba(236, 72, 153, 0.85);
-    margin: 0 0 0.5rem 0;
+    margin: 0;
     font-weight: 500;
 }
 
@@ -303,10 +328,33 @@ const formatDate = (dateString: string) => {
     color: #555;
 }
 
+.watch-now-btn {
+    margin-top: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    background: linear-gradient(135deg, #e8445a 0%, #d83b50 100%);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 0.45rem 0.75rem;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(232, 68, 90, 0.3);
+}
+
+.watch-now-btn:hover {
+    background: linear-gradient(135deg, #f43f5e 0%, #e8445a 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(232, 68, 90, 0.5);
+}
+
 /* Desktop Media Queries */
 @media (min-width: 768px) {
     .purchases-grid {
-        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
     }
 }
 

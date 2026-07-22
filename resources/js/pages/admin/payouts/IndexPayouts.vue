@@ -128,6 +128,21 @@ const filteredPendingPayouts = computed(() => {
     );
 });
 
+// Filter for Creator Balances & Metrics
+const searchCreatorMetricQuery = ref('');
+
+const filteredCreatorStats = computed(() => {
+    if (!searchCreatorMetricQuery.value.trim()) {
+        return props.creatorStats;
+    }
+    const q = searchCreatorMetricQuery.value.toLowerCase().trim();
+    return props.creatorStats.filter(c => 
+        (c.name && c.name.toLowerCase().includes(q)) ||
+        (c.username && c.username.toLowerCase().includes(q)) ||
+        (c.email && c.email.toLowerCase().includes(q))
+    );
+});
+
 // Approve Payout Modal Management
 const showApproveModal = ref(false);
 const activeApprovePayoutId = ref<number | null>(null);
@@ -554,7 +569,7 @@ function getStatusBadgeClass(status: string) {
                 </div>
             </div>
 
-            <!-- Historical Payouts Log (Full Width) -->
+            <!-- Historical Payouts Log (Full Width Datatable with Scroll) -->
             <div class="admin-panel full-width">
                 <div class="panel-header-with-actions">
                     <h3 class="panel-title" style="margin: 0; border: none; padding: 0;">
@@ -608,7 +623,7 @@ function getStatusBadgeClass(status: string) {
                     </div>
                 </div>
 
-                <div class="table-responsive">
+                <div class="table-scroll-container custom-scrollbar">
                     <table class="admin-table">
                         <thead>
                             <tr>
@@ -626,15 +641,15 @@ function getStatusBadgeClass(status: string) {
                                 <td colspan="7" class="empty-table-msg">No historical payout logs match the active filters.</td>
                             </tr>
                             <tr v-for="payout in filteredHistory" :key="payout.id">
-                                <td>{{ formatDate(payout.created_at) }}</td>
+                                <td style="white-space: nowrap;">{{ formatDate(payout.created_at) }}</td>
                                 <td>
                                     <div class="table-creator-cell">
                                         <img :src="payout.creator.image_url || '/images/default-avatar.png'" alt="Avatar" class="table-avatar">
                                         <span>@{{ payout.creator.username }}</span>
                                     </div>
                                 </td>
-                                <td class="font-bold">${{ Number(payout.amount).toFixed(2) }}</td>
-                                <td class="text-capitalize">{{ payout.payout_method.replace('_', ' ') }}</td>
+                                <td class="font-bold text-accent-green" style="font-weight: 700; color: #48bb78;">${{ Number(payout.amount).toFixed(2) }}</td>
+                                <td class="text-capitalize" style="white-space: nowrap;">{{ payout.payout_method.replace('_', ' ') }}</td>
                                 <td>
                                     <span class="badge" :class="getStatusBadgeClass(payout.status)">
                                         {{ payout.status }}
@@ -648,7 +663,7 @@ function getStatusBadgeClass(status: string) {
                                         </div>
                                     </div>
                                 </td>
-                                <td>{{ payout.processed_at ? formatDate(payout.processed_at) : 'N/A' }}</td>
+                                <td style="white-space: nowrap;">{{ payout.processed_at ? formatDate(payout.processed_at) : 'N/A' }}</td>
                                 <td>
                                     <div style="display: flex; gap: 8px; align-items: center;">
                                         <button class="row-action-btn details" @click="viewPayoutDetails(payout)" title="View Details">
@@ -665,12 +680,29 @@ function getStatusBadgeClass(status: string) {
                 </div>
             </div>
 
-            <!-- Creator Monetization Metrics (Full Width) -->
+            <!-- Creator Balances & Metrics (Full Width Searchable Datatable with Scroll) -->
             <div class="admin-panel full-width">
-                <h3 class="panel-title">
-                    <i class="fa-solid fa-users-gear text-accent"></i> Creator Balances & Metrics
-                </h3>
-                <div class="table-responsive">
+                <div class="panel-header-with-badge" style="margin-bottom: 1.25rem;">
+                    <h3 class="panel-title" style="margin: 0; border: none; padding: 0;">
+                        <i class="fa-solid fa-users-gear text-accent"></i> Creator Balances & Metrics
+                    </h3>
+                    <span class="pending-count-badge" style="background: rgba(49, 130, 206, 0.15); color: #63b3ed; border-color: rgba(49, 130, 206, 0.3);">
+                        {{ creatorStats.length }} Creators Registered
+                    </span>
+                </div>
+
+                <!-- Search Bar for Creator Metrics -->
+                <div class="pending-search-bar" style="margin-bottom: 1.25rem;">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input 
+                        type="text" 
+                        v-model="searchCreatorMetricQuery" 
+                        class="pending-search-input" 
+                        placeholder="Search creator by name, username, or email..."
+                    >
+                </div>
+
+                <div class="table-scroll-container custom-scrollbar">
                     <table class="admin-table">
                         <thead>
                             <tr>
@@ -686,21 +718,40 @@ function getStatusBadgeClass(status: string) {
                             <tr v-if="creatorStats.length === 0">
                                 <td colspan="6" class="empty-table-msg">No creators found on the platform.</td>
                             </tr>
-                            <tr v-for="creator in creatorStats" :key="creator.id">
+                            <tr v-else-if="filteredCreatorStats.length === 0">
+                                <td colspan="6" class="empty-table-msg">No creators match your search query.</td>
+                            </tr>
+                            <tr v-for="creator in filteredCreatorStats" :key="creator.id">
                                 <td>
                                     <div class="table-creator-cell">
                                         <img :src="creator.image_url || '/images/default-avatar.png'" alt="Avatar" class="table-avatar">
                                         <div class="creator-meta">
-                                            <span class="creator-name" style="font-weight: 600; color: #fff;">{{ creator.name }}</span>
+                                            <span class="creator-name" style="font-weight: 700; color: #fff;">{{ creator.name }}</span>
                                             <span class="creator-handle" style="font-size: 0.8rem; color: #a0aec0;">@{{ creator.username }}</span>
                                         </div>
                                     </div>
                                 </td>
-                                <td>{{ creator.email }}</td>
-                                <td style="font-weight: 700; color: #48bb78;">${{ Number(creator.lifetime_earnings).toFixed(2) }}</td>
-                                <td style="font-weight: 700; color: #3182ce;">${{ Number(creator.balance).toFixed(2) }}</td>
-                                <td style="font-weight: 700; color: #e53e3e;">${{ Number(creator.total_paid).toFixed(2) }}</td>
-                                <td style="font-weight: 700; color: #dd6b20;">${{ Number(creator.total_pending).toFixed(2) }}</td>
+                                <td style="color: #e2e8f0; font-size: 0.88rem;">{{ creator.email }}</td>
+                                <td>
+                                    <span class="metric-pill lifetime">
+                                        ${{ Number(creator.lifetime_earnings).toFixed(2) }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="metric-pill balance">
+                                        ${{ Number(creator.balance).toFixed(2) }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="metric-pill paid">
+                                        ${{ Number(creator.total_paid).toFixed(2) }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="metric-pill pending">
+                                        ${{ Number(creator.total_pending).toFixed(2) }}
+                                    </span>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -1205,6 +1256,7 @@ function getStatusBadgeClass(status: string) {
 
 .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
+    height: 6px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
@@ -1473,11 +1525,59 @@ function getStatusBadgeClass(status: string) {
     background: rgba(255, 255, 255, 0.15);
 }
 
-/* Admin Table */
-.table-responsive {
+/* Scrollable Table Container with Sticky Headers */
+.table-scroll-container {
+    max-height: 480px;
+    overflow-y: auto;
     overflow-x: auto;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(0, 0, 0, 0.2);
 }
 
+.table-scroll-container .admin-table th {
+    position: sticky;
+    top: 0;
+    background: #151a24;
+    z-index: 10;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Metric Pills */
+.metric-pill {
+    display: inline-block;
+    padding: 0.3rem 0.75rem;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.metric-pill.lifetime {
+    background: rgba(72, 187, 120, 0.12);
+    color: #48bb78;
+    border: 1px solid rgba(72, 187, 120, 0.25);
+}
+
+.metric-pill.balance {
+    background: rgba(49, 130, 206, 0.12);
+    color: #63b3ed;
+    border: 1px solid rgba(49, 130, 206, 0.25);
+}
+
+.metric-pill.paid {
+    background: rgba(229, 62, 62, 0.12);
+    color: #f56565;
+    border: 1px solid rgba(229, 62, 62, 0.25);
+}
+
+.metric-pill.pending {
+    background: rgba(237, 137, 86, 0.12);
+    color: #ed8936;
+    border: 1px solid rgba(237, 137, 86, 0.25);
+}
+
+/* Admin Table */
 .admin-table {
     width: 100%;
     border-collapse: collapse;
@@ -1487,7 +1587,6 @@ function getStatusBadgeClass(status: string) {
 
 .admin-table th {
     padding: 0.85rem 1rem;
-    background: rgba(255, 255, 255, 0.03);
     color: #a0aec0;
     font-weight: 600;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);

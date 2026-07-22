@@ -60,7 +60,7 @@ function isPpvPaid(content: any) {
     return price > 0 || !allowMembership;
 }
 
-// Netflix / Disney+ Style Arrow Scroll Navigation
+// Instant Smooth Scroll helper
 function scrollRow(rowId: string, direction: 'left' | 'right') {
     const container = document.getElementById(`movies-row-${rowId}`);
     if (container) {
@@ -83,14 +83,16 @@ function scrollRow(rowId: string, direction: 'left' | 'right') {
             </div>
             
             <div class="slider-wrapper">
-                <!-- Netflix / Disney+ Style Navigation Arrows -->
+                <!-- Native Instant SVG Arrow Left (0ms font delay) -->
                 <button 
                     type="button" 
                     class="slider-arrow prev-arrow" 
                     aria-label="Scroll left"
                     @click="scrollRow(String(category.id), 'left')"
                 >
-                    <i class="fas fa-chevron-left"></i>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 18l-6-6 6-6" />
+                    </svg>
                 </button>
 
                 <div :id="`movies-row-${category.id}`" class="movies-row" data-slider="action">
@@ -111,13 +113,16 @@ function scrollRow(rowId: string, direction: 'left' | 'right') {
                     </div>
                 </div>
 
+                <!-- Native Instant SVG Arrow Right (0ms font delay) -->
                 <button 
                     type="button" 
                     class="slider-arrow next-arrow" 
                     aria-label="Scroll right"
                     @click="scrollRow(String(category.id), 'right')"
                 >
-                    <i class="fas fa-chevron-right"></i>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 18l6-6-6-6" />
+                    </svg>
                 </button>
             </div>
         </div>
@@ -234,7 +239,7 @@ function scrollRow(rowId: string, direction: 'left' | 'right') {
     transform: scale(1.06);
 }
 
-/* Disney+ / Netflix Style Arrow Buttons */
+/* Instant Render SVG Arrow Buttons */
 .slider-arrow {
     position: absolute;
     top: 50%;
@@ -242,26 +247,29 @@ function scrollRow(rowId: string, direction: 'left' | 'right') {
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    background: rgba(15, 23, 42, 0.85);
+    background: rgba(15, 23, 42, 0.88);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.22);
     color: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.1rem;
     cursor: pointer;
     z-index: 25;
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
-    opacity: 0.85;
+    opacity: 1; /* Instant 100% opacity on frame 1 */
+}
+
+.slider-arrow svg {
+    display: block;
+    transition: transform 0.2s ease;
 }
 
 .slider-arrow:hover {
     background: #e8445a;
     border-color: #e8445a;
-    opacity: 1;
-    transform: translateY(-50%) scale(1.15);
+    transform: translateY(-50%) scale(1.12);
     box-shadow: 0 8px 20px rgba(232, 68, 90, 0.6);
 }
 
@@ -320,7 +328,6 @@ function scrollRow(rowId: string, direction: 'left' | 'right') {
     .slider-arrow {
         width: 36px;
         height: 36px;
-        font-size: 0.9rem;
     }
 
     .prev-arrow {

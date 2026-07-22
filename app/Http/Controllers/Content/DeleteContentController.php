@@ -20,7 +20,7 @@ class DeleteContentController extends Controller
     public function __invoke(Content $content)
     {
         try {
-            if (!$this->canAccess()) {
+            if (!$this->canAccess($content)) {
                 throw new \Exception(__("You are not authorized to delete this content"));
             }
 
@@ -72,12 +72,20 @@ class DeleteContentController extends Controller
         }
     }
 
-    public function canAccess()
+    public function canAccess(Content $content = null)
     {
-        $_user = User::find(Auth::user()->id);
+        $userId = Auth::id();
+        if (!$userId) return false;
+        
+        $_user = User::find($userId);
         if ($_user && $_user->hasRole('admin')) {
             return true;
         }
+
+        if ($content && $_user && $_user->id === $content->user_id) {
+            return true;
+        }
+
         return false;
     }
 }

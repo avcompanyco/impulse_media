@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue';
 import { useForm, router, usePage, Link } from '@inertiajs/vue3';
 import UserDashboardLayout from '@/layouts/UserDashboardLayout.vue';
 import MovieChannelController from '@/actions/App/Http/Controllers/Channel/MovieChannelController';
+import DeleteContentModal from '@/pages/admin/content/partials/DeleteContentModal.vue';
 
 interface Stats {
     lifetime_earnings: number;
@@ -158,6 +159,21 @@ function nextPage() {
     if (currentPage.value < totalPages.value) {
         currentPage.value++;
     }
+}
+
+function getEditUrl(item: ContentItem) {
+    if (item.type === 'movie' || item.type === 'movies') {
+        return `/movie/${item.contentable_id}/edit`;
+    } else if (item.type === 'series') {
+        return `/serie/${item.contentable_id}/edit`;
+    } else if (item.type === 'short' || item.type === 'shorts') {
+        return `/short/${item.contentable_id}/edit`;
+    }
+    return '#';
+}
+
+function refreshContents() {
+    router.reload({ only: ['contents', 'stats'] });
 }
 
 function getStatusBadgeClass(status: string) {
@@ -461,9 +477,15 @@ function getStatusBadgeClass(status: string) {
                                                 {{ item.allow_membership ? 'Member Access Allowed' : 'PPV Exclusive' }}
                                             </span>
                                         </div>
-                                        <button class="edit-price-btn" @click="startEditing(item)">
-                                            <i class="fa-solid fa-pen"></i> Edit Pricing
-                                        </button>
+                                        <div class="content-action-buttons">
+                                            <button class="edit-price-btn" @click="startEditing(item)">
+                                                <i class="fa-solid fa-pen"></i> Edit Pricing
+                                            </button>
+                                            <Link :href="getEditUrl(item)" class="edit-content-btn" title="Edit content details">
+                                                <i class="fa-solid fa-pen-to-square"></i> Edit Content
+                                            </Link>
+                                            <DeleteContentModal :content="item" @updated="refreshContents" />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1012,6 +1034,36 @@ select.form-control option {
 .edit-price-btn:hover {
     background: #e8445a;
     border-color: #e8445a;
+    transform: translateY(-1px);
+}
+
+.content-action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.edit-content-btn {
+    background: rgba(66, 153, 225, 0.12);
+    border: 1px solid rgba(66, 153, 225, 0.25);
+    color: #60a5fa;
+    border-radius: 8px;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.edit-content-btn:hover {
+    background: #3b82f6;
+    color: #fff;
+    border-color: #3b82f6;
     transform: translateY(-1px);
 }
 

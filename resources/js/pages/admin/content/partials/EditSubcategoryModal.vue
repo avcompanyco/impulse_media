@@ -19,7 +19,9 @@ const closeModal = () => {
 </script>
 
 <template>
-    <button class="btn btn-edit" @click="isOpen = true">Edit</button>
+    <button class="chip-action-btn chip-edit-btn" @click="isOpen = true" title="Edit Subcategory">
+        <i class="fa-solid fa-pen-to-square"></i> Edit
+    </button>
     <teleport to="body">
         <div id="editSubcategoryModal" class="modal" :class="{ 'active': isOpen }">
             <div class="modal-content">
@@ -186,5 +188,25 @@ const closeModal = () => {
     border-radius: var(--border-radius-sm);
     font-size: 0.95rem;
     font-weight: 500;
+}
+.chip-action-btn.chip-edit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: rgba(59, 130, 246, 0.25);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.5);
+    padding: 0.25rem 0.6rem;
+    font-weight: 700;
+    font-size: 0.75rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.chip-action-btn.chip-edit-btn:hover {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #3b82f6;
 }
 </style>

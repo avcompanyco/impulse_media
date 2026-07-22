@@ -36,7 +36,9 @@ const deleteSubcategory = () => {
 </script>
 
 <template>
-    <button class="btn btn-delete" @click="isOpen = true">Delete</button>
+    <button class="chip-action-btn chip-delete-btn" @click="isOpen = true" title="Delete Subcategory">
+        <i class="fa-solid fa-trash"></i> Delete
+    </button>
     <teleport to="body">
         <div id="deleteSubcategoryModal" class="modal" :class="{ 'active': isOpen }">
             <div class="modal-content">
@@ -271,5 +273,26 @@ const deleteSubcategory = () => {
         width: 100%;
         justify-content: center;
     }
+}
+
+.chip-action-btn.chip-delete-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: rgba(239, 68, 68, 0.25);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    padding: 0.25rem 0.6rem;
+    font-weight: 700;
+    font-size: 0.75rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.chip-action-btn.chip-delete-btn:hover {
+    background: #dc2626;
+    color: #ffffff;
+    border-color: #ef4444;
 }
 </style>

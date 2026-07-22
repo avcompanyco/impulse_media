@@ -32,7 +32,9 @@ const deleteCategory = () => {
 </script>
 
 <template>
-    <button class="btn btn-delete" @click="isOpen = true">Delete</button>
+    <button class="btn-category-action btn-delete-category" @click="isOpen = true">
+        <i class="fa-solid fa-trash"></i> Delete
+    </button>
     <teleport to="body">
         <div id="deleteCategoryModal" class="modal" :class="{ 'active': isOpen }">
             <div class="modal-content">
@@ -311,5 +313,27 @@ const deleteCategory = () => {
         width: 100%;
         justify-content: center;
     }
+}
+
+.btn-category-action.btn-delete-category {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #dc2626;
+    color: #ffffff;
+    padding: 0.45rem 0.85rem;
+    font-weight: 700;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    border: 1px solid #ef4444;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
+    transition: all 0.2s ease;
+}
+
+.btn-category-action.btn-delete-category:hover {
+    background: #b91c1c;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.6);
 }
 </style>

@@ -14,8 +14,9 @@ const isOpen = ref(false);
 </script>
 
 <template>
-    <button class="action-button add-subcategory-btn" data-category-id="cat_1"
-        style="padding:0.3rem 0.6rem; font-size:0.8rem;" @click="isOpen = true">+ Add</button>
+    <button class="btn-category-action btn-add-subcategory" @click="isOpen = true">
+        <i class="fa-solid fa-plus"></i> Add Subcategory
+    </button>
     <div id="subcategoryModal" class="modal" :class="{ 'active': isOpen }">
         <div class="modal-content">
             <div class="modal-header">
@@ -137,5 +138,26 @@ const isOpen = ref(false);
     display: flex;
     justify-content: flex-end;
     gap: 1rem;
+}
+.btn-category-action.btn-add-subcategory {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: linear-gradient(135deg, #e8445a 0%, #d83b50 100%);
+    color: #ffffff;
+    padding: 0.45rem 0.85rem;
+    font-weight: 700;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    border: 1px solid #f43f5e;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(232, 68, 90, 0.4);
+    transition: all 0.2s ease;
+}
+
+.btn-category-action.btn-add-subcategory:hover {
+    background: linear-gradient(135deg, #f43f5e 0%, #e8445a 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(232, 68, 90, 0.6);
 }
 </style>

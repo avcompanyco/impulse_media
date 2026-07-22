@@ -29,7 +29,9 @@ function onSuccess ()
 </script>
 
 <template>
-    <button class="btn btn-edit" @click="isOpen = true">Edit</button>
+    <button class="btn-category-action btn-edit-category" @click="isOpen = true">
+        <i class="fa-solid fa-pen-to-square"></i> Edit
+    </button>
     <teleport to="body">
         <div id="editCategoryModal" class="modal" :class="{ 'active': isOpen }">
             <div class="modal-content">
@@ -109,8 +111,26 @@ function onSuccess ()
     border-radius: 4px;
 }
 
-.item-actions .btn-edit {
-    background-color: var(--secondary-color);
+.btn-category-action.btn-edit-category {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #2563eb;
+    color: #ffffff;
+    padding: 0.45rem 0.85rem;
+    font-weight: 700;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    border: 1px solid #3b82f6;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+    transition: all 0.2s ease;
+}
+
+.btn-category-action.btn-edit-category:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.6);
 }
 
 .modal {

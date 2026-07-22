@@ -16,6 +16,9 @@ import ShowCreatorProfileController from '@/actions/App/Http/Controllers/Creator
 
 const props = defineProps<{
     serie: any;
+    hasFullAccess?: boolean;
+    isPurchased?: boolean;
+    ppvPrice?: number;
 }>();
 
 // Helper function to generate route for show category
@@ -25,6 +28,17 @@ const followButtonLoading = ref(false);
 const unfollowButtonLoading = ref(false);
 const watchlistButtonLoading = ref(false);
 const unwatchlistButtonLoading = ref(false);
+const checkoutLoading = ref(false);
+
+function buyPpvAccess() {
+    if (!props.serie?.content?.id) return;
+    checkoutLoading.value = true;
+    router.post(`/ppv/checkout/${props.serie.content.id}`, {}, {
+        onFinish: () => {
+            checkoutLoading.value = false;
+        }
+    });
+}
 
 function addToWatchlist() {
     watchlistButtonLoading.value = true;
@@ -153,16 +167,34 @@ onMounted(async () => {
                         </template>
                     </div>
                     <div class="action-buttons-group">
-                        <button v-if="serie.trailer_video_url" class="trailer-button-inline" @click="playTrailerSerie">
-                            <i class="fa-solid fa-film"></i> Trailer
-                        </button>
-                        <button 
-                            v-if="serie.content && (!serie.content.allow_membership || Number(serie.content.ppv_price) > 0)" 
-                            class="ppv-buy-button" 
-                            @click="router.post(`/ppv/checkout/${serie.content.id}`)"
-                        >
-                            <i class="fa-solid fa-ticket"></i> PPV ${{ Number(serie.content.ppv_price).toFixed(2) }}
-                        </button>
+                        <!-- Unlocked Access (Free, Purchased, Member, or Owner/Admin) -->
+                        <template v-if="hasFullAccess">
+                            <span v-if="isPurchased" class="unlocked-badge">
+                                <i class="fa-solid fa-circle-check"></i> Purchased
+                            </span>
+                            <span v-else-if="serie.content?.allow_membership" class="unlocked-badge membership">
+                                <i class="fa-solid fa-crown"></i> Included
+                            </span>
+                            <button v-if="serie.trailer_video_url" class="trailer-button-inline" @click="playTrailerSerie">
+                                <i class="fa-solid fa-film"></i> Trailer
+                            </button>
+                        </template>
+
+                        <!-- Locked Access (Requires PPV purchase) -->
+                        <template v-else>
+                            <button 
+                                class="ppv-buy-button-primary" 
+                                @click="buyPpvAccess"
+                                :disabled="checkoutLoading"
+                            >
+                                <i v-if="checkoutLoading" class="fa-solid fa-circle-notch fa-spin"></i>
+                                <i v-else class="fa-solid fa-ticket"></i>
+                                Buy PPV ${{ Number(serie.content?.ppv_price || 0).toFixed(2) }}
+                            </button>
+                            <button v-if="serie.trailer_video_url" class="trailer-button-inline" @click="playTrailerSerie">
+                                <i class="fa-solid fa-film"></i> Watch Trailer
+                            </button>
+                        </template>
                         <button v-if="!serie.watchlist" class="watchlist-button" id="watchlistBtn" @click="addToWatchlist" :disabled="watchlistButtonLoading">
                             <i class="fa-solid fa-circle-notch fa-spin"
                                 v-if="watchlistButtonLoading"></i>
@@ -930,5 +962,66 @@ onMounted(async () => {
 .ppv-buy-button:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(232, 68, 90, 0.6);
+}
+
+.ppv-buy-button-primary {
+    background: linear-gradient(135deg, #e8445a 0%, #b81c40 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 25px;
+    padding: 0.75rem 1.75rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(232, 68, 90, 0.4);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.ppv-buy-button-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(232, 68, 90, 0.6);
+}
+
+.play-button-preview {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 25px;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.play-button-preview:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+}
+
+.unlocked-badge {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    border-radius: 20px;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.unlocked-badge.membership {
+    background: rgba(124, 58, 237, 0.2);
+    color: #a78bfa;
+    border-color: rgba(124, 58, 237, 0.4);
 }
 </style>

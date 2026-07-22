@@ -36,8 +36,32 @@ class ShowMovieController extends Controller
             $query->select('id', 'name', 'username', 'image');
         }]);
 
+        $user = Auth::user();
+        $hasFullAccess = false;
+        $isPurchased = false;
+        $isMember = $user ? $user->isImpulseMember() : false;
+        $rawPpvPrice = (float)($content->ppv_price ?? 0);
+
+        if ($user) {
+            if ($user->hasRole('admin') || $user->id === $movie->user_id) {
+                $hasFullAccess = true;
+            } else {
+                if ($content->isPurchasedBy($user)) {
+                    $hasFullAccess = true;
+                    $isPurchased = true;
+                } elseif ($content->allow_membership && $isMember) {
+                    $hasFullAccess = true;
+                } elseif ($rawPpvPrice <= 0) {
+                    $hasFullAccess = true;
+                }
+            }
+        }
+
         return Inertia::render('user/movie/ShowMovie', [
             'movie' => $movie,
+            'hasFullAccess' => $hasFullAccess,
+            'isPurchased' => $isPurchased,
+            'ppvPrice' => $rawPpvPrice,
         ]);
     }
 }

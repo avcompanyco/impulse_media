@@ -399,7 +399,7 @@ function getStatusBadgeClass(status: string) {
                                 type="text" 
                                 v-model="pendingSearchQuery" 
                                 class="pending-search-input" 
-                                placeholder="Filter pending requests by creator or method..."
+                                placeholder="Filter requests by creator..."
                             >
                         </div>
 
@@ -698,7 +698,7 @@ function getStatusBadgeClass(status: string) {
                         type="text" 
                         v-model="searchCreatorMetricQuery" 
                         class="pending-search-input" 
-                        placeholder="Search creator by name, username, or email..."
+                        placeholder="Search creator by name or email..."
                     >
                 </div>
 
@@ -1930,5 +1930,75 @@ function getStatusBadgeClass(status: string) {
     font-weight: 600;
     font-size: 0.88rem;
     color: #fff;
+}
+
+@media (max-width: 768px) {
+    .panel-header-with-badge {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0.5rem !important;
+    }
+
+    .panel-title {
+        font-size: 1.15rem !important;
+    }
+
+    .pending-count-badge {
+        align-self: flex-start !important;
+    }
+
+    .card-creator-info {
+        flex-wrap: wrap !important;
+        gap: 0.5rem !important;
+    }
+
+    .creator-meta {
+        min-width: 120px !important;
+    }
+
+    .payout-amount {
+        font-size: 1.15rem !important;
+        margin-left: auto !important;
+    }
+
+    .card-details-box {
+        padding: 0.65rem 0.85rem !important;
+    }
+
+    .details-text {
+        font-size: 0.8rem !important;
+        word-break: break-all !important;
+    }
+
+    .card-actions {
+        flex-direction: row !important;
+        gap: 0.5rem !important;
+    }
+
+    .card-actions .action-btn {
+        padding: 0.5rem 0.65rem !important;
+        font-size: 0.78rem !important;
+        justify-content: center !important;
+        flex: 1 !important;
+    }
+
+    .admin-layout-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .stats-summary-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .table-scroll-container,
+    .admin-table-container {
+        width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    .admin-table {
+        min-width: 580px !important;
+    }
 }
 </style>

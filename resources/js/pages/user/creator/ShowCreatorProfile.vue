@@ -283,9 +283,7 @@ function scrollCreatorRow(tab: 'movies' | 'series' | 'shorts', direction: 'left'
 
                         <div id="creator-row-shorts" class="movies-row">
                             <div v-for="short in shorts" :key="`short_${short.id}`" class="movie-card short-card-style">
-                                <Link :href="`/shorts?id=${short.contentable.id}`">
-                                    <img :src="short.contentable.thumbnail_url || short.contentable.vertical_image_url || '/images/default_poster.webp'" alt="Short Thumbnail" loading="lazy">
-                                </Link>
+                                <ShortCard :short="short.contentable" />
                             </div>
                         </div>
 
@@ -525,6 +523,7 @@ function scrollCreatorRow(tab: 'movies' | 'series' | 'shorts', direction: 'left'
 
 .movie-card.short-card-style {
     aspect-ratio: 9/16;
+    width: 140px;
 }
 
 .movie-card a {

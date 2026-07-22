@@ -27,35 +27,44 @@ const props = defineProps<{
         <div class="dashboard-module">
             <div class="categories-container" id="categoriesContainer">
                 <div class="category-card" v-for="category in categories" :key="category.id">
+                    <!-- Category Header -->
                     <div class="category-card-header">
-                        <h3 class="category-card-title">{{ category.name }}</h3>
-                        <div class="item-actions">
+                        <div class="category-info">
+                            <div class="category-image-thumb">
+                                <img :src="category.image_url" :alt="category.name">
+                            </div>
+                            <div>
+                                <h3 class="category-card-title">{{ category.name }}</h3>
+                                <span class="subcategory-count-badge">
+                                    {{ category.subcategories?.length || 0 }} {{ category.subcategories?.length === 1 ? 'Subcategory' : 'Subcategories' }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="category-actions">
+                            <CreateSubcategoryModal :category="category" />
                             <EditCategoryModal :category="category" />
                             <DeleteCategoryModal :category="category" />
                         </div>
                     </div>
-                    <div class="category-card-body">
-                        <div class="category-image-container">
-                            <img :src="category.image_url" alt="Action">
+
+                    <!-- Subcategories Responsive Grid -->
+                    <div class="subcategories-section">
+                        <div v-if="category.subcategories && category.subcategories.length > 0" class="subcategories-grid">
+                            <div 
+                                v-for="subcategory in category.subcategories" 
+                                :key="subcategory.id"
+                                class="subcategory-chip"
+                            >
+                                <span class="subcategory-name" :title="subcategory.name">{{ subcategory.name }}</span>
+                                <div class="chip-actions">
+                                    <EditSubcategoryModal :subcategory="subcategory" />
+                                    <DeleteSubcategoryModal :subcategory="subcategory" />
+                                </div>
+                            </div>
                         </div>
-                        <div class="subcategories-container">
-                            <div class="list-header">
-                                <h4 class="list-title">Subcategories</h4>
-                                <CreateSubcategoryModal :category="category" />
-                            </div>
-                            <div class="subcategory-list">
-                                <div v-for="subcategory in category.subcategories" :key="subcategory.id"
-                                    class="subcategory-item">
-                                    <span>{{ subcategory.name }}</span>
-                                    <div class="item-actions">
-                                        <EditSubcategoryModal :subcategory="subcategory" />
-                                        <DeleteSubcategoryModal :subcategory="subcategory" />
-                                    </div>
-                                </div>
-                                <div v-if="category.subcategories.length === 0">
-                                    No subcategories yet.
-                                </div>
-                            </div>
+                        <div v-else class="empty-subcategories">
+                            <i class="fa-solid fa-folder-open"></i>
+                            <span>No subcategories created yet in this category.</span>
                         </div>
                     </div>
                 </div>
@@ -77,25 +86,7 @@ const props = defineProps<{
     margin-bottom: 2rem;
 }
 
-.action-button {
-    background-color: var(--primary-color);
-    color: white;
-    padding: 0.7rem 1.4rem;
-    border-radius: var(--border-radius-sm);
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 0.95rem;
-    transition: background-color 0.2s ease, transform 0.2s ease;
-    border: none;
-    cursor: pointer;
-}
-
-.action-button:hover {
-    background-color: var(--primary-color-hover);
-    transform: translateY(-1px);
-}
-
-/* --- NUEVO DISEÑO DE CATEGORÍAS --- */
+/* --- OPTIMIZED RESPONSIVE CATEGORIES DESIGN --- */
 .categories-container {
     display: flex;
     flex-direction: column;
@@ -103,82 +94,143 @@ const props = defineProps<{
 }
 
 .category-card {
-    background-color: rgba(0, 0, 0, 0.2);
+    background: rgba(18, 18, 26, 0.6);
+    backdrop-filter: blur(12px);
     padding: 1.5rem;
-    border-radius: var(--border-radius-sm);
-    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    transition: all 0.3s ease;
+}
+
+.category-card:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
 }
 
 .category-card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     padding-bottom: 1rem;
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.category-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.category-image-thumb {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.category-image-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .category-card-title {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 0 0 0.25rem 0;
+    color: #ffffff;
+    letter-spacing: -0.01em;
+}
+
+.subcategory-count-badge {
+    display: inline-block;
+    font-size: 0.75rem;
     font-weight: 600;
-    margin: 0;
-    color: var(--text-headings);
+    color: var(--primary-color, #e8445a);
+    background: rgba(232, 68, 90, 0.12);
+    border: 1px solid rgba(232, 68, 90, 0.25);
+    padding: 0.15rem 0.6rem;
+    border-radius: 20px;
 }
 
-.category-card-body {
-    display: grid;
-    grid-template-columns: 200px 1fr;
-    gap: 1.5rem;
+.category-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
 }
 
-.category-image-container img {
+.subcategories-section {
     width: 100%;
-    height: auto;
-    object-fit: cover;
-    border-radius: var(--border-radius-sm);
 }
 
-.subcategories-container .list-header {
+.subcategories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 0.75rem;
+}
+
+.subcategory-chip {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 10px;
+    padding: 0.55rem 0.85rem;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.subcategories-container .list-title {
-    font-size: 1.1rem;
-    color: var(--text-muted);
+.subcategory-chip:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.subcategory-item {
+.subcategory-name {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-right: 0.5rem;
+}
+
+.chip-actions {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 0.6rem;
-    border-radius: 4px;
+    gap: 0.3rem;
+    flex-shrink: 0;
 }
 
-.subcategory-item:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+.empty-subcategories {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.25rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.9rem;
 }
 
-.item-actions .btn {
-    font-size: 0.8rem;
-    padding: 0.2rem 0.5rem;
-    margin-left: 0.5rem;
-    border: none;
-    color: white;
-    cursor: pointer;
-    border-radius: 4px;
+@media (max-width: 768px) {
+    .subcategories-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    }
+    .category-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
 }
-
-.item-actions .btn-edit {
-    background-color: var(--secondary-color);
-}
-
-.item-actions .btn-delete {
-    background-color: var(--error-color);
-}
-
-/* --- FIN NUEVO DISEÑO --- */
 </style>

@@ -36,7 +36,7 @@ const adType = ref<'preroll' | 'midroll'>('preroll');
 const prerollComplete = ref(false);
 const canSkip = ref(false);
 const skipTimerSeconds = ref(15);
-const isAdMuted = ref(true);
+const isAdMuted = ref(false);
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
 let skipCountdownTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -75,7 +75,7 @@ function showAd(type: 'preroll' | 'midroll') {
     customVideoEnded.value = false;
     canSkip.value = false;
     skipTimerSeconds.value = 15;
-    isAdMuted.value = true;
+    isAdMuted.value = false;
 
     const ad = getRandomAd();
 
@@ -111,9 +111,14 @@ function showAd(type: 'preroll' | 'midroll') {
         startSkipCountdown();
         nextTick(() => {
             if (customVideoRef.value) {
-                customVideoRef.value.muted = isAdMuted.value;
-                customVideoRef.value.play().catch(err => {
-                    console.warn('Ad video autoplay was prevented or delayed:', err);
+                customVideoRef.value.muted = false;
+                customVideoRef.value.play().catch(() => {
+                    // Fallback to muted if browser policy blocks unmuted autoplay
+                    if (customVideoRef.value) {
+                        customVideoRef.value.muted = true;
+                        isAdMuted.value = true;
+                        customVideoRef.value.play().catch(() => {});
+                    }
                 });
             }
         });
@@ -266,7 +271,6 @@ defineExpose({ prerollComplete, isAdVisible, showAd });
                                 :src="currentAd.media_url"
                                 class="campaign-video"
                                 autoplay
-                                muted
                                 playsinline
                                 @ended="onCustomVideoEnded"
                                 @timeupdate="onCustomVideoTimeUpdate"

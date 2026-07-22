@@ -207,7 +207,6 @@ onMounted(async () => {
                 <p class="description">
                     {{ movie.description }}
                 </p>
-                <button class="trailer-button" @click="playTrailerMovie">Trailer</button>
             </section>
     
     
@@ -701,27 +700,88 @@ onMounted(async () => {
 
 @media (max-width: 768px) {
     :root {
-        --container-padding: 1.5rem;
+        --container-padding: 1rem;
     }
 
     .movie-banner {
-        height: 250px;
-    }
-
-    .movie-title {
-        font-size: 2rem;
-    }
-
-    .content-section {
-        padding: 0 1.5rem;
+        height: auto;
+        min-height: 320px;
+        padding-top: 4.5rem;
+        padding-bottom: 1.5rem;
+        box-sizing: border-box;
     }
 
     .banner-content {
-        padding: 0 1.5rem;
+        padding: 0 1rem;
+    }
+
+    .movie-title-container {
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .movie-title {
+        font-size: 1.5rem;
+        line-height: 1.25;
+    }
+
+    .category-tag {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.6rem;
+    }
+
+    .uploader-info {
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .uploader-avatar {
+        width: 32px;
+        height: 32px;
+    }
+
+    .uploader-username {
+        font-size: 0.9rem;
+    }
+
+    .follow-btn {
+        padding: 0.3rem 0.8rem;
+        font-size: 0.75rem;
+    }
+
+    .action-buttons-group {
+        gap: 0.5rem;
+    }
+
+    .play-button,
+    .ppv-buy-button-primary,
+    .play-button-preview,
+    .trailer-button-inline,
+    .watchlist-button {
+        font-size: 0.85rem;
+        padding: 0.6rem 1.1rem;
+        border-radius: 20px;
+    }
+
+    .content-section {
+        padding: 0 1rem;
+        margin-top: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .description-title {
+        font-size: 1.3rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .description {
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin-bottom: 1rem;
     }
 
     .movies-section {
-        padding: 0 1.5rem;
+        padding: 0 1rem;
     }
 }
 

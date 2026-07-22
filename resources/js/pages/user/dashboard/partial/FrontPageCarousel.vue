@@ -1,6 +1,33 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, onUnmounted } from 'vue';
-import { router } from '@inertiajs/vue3';
+import { router, usePage } from '@inertiajs/vue3';
+
+const page = usePage();
+
+const isUserMember = computed(() => {
+    return Boolean((page.props.auth as any)?.user?.is_member);
+});
+
+const isCurrentContentPaid = computed(() => {
+    if (!currentContent.value) return false;
+    const price = Number(currentContent.value.ppv_price || 0);
+    const allowMembership = Boolean(currentContent.value.allow_membership);
+    if (allowMembership && isUserMember.value) return false;
+    return price > 0 || !allowMembership;
+});
+
+const currentContentBadgeText = computed(() => {
+    if (!currentContent.value) return '';
+    const price = Number(currentContent.value.ppv_price || 0);
+    const allowMembership = Boolean(currentContent.value.allow_membership);
+    if (allowMembership && (price <= 0 || isUserMember.value)) {
+        return 'Included with Membership';
+    }
+    if (price > 0) {
+        return `PPV $${price.toFixed(2)}`;
+    }
+    return 'Included with Membership';
+});
 import ShowMovieController from '@/actions/App/Http/Controllers/Movie/ShowMovieController';
 import ShowSerieController from '@/actions/App/Http/Controllers/Serie/ShowSerieController';
 import AddToFollowController from '@/actions/App/Http/Controllers/Follow/AddToFollowController';
@@ -154,8 +181,8 @@ function unfollowUser(userId: number) {
         <h1 class="movie-title">{{ currentContent.contentable.title }}</h1>
         <div class="content-meta">
             <span class="content-type-tag">{{ currentContent.type }}</span>
-            <span v-if="currentContent" class="ppv-carousel-badge" :class="{ 'ppv-paid': !currentContent.allow_membership || Number(currentContent.ppv_price) > 0 }">
-                {{ (!currentContent.allow_membership || Number(currentContent.ppv_price) > 0) ? `PPV $${Number(currentContent.ppv_price).toFixed(2)}` : 'Included with Membership' }}
+            <span v-if="currentContent" class="ppv-carousel-badge" :class="{ 'ppv-paid': isCurrentContentPaid }">
+                {{ currentContentBadgeText }}
             </span>
         </div>
         <div class="button-group">

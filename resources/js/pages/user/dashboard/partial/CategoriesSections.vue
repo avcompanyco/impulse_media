@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import ShowCategoryController from '@/actions/App/Http/Controllers/Category/ShowCategoryController';
 import ShowMovieController from '@/actions/App/Http/Controllers/Movie/ShowMovieController';
 import ShowSerieController from '@/actions/App/Http/Controllers/Serie/ShowSerieController';
@@ -8,12 +8,50 @@ const props = defineProps<{
     categories: any[];
 }>();
 
+const page = usePage();
+
+function getCategoryUrl(category: any) {
+    if (typeof category === 'object' && category.id) {
+        return `/category/${category.id}`;
+    }
+    return ShowCategoryController(category);
+}
+
 function mergeInRandomOrderMoviesAndSeries(category: any) {
     return [...category.movies, ...category.series].sort(() => Math.random() - 0.5);
 }
 
 function hasMoviesOrSeries(category: any) {
-    return category.movies.length > 0 || category.series.length > 0;
+    return category.movies && (category.movies.length > 0 || category.series.length > 0);
+}
+
+function isUserMember() {
+    return Boolean((page.props.auth as any)?.user?.is_member);
+}
+
+function getBadgeText(content: any) {
+    if (!content) return '';
+    const price = Number(content.ppv_price || 0);
+    const allowMembership = Boolean(content.allow_membership);
+
+    if (allowMembership && (price <= 0 || isUserMember())) {
+        return 'INCLUDED';
+    }
+    if (price > 0) {
+        return `PPV $${price.toFixed(2)}`;
+    }
+    return 'INCLUDED';
+}
+
+function isPpvPaid(content: any) {
+    if (!content) return false;
+    const price = Number(content.ppv_price || 0);
+    const allowMembership = Boolean(content.allow_membership);
+
+    if (allowMembership && isUserMember()) {
+        return false;
+    }
+    return price > 0 || !allowMembership;
 }
 
 </script>
@@ -22,21 +60,21 @@ function hasMoviesOrSeries(category: any) {
     <div v-for="category in categories" :key="category.id">
         <div v-if="hasMoviesOrSeries(category)" class="movies-section">
             <div class="section-header">
-                <Link :href="ShowCategoryController(category)" class="section-title">{{ category.name }}</Link>
-                <Link :href="ShowCategoryController(category)" class="view-all-btn">View All</Link>
+                <Link :href="getCategoryUrl(category)" class="section-title">{{ category.name }}</Link>
+                <Link :href="getCategoryUrl(category)" class="view-all-btn">View All</Link>
             </div>
             <div class="movies-row" data-slider="action">
                 <div v-for="(movie, index) in mergeInRandomOrderMoviesAndSeries(category)"
                     :key="`movie_${movie.id}_card_${index + 1}`" class="movie-card">
                     <Link v-if="movie.movie_video" :href="ShowMovieController.url(movie)">
-                        <div v-if="movie.content" class="card-ppv-badge" :class="{ 'ppv-paid': !movie.content.allow_membership || Number(movie.content.ppv_price) > 0 }">
-                            {{ (!movie.content.allow_membership || Number(movie.content.ppv_price) > 0) ? `PPV $${Number(movie.content.ppv_price).toFixed(2)}` : 'INCLUDED' }}
+                        <div v-if="movie.content" class="card-ppv-badge" :class="{ 'ppv-paid': isPpvPaid(movie.content) }">
+                            {{ getBadgeText(movie.content) }}
                         </div>
                         <img :src="movie.vertical_image_url" alt="Movie Poster" loading="lazy">
                     </Link>
                     <Link v-else :href="ShowSerieController.url(movie)">
-                        <div v-if="movie.content" class="card-ppv-badge" :class="{ 'ppv-paid': !movie.content.allow_membership || Number(movie.content.ppv_price) > 0 }">
-                            {{ (!movie.content.allow_membership || Number(movie.content.ppv_price) > 0) ? `PPV $${Number(movie.content.ppv_price).toFixed(2)}` : 'INCLUDED' }}
+                        <div v-if="movie.content" class="card-ppv-badge" :class="{ 'ppv-paid': isPpvPaid(movie.content) }">
+                            {{ getBadgeText(movie.content) }}
                         </div>
                         <img :src="movie.vertical_image_url" alt="Movie Poster" loading="lazy">
                     </Link>

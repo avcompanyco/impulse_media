@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Content;
 use App\Http\Controllers\Controller;
 use App\Models\Content;
 use App\Models\User;
+use App\Enums\Content\ContentType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -15,6 +16,12 @@ class ToggleFeaturedContentController extends Controller
         $_user = User::find(Auth::id());
         if (!$_user || !$_user->hasRole('admin')) {
             throw new \Exception(__("You are not authorized to perform this action"));
+        }
+
+        $typeValue = is_object($content->type) && isset($content->type->value) ? $content->type->value : (string)$content->type;
+
+        if (!in_array($typeValue, ['movies', 'series'])) {
+            return back()->with('error', __('Only Movies and Series can be featured on the hero carousel'));
         }
 
         $content->update([

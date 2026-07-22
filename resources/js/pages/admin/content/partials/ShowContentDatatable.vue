@@ -267,12 +267,14 @@ onMounted(() => {
                         </td>
                         <td class="action-buttons">
                             <button 
-                                class="btn-icon featured-toggle-btn" 
+                                v-if="content.type === 'movies' || content.type === 'series'"
+                                class="featured-toggle-btn" 
                                 :class="{ 'is-featured': content.is_featured }" 
                                 @click="toggleFeatured(content.id)" 
                                 :title="content.is_featured ? 'Remove from Hero Carousel' : 'Feature in Hero Carousel'"
                             >
-                                <i :class="content.is_featured ? 'fa-solid fa-star text-warning' : 'fa-regular fa-star'"></i>
+                                <i :class="content.is_featured ? 'fa-solid fa-star' : 'fa-regular fa-star'"></i>
+                                <span>{{ content.is_featured ? 'Featured' : 'Feature' }}</span>
                             </button>
                             <TogglePauseBtn :content="content" @updated="fetchContents" />
                             <DeleteContentModal :content="content" @updated="fetchContents" />
@@ -512,5 +514,41 @@ onMounted(() => {
 
 .action-buttons .btn-delete:hover {
     background-color: var(--error-color-hover);
+}
+
+.featured-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.07);
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.featured-toggle-btn:hover {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border-color: rgba(245, 158, 11, 0.4);
+    transform: translateY(-1px);
+}
+
+.featured-toggle-btn.is-featured {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: #ffffff;
+    border: 1px solid #fbbf24;
+    box-shadow: 0 2px 10px rgba(245, 158, 11, 0.4);
+}
+
+.featured-toggle-btn.is-featured:hover {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.6);
 }
 </style>

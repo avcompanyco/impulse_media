@@ -65,6 +65,8 @@ class StorePayoutRequestController extends Controller
             ]);
 
             return back()->with('success', __('Payout requested successfully.'));
+        } catch (\Illuminate\Validation\ValidationException $ve) {
+            throw $ve;
         } catch (\Throwable $th) {
             return back()->withErrors(['amount' => $th->getMessage()]);
         }

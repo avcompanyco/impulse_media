@@ -67,12 +67,17 @@ const payoutForm = useForm({
 });
 
 const isSubmittingPayout = ref(false);
+const payoutSuccessMessage = ref('');
 
 function submitPayoutRequest() {
     isSubmittingPayout.value = true;
+    payoutSuccessMessage.value = '';
+    const currentAmt = payoutForm.amount;
+    
     payoutForm.post('/creator/payout-request', {
         preserveScroll: true,
         onSuccess: () => {
+            payoutSuccessMessage.value = `Your payout request for $${Number(currentAmt).toFixed(2)} has been submitted successfully! Our administration team will review and process it shortly.`;
             const updatedUser = usePage().props.auth.user as any;
             payoutForm.payout_method = updatedUser.payout_method || 'paypal';
             payoutForm.payout_details = updatedUser.payout_details || '';
@@ -256,6 +261,17 @@ function getStatusBadgeClass(status: string) {
                 <!-- Request Payout Panel -->
                 <div class="dashboard-panel">
                     <h3 class="panel-title"><i class="fa-solid fa-money-bill-transfer text-accent"></i> Request Payout</h3>
+                    
+                    <div v-if="payoutSuccessMessage" class="payout-success-banner">
+                        <div class="banner-content">
+                            <i class="fa-solid fa-circle-check banner-icon"></i>
+                            <div>
+                                <strong style="font-size: 0.95rem; color: #48bb78;">Payout Request Submitted!</strong>
+                                <p style="margin: 0.2rem 0 0 0; font-size: 0.85rem; color: #e2e8f0;">{{ payoutSuccessMessage }}</p>
+                            </div>
+                        </div>
+                        <button type="button" class="close-banner-btn" @click="payoutSuccessMessage = ''">&times;</button>
+                    </div>
                     
                     <div class="revenue-split-info-box" style="margin-bottom: 1.5rem; background: rgba(72, 187, 120, 0.05); border: 1px solid rgba(72, 187, 120, 0.15); border-radius: 12px; padding: 0.9rem; display: flex; align-items: flex-start; gap: 0.75rem;">
                         <i class="fa-solid fa-circle-check text-success" style="font-size: 1.1rem; margin-top: 0.1rem;"></i>
@@ -708,6 +724,50 @@ function getStatusBadgeClass(status: string) {
 }
 
 /* Payout Request Panel */
+.payout-success-banner {
+    background: rgba(72, 187, 120, 0.12);
+    border: 1px solid rgba(72, 187, 120, 0.4);
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    color: #48bb78;
+    box-shadow: 0 4px 15px rgba(72, 187, 120, 0.15);
+    animation: fadeInBanner 0.3s ease-out;
+}
+
+.banner-content {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.banner-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.close-banner-btn {
+    background: none;
+    border: none;
+    color: #a0aec0;
+    font-size: 1.5rem;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.close-banner-btn:hover {
+    color: #fff;
+}
+
+@keyframes fadeInBanner {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 .threshold-alert {
     background: rgba(232, 68, 90, 0.08);
     border: 1px solid rgba(232, 68, 90, 0.2);

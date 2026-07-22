@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
+import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 
 const page = usePage();
@@ -36,7 +36,9 @@ const adType = ref<'preroll' | 'midroll'>('preroll');
 const prerollComplete = ref(false);
 const canSkip = ref(false);
 const skipTimerSeconds = ref(15);
+const isAdMuted = ref(true);
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
+let skipCountdownTimer: ReturnType<typeof setInterval> | null = null;
 
 // ─── Custom Campaign State ───
 const currentAd = ref<any>(null);
@@ -73,6 +75,7 @@ function showAd(type: 'preroll' | 'midroll') {
     customVideoEnded.value = false;
     canSkip.value = false;
     skipTimerSeconds.value = 15;
+    isAdMuted.value = true;
 
     const ad = getRandomAd();
 
@@ -105,12 +108,22 @@ function showAd(type: 'preroll' | 'midroll') {
         startCountdown();
     } else {
         countdown.value = 0;
+        startSkipCountdown();
+        nextTick(() => {
+            if (customVideoRef.value) {
+                customVideoRef.value.muted = isAdMuted.value;
+                customVideoRef.value.play().catch(err => {
+                    console.warn('Ad video autoplay was prevented or delayed:', err);
+                });
+            }
+        });
     }
 
     emit('ad-start');
 }
 
 function startCountdown() {
+    if (countdownTimer) clearInterval(countdownTimer);
     countdownTimer = setInterval(() => {
         countdown.value--;
         if (countdown.value <= 0) {
@@ -119,19 +132,45 @@ function startCountdown() {
     }, 1000);
 }
 
+function startSkipCountdown() {
+    if (skipCountdownTimer) clearInterval(skipCountdownTimer);
+    skipCountdownTimer = setInterval(() => {
+        if (skipTimerSeconds.value > 0) {
+            skipTimerSeconds.value--;
+        } else {
+            canSkip.value = true;
+            if (skipCountdownTimer) {
+                clearInterval(skipCountdownTimer);
+                skipCountdownTimer = null;
+            }
+        }
+    }, 1000);
+}
+
 function onCustomVideoEnded() {
     customVideoEnded.value = true;
     canSkip.value = true;
     skipTimerSeconds.value = 0;
+    hideAd();
 }
 
 function onCustomVideoTimeUpdate() {
     if (customVideoRef.value) {
         const time = customVideoRef.value.currentTime;
-        skipTimerSeconds.value = Math.max(0, Math.ceil(15 - time));
-        if (time >= 15) {
+        const remaining = Math.max(0, Math.ceil(15 - time));
+        if (remaining < skipTimerSeconds.value) {
+            skipTimerSeconds.value = remaining;
+        }
+        if (time >= 15 || skipTimerSeconds.value <= 0) {
             canSkip.value = true;
         }
+    }
+}
+
+function toggleAdMute() {
+    isAdMuted.value = !isAdMuted.value;
+    if (customVideoRef.value) {
+        customVideoRef.value.muted = isAdMuted.value;
     }
 }
 
@@ -145,6 +184,13 @@ function hideAd() {
     if (countdownTimer) {
         clearInterval(countdownTimer);
         countdownTimer = null;
+    }
+    if (skipCountdownTimer) {
+        clearInterval(skipCountdownTimer);
+        skipCountdownTimer = null;
+    }
+    if (customVideoRef.value) {
+        customVideoRef.value.pause();
     }
     isAdVisible.value = false;
 
@@ -182,9 +228,8 @@ watch(() => props.currentTime, (time) => {
 });
 
 onUnmounted(() => {
-    if (countdownTimer) {
-        clearInterval(countdownTimer);
-    }
+    if (countdownTimer) clearInterval(countdownTimer);
+    if (skipCountdownTimer) clearInterval(skipCountdownTimer);
 });
 
 defineExpose({ prerollComplete, isAdVisible, showAd });
@@ -221,10 +266,30 @@ defineExpose({ prerollComplete, isAdVisible, showAd });
                                 :src="currentAd.media_url"
                                 class="campaign-video"
                                 autoplay
+                                muted
                                 playsinline
                                 @ended="onCustomVideoEnded"
                                 @timeupdate="onCustomVideoTimeUpdate"
                             ></video>
+
+                            <!-- Audio Mute / Unmute Button for Video Ads -->
+                            <button
+                                type="button"
+                                class="ad-mute-toggle-btn"
+                                @click="toggleAdMute"
+                                :aria-label="isAdMuted ? 'Unmute ad' : 'Mute ad'"
+                            >
+                                <svg v-if="isAdMuted" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M11 5L6 9H2v6h4l5 4V5z" />
+                                    <line x1="23" y1="9" x2="17" y2="15" />
+                                    <line x1="17" y1="9" x2="23" y2="15" />
+                                </svg>
+                                <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+                                </svg>
+                                <span>{{ isAdMuted ? 'Unmute' : 'Mute' }}</span>
+                            </button>
                         </div>
 
                         <!-- Floating YouTube-style 15s Countdown & Skip Button Badge (Bottom Right) -->
@@ -348,6 +413,7 @@ defineExpose({ prerollComplete, isAdVisible, showAd });
     align-items: center;
     justify-content: center;
     background: #000000;
+    position: relative;
 }
 
 .campaign-image {
@@ -361,6 +427,31 @@ defineExpose({ prerollComplete, isAdVisible, showAd });
     max-height: 480px;
     object-fit: contain;
     display: block;
+}
+
+.ad-mute-toggle-btn {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(15, 23, 42, 0.82);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.ad-mute-toggle-btn:hover {
+    background: rgba(232, 68, 90, 0.9);
+    border-color: rgba(232, 68, 90, 1);
 }
 
 /* Floating Skip Pill Positioned on Media Bottom-Right */
@@ -451,7 +542,7 @@ defineExpose({ prerollComplete, isAdVisible, showAd });
 }
 
 /* Responsive UI UX Adjustments */
-@max-width: 768px {
+@media (max-width: 768px) {
     .ad-container {
         max-width: 100%;
         gap: 0.75rem;

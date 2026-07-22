@@ -32,7 +32,7 @@ function cancelEdit() {
 </script>
 
 <template>
-    <AdminDashboardLayout title="Terms & Conditions" headerTitle="Terms & Conditions">
+    <AdminDashboardLayout title="Terms & Conditions" headerTitle="Terms & Conditions Management">
         <!-- Tab Switcher -->
         <div class="terms-tabs">
             <button
@@ -40,14 +40,14 @@ function cancelEdit() {
                 :class="{ active: activeTab === 'spectator' }"
                 @click="activeTab = 'spectator'; cancelEdit()"
             >
-                <i class="fas fa-tv" style="margin-right:6px;"></i> Spectator Terms
+                <i class="fas fa-tv" style="margin-right:8px;"></i> Spectator Terms
             </button>
             <button
                 class="tab-btn"
                 :class="{ active: activeTab === 'creator' }"
                 @click="activeTab = 'creator'; cancelEdit()"
             >
-                <i class="fas fa-video" style="margin-right:6px;"></i> Creator Terms
+                <i class="fas fa-video" style="margin-right:8px;"></i> Creator Terms
             </button>
         </div>
 
@@ -58,18 +58,22 @@ function cancelEdit() {
                 <div class="terms-card-header">
                     <div>
                         <h3 class="terms-card-title">{{ term.title }}</h3>
-                        <span class="terms-badge">v{{ term.version }}</span>
+                        <span class="terms-badge">Version {{ term.version }}</span>
                         <span class="terms-badge" :class="term.is_active ? 'badge-active' : 'badge-inactive'">
                             {{ term.is_active ? 'Active' : 'Inactive' }}
                         </span>
                     </div>
-                    <button class="edit-btn" @click="startEdit(term)">
-                        <i class="fas fa-pencil-alt" style="margin-right:4px;"></i> Edit
+                    <button class="edit-btn-primary" @click="startEdit(term)">
+                        <i class="fas fa-edit" style="margin-right:6px;"></i> Edit Terms & Conditions
                     </button>
+                </div>
+
+                <div class="section-label-tc">
+                    <i class="fas fa-eye" style="margin-right:6px;"></i> Current Published Version Content:
                 </div>
                 <div class="terms-preview" v-html="term.content"></div>
                 <div class="terms-meta">
-                    Last updated: {{ new Date(term.updated_at).toLocaleDateString() }}
+                    <i class="fas fa-clock" style="margin-right:4px;"></i> Last updated: {{ new Date(term.updated_at).toLocaleString() }}
                 </div>
             </div>
 
@@ -82,46 +86,67 @@ function cancelEdit() {
                 @success="cancelEdit()"
             >
                 <div class="edit-form">
-                    <div class="form-group-tc">
-                        <label class="form-label-tc">Title</label>
-                        <input
-                            type="text"
-                            name="title"
-                            v-model="editTitle"
-                            class="form-input-tc"
-                        />
-                    </div>
-                    <div class="form-group-tc">
-                        <label class="form-label-tc">Version</label>
-                        <input
-                            type="text"
-                            name="version"
-                            v-model="editVersion"
-                            class="form-input-tc"
-                            style="max-width: 150px;"
-                        />
-                    </div>
-                    <div class="form-group-tc">
-                        <label class="form-label-tc">Content (HTML)</label>
-                        <textarea
-                            name="content"
-                            v-model="editContent"
-                            class="form-textarea-tc"
-                            rows="20"
-                        ></textarea>
+                    <div class="edit-header">
+                        <h2><i class="fas fa-pen-to-square" style="color: var(--primary-color); margin-right:8px;"></i> Editing {{ term.title }}</h2>
+                        <span class="edit-subtitle">Make changes below and see real-time preview instantly.</span>
                     </div>
 
-                    <!-- Live Preview -->
-                    <div class="form-group-tc">
-                        <label class="form-label-tc">Preview</label>
-                        <div class="terms-preview live-preview" v-html="editContent"></div>
+                    <div class="form-row-2col">
+                        <div class="form-group-tc">
+                            <label class="form-label-tc">Document Title</label>
+                            <input
+                                type="text"
+                                name="title"
+                                v-model="editTitle"
+                                class="form-input-tc"
+                                placeholder="Terms & Conditions Title"
+                            />
+                        </div>
+                        <div class="form-group-tc">
+                            <label class="form-label-tc">Version Number</label>
+                            <input
+                                type="text"
+                                name="version"
+                                v-model="editVersion"
+                                class="form-input-tc"
+                                placeholder="1.0"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Split Editor and Live Preview -->
+                    <div class="editor-split-grid">
+                        <!-- Left Column: HTML Editor -->
+                        <div class="form-group-tc">
+                            <label class="form-label-tc">
+                                <i class="fas fa-code" style="margin-right:6px; color: #a855f7;"></i> Content HTML Code Editor
+                            </label>
+                            <textarea
+                                name="content"
+                                v-model="editContent"
+                                class="form-textarea-tc"
+                                rows="22"
+                                placeholder="Enter HTML content here..."
+                            ></textarea>
+                        </div>
+
+                        <!-- Right Column: Real-time Live Preview -->
+                        <div class="form-group-tc">
+                            <label class="form-label-tc">
+                                <i class="fas fa-desktop" style="margin-right:6px; color: #22c55e;"></i> Live Real-Time Preview (Vista Previa en Vivo)
+                            </label>
+                            <div class="terms-preview live-preview" v-html="editContent || '<p style=\'color: gray;\'>Preview will appear here as you type...</p>'"></div>
+                        </div>
                     </div>
 
                     <div class="edit-actions">
-                        <button type="button" class="cancel-btn" @click="cancelEdit()">Cancel</button>
+                        <button type="button" class="cancel-btn" @click="cancelEdit()">
+                            <i class="fas fa-times" style="margin-right:6px;"></i> Cancel
+                        </button>
                         <button type="submit" class="save-btn" :disabled="processing">
                             <i class="fa-solid fa-circle-notch fa-spin" v-if="processing"></i>
-                            Save Changes
+                            <i class="fas fa-save" v-else style="margin-right:6px;"></i>
+                            Save & Publish Changes
                         </button>
                     </div>
                 </div>
@@ -129,7 +154,8 @@ function cancelEdit() {
         </div>
 
         <div v-if="filteredTerms.length === 0" class="empty-state">
-            <p>No terms & conditions found for {{ activeTab }} users.</p>
+            <i class="fas fa-file-contract" style="font-size: 2.5rem; margin-bottom: 1rem; color: var(--text-muted);"></i>
+            <p>No terms & conditions document found for {{ activeTab }} users.</p>
         </div>
     </AdminDashboardLayout>
 </template>
@@ -137,190 +163,271 @@ function cancelEdit() {
 <style scoped>
 .terms-tabs {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.75rem;
     margin-bottom: 2rem;
 }
 
 .tab-btn {
-    padding: 0.75rem 1.5rem;
-    border: 1.5px solid var(--border-color);
-    background: transparent;
+    padding: 0.85rem 1.75rem;
+    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.03);
     color: var(--text-muted);
-    border-radius: 10px;
+    border-radius: 12px;
     font-size: 0.95rem;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
 }
 
 .tab-btn.active {
-    background: var(--primary-color);
-    border-color: var(--primary-color);
+    background: var(--primary-color, #e8445a);
+    border-color: var(--primary-color, #e8445a);
     color: white;
+    box-shadow: 0 4px 20px rgba(232, 68, 90, 0.3);
 }
 
 .tab-btn:hover:not(.active) {
-    border-color: var(--primary-color);
-    color: var(--primary-color);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: white;
 }
 
 .terms-card {
-    background: var(--section-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 1.5rem;
+    background: rgba(15, 15, 35, 0.75);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 1.75rem;
     margin-bottom: 1.5rem;
 }
 
 .terms-card-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 1rem;
+    align-items: center;
+    margin-bottom: 1.25rem;
 }
 
 .terms-card-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--text-headings);
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #fff;
     margin: 0 0 0.5rem;
 }
 
 .terms-badge {
     display: inline-block;
-    padding: 0.2rem 0.6rem;
-    border-radius: 6px;
-    font-size: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
     font-weight: 600;
     background: rgba(255, 255, 255, 0.1);
-    color: var(--text-muted);
+    color: rgba(255, 255, 255, 0.8);
     margin-right: 0.5rem;
 }
 
 .badge-active {
-    background: rgba(34, 197, 94, 0.15);
-    color: #22c55e;
+    background: rgba(34, 197, 94, 0.18);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.3);
 }
 
 .badge-inactive {
-    background: rgba(239, 68, 68, 0.15);
-    color: #ef4444;
+    background: rgba(239, 68, 68, 0.18);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
-.edit-btn {
-    background: transparent;
-    border: 1px solid var(--border-color);
-    color: var(--text-muted);
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
+.edit-btn-primary {
+    background: linear-gradient(135deg, #e8445a, #b91c1c);
+    border: none;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
     cursor: pointer;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
+    font-weight: 600;
     transition: all 0.2s;
+    box-shadow: 0 4px 15px rgba(232, 68, 90, 0.3);
+    display: flex;
+    align-items: center;
 }
 
-.edit-btn:hover {
-    border-color: var(--primary-color);
-    color: var(--primary-color);
+.edit-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(232, 68, 90, 0.4);
+}
+
+.section-label-tc {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 0.5rem;
 }
 
 .terms-preview {
-    max-height: 300px;
+    max-height: 350px;
     overflow-y: auto;
-    padding: 1rem;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 8px;
-    color: var(--text-light);
-    font-size: 0.85rem;
+    padding: 1.25rem;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    color: rgba(255, 255, 255, 0.88);
+    font-size: 0.88rem;
     line-height: 1.7;
 }
 
-.terms-preview :deep(h2) { font-size: 1.1rem; margin-bottom: 0.4rem; color: var(--text-headings); }
-.terms-preview :deep(h3) { font-size: 0.95rem; margin: 0.8rem 0 0.3rem; color: var(--primary-color); }
-.terms-preview :deep(ul) { padding-left: 1.25rem; }
-.terms-preview :deep(strong) { color: var(--text-headings); }
+.terms-preview :deep(h2) { font-size: 1.15rem; margin-bottom: 0.5rem; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.3rem; }
+.terms-preview :deep(h3) { font-size: 1rem; margin: 1rem 0 0.4rem; color: #e8445a; }
+.terms-preview :deep(p) { margin-bottom: 0.6rem; }
+.terms-preview :deep(ul) { padding-left: 1.25rem; margin-bottom: 0.6rem; }
+.terms-preview :deep(li) { margin-bottom: 0.3rem; }
+.terms-preview :deep(strong) { color: #fff; }
 
 .live-preview {
-    max-height: 250px;
-    border: 1px solid var(--border-color);
+    max-height: 480px;
+    height: 480px;
+    border: 1.5px solid rgba(34, 197, 94, 0.4);
+    background: rgba(10, 25, 15, 0.4);
 }
 
 .terms-meta {
-    margin-top: 0.75rem;
-    font-size: 0.8rem;
-    color: var(--text-muted);
+    margin-top: 0.85rem;
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.5);
 }
 
 /* Edit Form */
 .edit-form {
     display: flex;
     flex-direction: column;
+    gap: 1.25rem;
+}
+
+.edit-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.edit-header h2 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: white;
+    margin: 0 0 0.25rem;
+}
+
+.edit-subtitle {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.form-row-2col {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
     gap: 1rem;
 }
 
-.form-group-tc { display: flex; flex-direction: column; gap: 0.3rem; }
-.form-label-tc { font-size: 0.9rem; font-weight: 500; color: var(--text-muted); }
+.editor-split-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+}
+
+.form-group-tc { display: flex; flex-direction: column; gap: 0.4rem; }
+.form-label-tc { font-size: 0.9rem; font-weight: 600; color: rgba(255, 255, 255, 0.85); display: flex; align-items: center; }
 
 .form-input-tc {
-    background: var(--input-bg);
-    border: 1px solid var(--border-color);
-    color: var(--text-dark-on-light-bg);
-    padding: 0.7rem 1rem;
-    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    color: #fff;
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
     font-size: 0.9rem;
     width: 100%;
 }
+.form-input-tc:focus {
+    border-color: var(--primary-color, #e8445a);
+    outline: none;
+}
 
 .form-textarea-tc {
-    background: var(--input-bg);
-    border: 1px solid var(--border-color);
-    color: var(--text-dark-on-light-bg);
-    padding: 0.7rem 1rem;
-    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1.5px solid rgba(168, 85, 247, 0.4);
+    color: #4ade80;
+    padding: 1rem;
+    border-radius: 12px;
     font-size: 0.85rem;
-    font-family: monospace;
+    font-family: 'Fira Code', monospace;
     width: 100%;
     resize: vertical;
+    line-height: 1.6;
+    height: 480px;
+}
+.form-textarea-tc:focus {
+    border-color: #a855f7;
+    outline: none;
 }
 
 .edit-actions {
     display: flex;
-    gap: 0.75rem;
+    gap: 1rem;
     justify-content: flex-end;
+    margin-top: 0.5rem;
 }
 
 .cancel-btn {
     background: transparent;
-    border: 1px solid var(--border-color);
-    color: var(--text-muted);
-    padding: 0.65rem 1.25rem;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.cancel-btn:hover {
-    border-color: var(--text-light);
-    color: var(--text-light);
-}
-
-.save-btn {
-    background: var(--primary-color);
-    border: none;
-    color: white;
-    padding: 0.65rem 1.5rem;
-    border-radius: 8px;
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.8);
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
 }
 
-.save-btn:hover { opacity: 0.9; }
+.cancel-btn:hover {
+    border-color: white;
+    color: white;
+}
+
+.save-btn {
+    background: linear-gradient(135deg, #22c55e, #15803d);
+    border: none;
+    color: white;
+    padding: 0.75rem 2rem;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+}
+
+.save-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+}
 .save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .empty-state {
     text-align: center;
-    padding: 3rem;
+    padding: 4rem 2rem;
     color: var(--text-muted);
-    font-size: 0.95rem;
+    font-size: 1rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 16px;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 992px) {
+    .editor-split-grid {
+        grid-template-columns: 1fr;
+    }
+    .form-row-2col {
+        grid-template-columns: 1fr;
+    }
 }
 </style>

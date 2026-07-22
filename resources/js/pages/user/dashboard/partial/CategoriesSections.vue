@@ -163,11 +163,13 @@ function scrollRow(rowId: string, direction: 'left' | 'right') {
     color: var(--text-light, #ffffff);
     text-decoration: none;
     padding: 0.35rem 0.9rem;
-    border-radius: 12px;
+    border-radius: 16px;
     font-size: 0.85rem;
     font-weight: 600;
     transition: all 0.25s ease;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .view-all-btn:hover {
@@ -175,6 +177,24 @@ function scrollRow(rowId: string, direction: 'left' | 'right') {
     color: #ffffff;
     border-color: #e8445a;
     box-shadow: 0 4px 12px rgba(232, 68, 90, 0.4);
+}
+
+@media (max-width: 768px) {
+    .section-header {
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .section-title {
+        font-size: 1.15rem;
+        line-height: 1.25;
+    }
+
+    .view-all-btn {
+        padding: 0.25rem 0.65rem;
+        font-size: 0.72rem;
+        border-radius: 14px;
+    }
 }
 
 /* Slider Container with Glassmorphism Arrow Positioning */

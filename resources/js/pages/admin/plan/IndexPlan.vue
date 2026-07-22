@@ -122,6 +122,17 @@ const closeDeleteModal = () => {
     gap: 1.5rem;
 }
 
+@media (max-width: 768px) {
+    .plans-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .plan-card {
+        padding: 1rem;
+    }
+}
+
 .plan-card {
     background-color: var(--section-bg);
     padding: 1.5rem;

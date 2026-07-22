@@ -184,6 +184,33 @@ onMounted(() => {
     margin-bottom: 2.5rem;
 }
 
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+        padding: 1rem;
+        border-radius: 10px;
+    }
+
+    .stat-card h3 {
+        font-size: 0.72rem;
+        letter-spacing: 0;
+    }
+
+    .stat-card .stat-value {
+        font-size: 1.4rem;
+    }
+
+    .dashboard-section {
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+}
+
 .stat-card {
     background-color: var(--section-bg);
     padding: 1.5rem;

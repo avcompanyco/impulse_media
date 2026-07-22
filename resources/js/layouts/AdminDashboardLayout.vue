@@ -557,4 +557,43 @@ watch(() => usePage().props, (newVal: any) => {
         display: block;
     }
 }
+
+@media (max-width: 768px) {
+    .admin-main-content {
+        padding: 1rem !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+    }
+
+    .content-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0.75rem !important;
+        margin-bottom: 1.25rem !important;
+        width: 100% !important;
+    }
+
+    .page-module-title {
+        font-size: 1.35rem !important;
+        line-height: 1.3 !important;
+        overflow-wrap: break-word !important;
+        word-break: break-word !important;
+        width: 100% !important;
+    }
+
+    .admin-table-container,
+    .admin-table-wrapper,
+    .datatable-wrapper {
+        width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        display: block !important;
+    }
+
+    .admin-table {
+        min-width: 600px !important;
+    }
+}
 </style>

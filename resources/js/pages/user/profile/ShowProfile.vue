@@ -174,51 +174,54 @@ function logout() {
 
 .app-subcontainer {
     padding-bottom: 80px;
-    max-width: 480px;
+    max-width: 500px;
     margin: 0 auto;
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    box-sizing: border-box;
 }
 
 .page-title {
-    font-size: 2rem;
+    font-size: 1.75rem;
     font-weight: 700;
-    margin-top: 1.5rem;
-    margin-bottom: 2.5rem;
+    margin-top: 1.25rem;
+    margin-bottom: 2rem;
+    text-align: center;
+    width: 100%;
 }
 
 .section-title {
-    font-size: 1.75rem;
+    font-size: 1.4rem;
     font-weight: 600;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
 }
 
 .info-card {
     background-color: #E6E6E6;
     border-radius: 1.25rem;
-    padding: 1.5rem;
+    padding: 1.25rem;
     color: black;
     position: relative;
-    margin-bottom: 3rem;
+    margin-bottom: 2.5rem;
     display: flex;
     align-items: center;
-    gap: 1.5rem;
+    gap: 1rem;
 }
 
 .user-avatar {
-    width: 80px;
-    height: 80px;
+    width: 64px;
+    height: 64px;
     border-radius: 50%;
     object-fit: cover;
     flex-shrink: 0;
 }
 
 .info-text {
-    font-size: 1.1rem;
-    /* Ajustado para mejor fit */
+    font-size: 0.95rem;
     font-weight: 500;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.35rem;
     line-height: 1.4;
+    word-break: break-word;
 }
 
 .info-text:last-child {

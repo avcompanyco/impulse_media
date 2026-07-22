@@ -524,11 +524,13 @@ const logout = () => {
     background-color: rgba(255, 255, 255, 0.1);
     color: var(--text-light);
     text-decoration: none;
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    font-weight: 500;
+    padding: 0.25rem 0.65rem;
+    border-radius: 14px;
+    font-size: 0.75rem;
+    font-weight: 600;
     transition: background-color 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .view-all-btn:hover {

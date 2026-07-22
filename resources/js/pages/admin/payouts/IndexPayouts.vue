@@ -362,91 +362,77 @@ function getStatusBadgeClass(status: string) {
                 </div>
             </div>
 
-            <!-- Dashboard Layout Grid -->
+            <!-- Dashboard Layout Grid (Balanced 2-Column) -->
             <div class="admin-layout-grid">
-                <!-- Left Column: Settings -->
-                <div style="display: flex; flex-direction: column; gap: 2rem;">
-                    <!-- Left: Monetization Configuration Settings -->
-                    <div class="admin-settings-panel">
-                        <h3 class="panel-title">
-                            <i class="fa-solid fa-gears text-accent"></i> Platform Settings
-                        </h3>
-                        <form @submit.prevent="saveSettings" class="settings-form">
-                            <div class="form-group">
-                                <label class="form-label">Creator Revenue Share (%)</label>
-                                <input 
-                                    type="number" 
-                                    v-model="settingsForm.revenue_split_ratio" 
-                                    class="form-control" 
-                                    min="0" 
-                                    max="100" 
-                                    required
-                                >
-                                <span class="form-help">Percentage of PPV sales paid directly to creators. The platform retains the remainder.</span>
-                                <span v-if="settingsForm.errors.revenue_split_ratio" class="error-msg">{{ settingsForm.errors.revenue_split_ratio }}</span>
+                <!-- Left Column: Pending Payout Requests + Monthly Membership Split -->
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <!-- Pending Payout Requests Panel -->
+                    <div class="admin-payouts-panel">
+                        <div class="panel-header-with-badge">
+                            <h3 class="panel-title" style="margin: 0; border: none; padding: 0;">
+                                <i class="fa-solid fa-circle-dollar-to-slot text-accent"></i> Pending Payout Requests
+                            </h3>
+                            <span class="pending-count-badge">
+                                {{ pendingPayouts.length }} Pending
+                            </span>
+                        </div>
+
+                        <!-- Search Filter for Pending Requests -->
+                        <div v-if="pendingPayouts.length > 0" class="pending-search-bar">
+                            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                            <input 
+                                type="text" 
+                                v-model="pendingSearchQuery" 
+                                class="pending-search-input" 
+                                placeholder="Filter pending requests by creator or method..."
+                            >
+                        </div>
+
+                        <!-- Scrollable Feed Container -->
+                        <div class="payout-cards-container custom-scrollbar">
+                            <div v-if="pendingPayouts.length === 0" class="empty-requests-msg">
+                                <i class="fa-solid fa-circle-check checked-icon"></i>
+                                <p>All payout requests have been processed. Great job!</p>
                             </div>
 
-                            <div class="form-group">
-                                <label class="form-label">Minimum Withdrawal Threshold ($)</label>
-                                <input 
-                                    type="number" 
-                                    v-model="settingsForm.min_payout_threshold" 
-                                    class="form-control" 
-                                    min="1" 
-                                    step="0.01" 
-                                    required
-                                >
-                                <span class="form-help">Minimum balance required for a creator to request a payout.</span>
-                                <span v-if="settingsForm.errors.min_payout_threshold" class="error-msg">{{ settingsForm.errors.min_payout_threshold }}</span>
+                            <div v-else-if="filteredPendingPayouts.length === 0" class="empty-requests-msg">
+                                <i class="fa-solid fa-filter checked-icon"></i>
+                                <p>No pending payout requests match your search query.</p>
                             </div>
 
-                            <div class="form-group">
-                                <label class="form-label">Member PPV Discount Rate (%)</label>
-                                <input 
-                                    type="number" 
-                                    v-model="settingsForm.membership_discount_rate" 
-                                    class="form-control" 
-                                    min="0" 
-                                    max="100" 
-                                    required
-                                >
-                                <span class="form-help">Discount percentage applied to PPV purchases for spectators with an active Impulse Membership.</span>
-                                <span v-if="settingsForm.errors.membership_discount_rate" class="error-msg">{{ settingsForm.errors.membership_discount_rate }}</span>
-                            </div>
+                            <div v-for="payout in filteredPendingPayouts" :key="payout.id" class="payout-request-card">
+                                <div class="card-creator-info">
+                                    <img 
+                                        :src="payout.creator.image_url || '/images/default-avatar.png'" 
+                                        alt="Creator Avatar" 
+                                        class="creator-avatar"
+                                    >
+                                    <div class="creator-meta">
+                                        <span class="creator-name">{{ payout.creator.name }}</span>
+                                        <span class="creator-handle">@{{ payout.creator.username }}</span>
+                                    </div>
+                                    <span class="payout-amount">${{ Number(payout.amount).toFixed(2) }}</span>
+                                </div>
 
-                            <div class="form-group">
-                                <label class="form-label">Minimum PPV Purchase Price ($)</label>
-                                <input 
-                                    type="number" 
-                                    v-model="settingsForm.min_ppv_price" 
-                                    class="form-control" 
-                                    min="0.01" 
-                                    step="0.01" 
-                                    required
-                                >
-                                <span class="form-help">Minimum price creators are allowed to set for paid videos.</span>
-                                <span v-if="settingsForm.errors.min_ppv_price" class="error-msg">{{ settingsForm.errors.min_ppv_price }}</span>
-                            </div>
+                                <div class="card-details-box">
+                                    <span class="details-label">Payment Method:</span>
+                                    <span class="details-value text-capitalize">{{ payout.payout_method.replace('_', ' ') }}</span>
+                                    <div class="details-text-area">
+                                        <span class="details-label">Payout Destination:</span>
+                                        <p class="details-text">{{ payout.payout_details }}</p>
+                                    </div>
+                                </div>
 
-                            <div class="form-group">
-                                <label class="form-label">Free PPV Video Preview Limit (Seconds)</label>
-                                <input 
-                                    type="number" 
-                                    v-model="settingsForm.free_preview_seconds" 
-                                    class="form-control" 
-                                    min="1" 
-                                    step="1" 
-                                    required
-                                >
-                                <span class="form-help">Number of seconds a spectator is allowed to watch a PPV video before the paywall blocks it (e.g. 300 for 5 minutes).</span>
-                                <span v-if="settingsForm.errors.free_preview_seconds" class="error-msg">{{ settingsForm.errors.free_preview_seconds }}</span>
+                                <div class="card-actions">
+                                    <button class="action-btn approve-btn" @click="startApproval(payout.id)">
+                                        <i class="fa-solid fa-check"></i> Approve Payout
+                                    </button>
+                                    <button class="action-btn reject-btn" @click="startRejection(payout.id)">
+                                        <i class="fa-solid fa-xmark"></i> Reject Request
+                                    </button>
+                                </div>
                             </div>
-
-                            <button type="submit" class="submit-btn" :disabled="isSavingSettings">
-                                <i class="fa-solid fa-circle-notch fa-spin" v-if="isSavingSettings"></i>
-                                Save Platform Settings
-                            </button>
-                        </form>
+                        </div>
                     </div>
 
                     <!-- Calculate Monthly Earnings Split Card -->
@@ -473,84 +459,98 @@ function getStatusBadgeClass(status: string) {
                         </form>
 
                         <!-- Console Output -->
-                        <div v-if="splitSuccessOutput" class="console-output-box" style="margin-top: 1.5rem;">
+                        <div v-if="splitSuccessOutput" class="console-output-box" style="margin-top: 1.25rem;">
                             <span class="console-label">Execution Logs</span>
                             <pre class="console-text">{{ splitSuccessOutput }}</pre>
                         </div>
-                        <div v-if="splitErrorMsg" class="console-output-box error" style="margin-top: 1.5rem;">
+                        <div v-if="splitErrorMsg" class="console-output-box error" style="margin-top: 1.25rem;">
                             <span class="console-label">Error</span>
                             <pre class="console-text">{{ splitErrorMsg }}</pre>
                         </div>
                     </div>
                 </div>
 
-                <!-- Right: Pending Payout Requests Panel (Scrollable & Searchable) -->
-                <div class="admin-payouts-panel">
-                    <div class="panel-header-with-badge">
-                        <h3 class="panel-title" style="margin: 0; border: none; padding: 0;">
-                            <i class="fa-solid fa-circle-dollar-to-slot text-accent"></i> Pending Payout Requests
-                        </h3>
-                        <span class="pending-count-badge">
-                            {{ pendingPayouts.length }} Pending
-                        </span>
-                    </div>
-
-                    <!-- Search Filter for Pending Requests -->
-                    <div v-if="pendingPayouts.length > 0" class="pending-search-bar">
-                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                        <input 
-                            type="text" 
-                            v-model="pendingSearchQuery" 
-                            class="pending-search-input" 
-                            placeholder="Filter pending requests by creator or method..."
-                        >
-                    </div>
-
-                    <!-- Fixed Height Scrollable Feed Container -->
-                    <div class="payout-cards-container custom-scrollbar">
-                        <div v-if="pendingPayouts.length === 0" class="empty-requests-msg">
-                            <i class="fa-solid fa-circle-check checked-icon"></i>
-                            <p>All payout requests have been processed. Great job!</p>
+                <!-- Right Column: Monetization Configuration Settings -->
+                <div class="admin-settings-panel">
+                    <h3 class="panel-title">
+                        <i class="fa-solid fa-gears text-accent"></i> Platform Settings
+                    </h3>
+                    <form @submit.prevent="saveSettings" class="settings-form">
+                        <div class="form-group">
+                            <label class="form-label">Creator Revenue Share (%)</label>
+                            <input 
+                                type="number" 
+                                v-model="settingsForm.revenue_split_ratio" 
+                                class="form-control" 
+                                min="0" 
+                                max="100" 
+                                required
+                            >
+                            <span class="form-help">Percentage of PPV sales paid directly to creators. The platform retains the remainder.</span>
+                            <span v-if="settingsForm.errors.revenue_split_ratio" class="error-msg">{{ settingsForm.errors.revenue_split_ratio }}</span>
                         </div>
 
-                        <div v-else-if="filteredPendingPayouts.length === 0" class="empty-requests-msg">
-                            <i class="fa-solid fa-filter checked-icon"></i>
-                            <p>No pending payout requests match your search query.</p>
+                        <div class="form-group">
+                            <label class="form-label">Minimum Withdrawal Threshold ($)</label>
+                            <input 
+                                type="number" 
+                                v-model="settingsForm.min_payout_threshold" 
+                                class="form-control" 
+                                min="1" 
+                                step="0.01" 
+                                required
+                            >
+                            <span class="form-help">Minimum balance required for a creator to request a payout.</span>
+                            <span v-if="settingsForm.errors.min_payout_threshold" class="error-msg">{{ settingsForm.errors.min_payout_threshold }}</span>
                         </div>
 
-                        <div v-for="payout in filteredPendingPayouts" :key="payout.id" class="payout-request-card">
-                            <div class="card-creator-info">
-                                <img 
-                                    :src="payout.creator.image_url || '/images/default-avatar.png'" 
-                                    alt="Creator Avatar" 
-                                    class="creator-avatar"
-                                >
-                                <div class="creator-meta">
-                                    <span class="creator-name">{{ payout.creator.name }}</span>
-                                    <span class="creator-handle">@{{ payout.creator.username }}</span>
-                                </div>
-                                <span class="payout-amount">${{ Number(payout.amount).toFixed(2) }}</span>
-                            </div>
-
-                            <div class="card-details-box">
-                                <span class="details-label">Payment Method:</span>
-                                <span class="details-value text-capitalize">{{ payout.payout_method.replace('_', ' ') }}</span>
-                                <div class="details-text-area">
-                                    <span class="details-label">Payout Destination:</span>
-                                    <p class="details-text">{{ payout.payout_details }}</p>
-                                </div>
-                            </div>
-
-                            <div class="card-actions">
-                                <button class="action-btn approve-btn" @click="startApproval(payout.id)">
-                                    <i class="fa-solid fa-check"></i> Approve Payout
-                                </button>
-                                <button class="action-btn reject-btn" @click="startRejection(payout.id)">
-                                    <i class="fa-solid fa-xmark"></i> Reject Request
-                                </button>
-                            </div>
+                        <div class="form-group">
+                            <label class="form-label">Member PPV Discount Rate (%)</label>
+                            <input 
+                                type="number" 
+                                v-model="settingsForm.membership_discount_rate" 
+                                class="form-control" 
+                                min="0" 
+                                max="100" 
+                                required
+                            >
+                            <span class="form-help">Discount percentage applied to PPV purchases for spectators with an active Impulse Membership.</span>
+                            <span v-if="settingsForm.errors.membership_discount_rate" class="error-msg">{{ settingsForm.errors.membership_discount_rate }}</span>
                         </div>
-                    </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Minimum PPV Purchase Price ($)</label>
+                            <input 
+                                type="number" 
+                                v-model="settingsForm.min_ppv_price" 
+                                class="form-control" 
+                                min="0.01" 
+                                step="0.01" 
+                                required
+                            >
+                            <span class="form-help">Minimum price creators are allowed to set for paid videos.</span>
+                            <span v-if="settingsForm.errors.min_ppv_price" class="error-msg">{{ settingsForm.errors.min_ppv_price }}</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Free PPV Video Preview Limit (Seconds)</label>
+                            <input 
+                                type="number" 
+                                v-model="settingsForm.free_preview_seconds" 
+                                class="form-control" 
+                                min="1" 
+                                step="1" 
+                                required
+                            >
+                            <span class="form-help">Number of seconds a spectator is allowed to watch a PPV video before the paywall blocks it (e.g. 300 for 5 minutes).</span>
+                            <span v-if="settingsForm.errors.free_preview_seconds" class="error-msg">{{ settingsForm.errors.free_preview_seconds }}</span>
+                        </div>
+
+                        <button type="submit" class="submit-btn" :disabled="isSavingSettings">
+                            <i class="fa-solid fa-circle-notch fa-spin" v-if="isSavingSettings"></i>
+                            Save Platform Settings
+                        </button>
+                    </form>
                 </div>
             </div>
 
@@ -994,14 +994,15 @@ function getStatusBadgeClass(status: string) {
     color: #fff;
 }
 
-/* Grid Layout */
+/* Grid Layout (Balanced 2-Column) */
 .admin-layout-grid {
     display: grid;
-    grid-template-columns: 1fr 1.5fr;
-    gap: 2rem;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 1.5rem;
+    align-items: start;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1100px) {
     .admin-layout-grid {
         grid-template-columns: 1fr;
     }
@@ -1013,7 +1014,7 @@ function getStatusBadgeClass(status: string) {
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 24px;
-    padding: 2rem;
+    padding: 1.75rem;
     box-sizing: border-box;
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
 }
@@ -1194,7 +1195,7 @@ function getStatusBadgeClass(status: string) {
 
 /* Scrollable Payout Cards Container */
 .payout-cards-container {
-    max-height: 540px;
+    max-height: 460px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;

@@ -210,6 +210,14 @@ class User extends Authenticatable
         return $this->user_type === UserType::CREATOR;
     }
 
+    /**
+     * Check if user is an admin
+     */
+    public function isAdmin(): bool
+    {
+        return $this->user_type === UserType::ADMIN || $this->hasRole('admin');
+    }
+
     public function getIsSpectatorAttribute(): bool
     {
         return $this->isSpectator();
@@ -218,6 +226,11 @@ class User extends Authenticatable
     public function getIsCreatorAttribute(): bool
     {
         return $this->isCreator();
+    }
+
+    public function getIsAdminAttribute(): bool
+    {
+        return $this->isAdmin();
     }
 
     /**

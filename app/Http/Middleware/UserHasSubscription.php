@@ -23,8 +23,8 @@ class UserHasSubscription
         }
         $user = User::find(Auth::user()->id);
         
-        // Spectators are allowed to browse the catalog, preview, and buy PPV without subscription
-        if ($user->user_type === UserType::SPECTATOR) {
+        // Admins and Spectators are allowed to browse and access the platform without creator subscription
+        if ($user->hasRole('admin') || $user->user_type === UserType::ADMIN || $user->user_type === UserType::SPECTATOR) {
             return $next($request);
         }
 

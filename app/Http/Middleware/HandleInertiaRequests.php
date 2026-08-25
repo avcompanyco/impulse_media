@@ -107,7 +107,7 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user() ? array_merge($request->user()->toArray(), [
                     'is_member' => $request->user()->isImpulseMember(),
-                    'is_admin' => $request->user()->hasRole('admin'),
+                    'is_admin' => $request->user()->hasRole('admin') || $request->user()->user_type === \App\Enums\User\UserType::ADMIN,
                 ]) : null,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',

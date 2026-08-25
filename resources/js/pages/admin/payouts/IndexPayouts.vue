@@ -35,13 +35,32 @@ interface Settings {
 
 interface PlatformStats {
     platform_earnings: number;
+    gross_ppv_revenue?: number;
+    platform_ppv_revenue?: number;
+    subscription_revenue?: number;
     total_paid_out: number;
     total_pending: number;
+}
+
+interface PurchaseItem {
+    id: number;
+    user_name: string;
+    user_username: string;
+    user_email: string;
+    user_image: string;
+    content_title: string;
+    content_type: string;
+    amount: number;
+    creator_share: number;
+    platform_share: number;
+    stripe_payment_intent_id: string | null;
+    created_at: string;
 }
 
 const props = defineProps<{
     pendingPayouts: Payout[];
     payoutsHistory: Payout[];
+    recentPurchases?: PurchaseItem[];
     settings: Settings;
     platformStats: PlatformStats;
     creatorStats: any[];
@@ -140,6 +159,21 @@ const filteredCreatorStats = computed(() => {
         (c.name && c.name.toLowerCase().includes(q)) ||
         (c.username && c.username.toLowerCase().includes(q)) ||
         (c.email && c.email.toLowerCase().includes(q))
+    );
+});
+
+// Filter for PPV Purchases & Transactions
+const searchPurchaseQuery = ref('');
+const filteredPurchases = computed(() => {
+    if (!props.recentPurchases) return [];
+    if (!searchPurchaseQuery.value.trim()) return props.recentPurchases;
+    const q = searchPurchaseQuery.value.toLowerCase().trim();
+    return props.recentPurchases.filter(p => 
+        (p.user_name && p.user_name.toLowerCase().includes(q)) ||
+        (p.user_username && p.user_username.toLowerCase().includes(q)) ||
+        (p.user_email && p.user_email.toLowerCase().includes(q)) ||
+        (p.content_title && p.content_title.toLowerCase().includes(q)) ||
+        (p.stripe_payment_intent_id && p.stripe_payment_intent_id.toLowerCase().includes(q))
     );
 });
 
@@ -566,6 +600,84 @@ function getStatusBadgeClass(status: string) {
                             Save Platform Settings
                         </button>
                     </form>
+                </div>
+            </div>
+
+            <!-- PPV Content Purchases & Transactions Log -->
+            <div class="admin-panel full-width">
+                <div class="panel-header-with-badge" style="margin-bottom: 1.25rem;">
+                    <h3 class="panel-title" style="margin: 0; border: none; padding: 0;">
+                        <i class="fa-solid fa-cart-shopping text-accent"></i> PPV Sales & Transactions Log
+                    </h3>
+                    <span class="pending-count-badge" style="background: rgba(72, 187, 120, 0.15); color: #48bb78; border-color: rgba(72, 187, 120, 0.3);">
+                        {{ (recentPurchases || []).length }} Purchases Completed
+                    </span>
+                </div>
+
+                <!-- Search Bar for Purchases -->
+                <div class="pending-search-bar" style="margin-bottom: 1.25rem;">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input 
+                        type="text" 
+                        v-model="searchPurchaseQuery" 
+                        class="pending-search-input" 
+                        placeholder="Search purchases by buyer, content title, or Stripe intent ID..."
+                    >
+                </div>
+
+                <div class="table-scroll-container custom-scrollbar">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Buyer / Customer</th>
+                                <th>Content Title</th>
+                                <th>Type</th>
+                                <th>Total Price</th>
+                                <th>Creator Share</th>
+                                <th>Platform Net</th>
+                                <th>Stripe Intent ID</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-if="!recentPurchases || recentPurchases.length === 0">
+                                <td colspan="8" class="empty-table-msg">No PPV purchases recorded yet.</td>
+                            </tr>
+                            <tr v-else-if="filteredPurchases.length === 0">
+                                <td colspan="8" class="empty-table-msg">No purchases match your search query.</td>
+                            </tr>
+                            <tr v-for="purchase in filteredPurchases" :key="purchase.id">
+                                <td style="white-space: nowrap;">{{ purchase.created_at }}</td>
+                                <td>
+                                    <div class="table-creator-cell">
+                                        <img :src="purchase.user_image" alt="Avatar" class="table-avatar">
+                                        <div class="creator-meta">
+                                            <span class="creator-name" style="font-weight: 700; color: #fff;">{{ purchase.user_name }}</span>
+                                            <span class="creator-handle" style="font-size: 0.8rem; color: #a0aec0;">@{{ purchase.user_username }} &bull; {{ purchase.user_email }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td style="color: #fff; font-weight: 600;">{{ purchase.content_title }}</td>
+                                <td>
+                                    <span class="badge" style="background: rgba(232, 68, 90, 0.2); color: #e8445a; text-transform: uppercase;">
+                                        {{ purchase.content_type }}
+                                    </span>
+                                </td>
+                                <td class="font-bold text-accent-green" style="font-weight: 700; color: #48bb78;">
+                                    ${{ Number(purchase.amount).toFixed(2) }}
+                                </td>
+                                <td style="color: #63b3ed; font-weight: 600;">
+                                    ${{ Number(purchase.creator_share).toFixed(2) }}
+                                </td>
+                                <td style="color: #f6ad55; font-weight: 600;">
+                                    ${{ Number(purchase.platform_share).toFixed(2) }}
+                                </td>
+                                <td style="font-family: monospace; font-size: 0.8rem; color: #a0aec0;">
+                                    {{ purchase.stripe_payment_intent_id || 'N/A' }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 

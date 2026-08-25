@@ -135,9 +135,15 @@ class SubscriptionController extends Controller
     public function cancel(Request $request)
     {
         $user = Auth::user();
-        $userType = $user ? ($user->user_type ?? 'creator') : 'creator';
+        if ($user && ($user->hasRole('admin') || $user->user_type === \App\Enums\User\UserType::ADMIN)) {
+            return redirect()->route('admin.dashboard');
+        }
+
+        $rawType = $user ? ($user->user_type instanceof \App\Enums\User\UserType ? $user->user_type->value : ($user->user_type ?? 'creator')) : 'creator';
+        $planType = $rawType === 'spectator' ? 'spectator' : 'creator';
+
         $plans = Plan::where('status', 'active')
-            ->where('plan_type', $userType)
+            ->where('plan_type', $planType)
             ->get();
 
         return Inertia::render('subscription/Cancel', [

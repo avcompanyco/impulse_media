@@ -11,6 +11,8 @@ use App\Models\Movie;
 use App\Models\Serie;
 use App\Models\Short;
 
+use App\Models\Purchase;
+
 use App\Enums\Content\ContentStatus;
 use App\Enums\Payment\PaymentStatus;
 
@@ -18,8 +20,9 @@ class IndexAdminDashboardController extends Controller
 {
     public function __invoke()
     {
-        $totalRevenue = DB::table('payments')->where('status', PaymentStatus::COMPLETED)->sum('amount');
-
+        $subscriptionRevenue = (float) DB::table('payments')->where('status', PaymentStatus::COMPLETED)->sum('amount');
+        $ppvRevenue = (float) DB::table('purchases')->where('status', 'completed')->sum('amount');
+        $totalRevenue = $subscriptionRevenue + $ppvRevenue;
 
         $cards = [
             [
@@ -39,6 +42,10 @@ class IndexAdminDashboardController extends Controller
             [
                 'title' => __("Total Revenue"),
                 'value' => "$" . number_format($totalRevenue, 2),
+            ],
+            [
+                'title' => __("PPV Sales Revenue"),
+                'value' => "$" . number_format($ppvRevenue, 2),
             ],
             [
                 'title' => 'Total Movies',

@@ -18,6 +18,11 @@ class LoginUserController extends Controller
 
         $request->session()->regenerate();
 
+        $user = auth()->user();
+        if ($user && ($user->hasRole('admin') || $user->user_type === \App\Enums\User\UserType::ADMIN)) {
+            return redirect()->intended(route('admin.dashboard', absolute: false));
+        }
+
         return redirect()->intended(route('dashboard', absolute: false));
     }
 }

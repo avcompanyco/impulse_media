@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Payment;
 
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
+use App\Models\Purchase;
 use App\Models\User;
 use App\Enums\Payment\PaymentStatus;
 use Carbon\Carbon;
@@ -20,7 +21,7 @@ class RevenueController extends Controller
         }
 
         $period = $request->query('period', 'monthly'); // daily, monthly, annually
-        $year = $request->query('year', now()->year);
+        $year = (int) $request->query('year', now()->year);
 
         $revenueData = $this->getRevenueData($period, $year);
 
@@ -29,56 +30,75 @@ class RevenueController extends Controller
 
     private function getRevenueData(string $period, int $year): array
     {
-        $baseQuery = Payment::where('status', PaymentStatus::COMPLETED)
-            ->whereYear('paid_at', $year);
-
         switch ($period) {
             case 'daily':
-                return $this->getDailyRevenue($baseQuery, $year);
+                return $this->getDailyRevenue($year);
             case 'monthly':
-                return $this->getMonthlyRevenue($baseQuery, $year);
+                return $this->getMonthlyRevenue($year);
             case 'annually':
-                return $this->getAnnualRevenue($baseQuery);
+                return $this->getAnnualRevenue();
             default:
-                return $this->getMonthlyRevenue($baseQuery, $year);
+                return $this->getMonthlyRevenue($year);
         }
     }
 
-    private function getDailyRevenue($query, int $year): array
+    private function getDailyRevenue(int $year): array
     {
-        $month = request()->query('month', now()->month);
+        $month = (int) request()->query('month', now()->month);
         
-        $data = $query->whereMonth('paid_at', $month)
+        $paymentData = Payment::where('status', PaymentStatus::COMPLETED)
+            ->whereYear('paid_at', $year)
+            ->whereMonth('paid_at', $month)
             ->select(
                 DB::raw('DAY(paid_at) as day'),
                 DB::raw('SUM(amount) as revenue')
             )
             ->groupBy('day')
-            ->orderBy('day')
+            ->get();
+
+        $purchaseData = Purchase::where('status', 'completed')
+            ->whereYear('created_at', $year)
+            ->whereMonth('created_at', $month)
+            ->select(
+                DB::raw('DAY(created_at) as day'),
+                DB::raw('SUM(amount) as revenue')
+            )
+            ->groupBy('day')
             ->get();
 
         $daysInMonth = Carbon::create($year, $month)->daysInMonth;
         $result = [];
 
         for ($day = 1; $day <= $daysInMonth; $day++) {
-            $dayData = $data->firstWhere('day', $day);
+            $pRev = (float) ($paymentData->firstWhere('day', $day)?->revenue ?? 0);
+            $purRev = (float) ($purchaseData->firstWhere('day', $day)?->revenue ?? 0);
             $result[] = [
                 'day' => $day,
-                'revenue' => $dayData ? (float) $dayData->revenue : 0
+                'revenue' => $pRev + $purRev
             ];
         }
 
         return $result;
     }
 
-    private function getMonthlyRevenue($query, int $year): array
+    private function getMonthlyRevenue(int $year): array
     {
-        $data = $query->select(
+        $paymentData = Payment::where('status', PaymentStatus::COMPLETED)
+            ->whereYear('paid_at', $year)
+            ->select(
                 DB::raw('MONTH(paid_at) as month'),
                 DB::raw('SUM(amount) as revenue')
             )
             ->groupBy('month')
-            ->orderBy('month')
+            ->get();
+
+        $purchaseData = Purchase::where('status', 'completed')
+            ->whereYear('created_at', $year)
+            ->select(
+                DB::raw('MONTH(created_at) as month'),
+                DB::raw('SUM(amount) as revenue')
+            )
+            ->groupBy('month')
             ->get();
 
         $months = [
@@ -90,38 +110,54 @@ class RevenueController extends Controller
         $result = [];
 
         foreach ($months as $monthNum => $monthName) {
-            $monthData = $data->firstWhere('month', $monthNum);
+            $pRev = (float) ($paymentData->firstWhere('month', $monthNum)?->revenue ?? 0);
+            $purRev = (float) ($purchaseData->firstWhere('month', $monthNum)?->revenue ?? 0);
             $result[] = [
                 'month' => $monthName,
-                'revenue' => $monthData ? (float) $monthData->revenue : 0
+                'revenue' => $pRev + $purRev
             ];
         }
 
         return $result;
     }
 
-    private function getAnnualRevenue($query): array
+    private function getAnnualRevenue(): array
     {
-        $data = $query->select(
+        $paymentData = Payment::where('status', PaymentStatus::COMPLETED)
+            ->select(
                 DB::raw('YEAR(paid_at) as year'),
                 DB::raw('SUM(amount) as revenue')
             )
             ->groupBy('year')
-            ->orderBy('year')
             ->get();
 
-        return $data->map(function ($item) {
-            return [
-                'year' => $item->year,
-                'revenue' => (float) $item->revenue
+        $purchaseData = Purchase::where('status', 'completed')
+            ->select(
+                DB::raw('YEAR(created_at) as year'),
+                DB::raw('SUM(amount) as revenue')
+            )
+            ->groupBy('year')
+            ->get();
+
+        $allYears = $paymentData->pluck('year')->merge($purchaseData->pluck('year'))->unique()->sort()->values();
+
+        $result = [];
+        foreach ($allYears as $yr) {
+            $pRev = (float) ($paymentData->firstWhere('year', $yr)?->revenue ?? 0);
+            $purRev = (float) ($purchaseData->firstWhere('year', $yr)?->revenue ?? 0);
+            $result[] = [
+                'year' => $yr,
+                'revenue' => $pRev + $purRev
             ];
-        })->toArray();
+        }
+
+        return $result;
     }
 
     public function canAccess()
     {
         $_user = User::find(Auth::user()->id);
-        if ($_user && $_user->hasRole('admin')) {
+        if ($_user && ($_user->hasRole('admin') || $_user->user_type === \App\Enums\User\UserType::ADMIN)) {
             return true;
         }
         return false;

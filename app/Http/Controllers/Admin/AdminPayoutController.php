@@ -36,6 +36,7 @@ class AdminPayoutController extends Controller
         ];
 
         // Platform Accounting Stats
+        $grossPPVRevenue = (float) Purchase::where('status', 'completed')->sum('amount');
         $platformPPVRevenue = (float) Purchase::where('status', 'completed')->sum('platform_share');
         $totalSubscriptionPayments = (float) Payment::where('status', PaymentStatus::COMPLETED)->sum('amount');
         $creatorMembershipEarnings = (float) CreatorEarning::where('source', 'membership_split')->sum('amount');
@@ -47,9 +48,37 @@ class AdminPayoutController extends Controller
 
         $platformStats = [
             'platform_earnings' => $platformEarnings,
+            'gross_ppv_revenue' => $grossPPVRevenue,
+            'platform_ppv_revenue' => $platformPPVRevenue,
+            'subscription_revenue' => $totalSubscriptionPayments,
             'total_paid_out' => $totalPaidOut,
             'total_pending' => $totalPending,
         ];
+
+        $recentPurchases = Purchase::with(['user', 'content.contentable'])
+            ->where('status', 'completed')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($purchase) {
+                $title = 'PPV Video';
+                if ($purchase->content && $purchase->content->contentable) {
+                    $title = $purchase->content->contentable->title ?? $purchase->content->contentable->name ?? 'Content #' . $purchase->content_id;
+                }
+                return [
+                    'id' => $purchase->id,
+                    'user_name' => $purchase->user?->name ?? 'Viewer',
+                    'user_username' => $purchase->user?->username ?? 'user',
+                    'user_email' => $purchase->user?->email ?? '-',
+                    'user_image' => $purchase->user?->image_url ?? '/images/default-avatar.png',
+                    'content_title' => $title,
+                    'content_type' => $purchase->content?->type ?? 'movie',
+                    'amount' => (float) $purchase->amount,
+                    'creator_share' => (float) $purchase->creator_share,
+                    'platform_share' => (float) $purchase->platform_share,
+                    'stripe_payment_intent_id' => $purchase->stripe_payment_intent_id,
+                    'created_at' => $purchase->created_at?->format('Y-m-d H:i:s'),
+                ];
+            });
 
         $creatorStats = User::where('user_type', \App\Enums\User\UserType::CREATOR)
             ->get()
@@ -70,6 +99,7 @@ class AdminPayoutController extends Controller
         return Inertia::render('admin/payouts/IndexPayouts', [
             'pendingPayouts' => $pendingPayouts,
             'payoutsHistory' => $payoutsHistory,
+            'recentPurchases' => $recentPurchases,
             'settings' => $settings,
             'platformStats' => $platformStats,
             'creatorStats' => $creatorStats,
